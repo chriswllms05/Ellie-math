@@ -33,7 +33,7 @@
       const nm = NAMES[col], nextNm = NAMES[col + 1].slice(0, -1), lab = { 1: 'O', 10: 'T', 100: 'H', 1000: 'Th' };
       const big = broke ? '<i class="disc ghost"></i>' : `<i class="disc d${next} mdrag" role="button" aria-label="Move one ${nextNm}">${next}</i>`;
       const ones = [...fill(x, `<i class="disc d${unit}">${unit}</i>`), ...fill(broke ? 10 : 0, `<i class="disc d${unit} fresh">${unit}</i>`)].join('');
-      const cap = broke ? `1 ${nextNm} became 10 ${nm}. How many ${nm} now?` : `${d.short === '1' ? '' : `Not enough ${nm}! `}Drag 1 ${nextNm} over to the ${nm}.`;
+      const cap = broke ? `1 ${nextNm} is regrouped as 10 ${nm}. How many ${nm} now?` : `${d.short === '1' ? '' : `Not enough ${nm}! `}Regroup: drag 1 ${nextNm} over to the ${nm}.`;
       return `<div class="pvc mreg"><div class="col"><div class="lab">${lab[next]}</div><div class="dcs">${big}</div></div><div class="col mdrop"><div class="lab">${lab[unit]}</div><div class="dcs">${ones}</div></div></div><div class="mcap">${cap}</div>`;
     },
     // Number line from lo to hi with a marker she drags. lab: 'ends' | 'mid' | 'all'. tgt: an arrow where it goes (help).

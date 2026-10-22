@@ -67,6 +67,16 @@ She builds her own avatar on the device (never uploaded; the repo is public). Te
 - **Ten Take Away** (10 − n) is its own small skill, required before take-away from teens.
 - **Trade Tens** (14 ones = 1 ten and 4 ones; 1 ten and 4 ones = 14 ones; same with hundreds) comes before column add and subtract.
 
+## Same words as her class (done)
+
+Checked against Singapore Math's own grade 3 Letters Home (chapters 1–4) and the grade 1 lesson titles:
+- Column work says **regroup** ("Regroup 10 ones as 1 ten", "There are not enough ones. Regroup 1 ten as 10 ones", "regrouped ten"), never carry or borrow.
+- Mental math uses the chapter 2 strategy names: **add the tens**, **make the next hundred**, **over-add**, **over-subtract**.
+- Story problems name the two bar models: **part-whole** (whole: add, part: subtract) and **comparison** (greater amount: add, difference or smaller amount: subtract).
+- Teen take-away uses the grade 1 lesson names **subtract from 10** and **subtract the ones first**; addition says **make 10**.
+- Comparing says **greater**. Number bonds say "3 and 4 make 7".
+- Times facts now include ×3 and ×4: chapter 4 expects facts for 0–5 and 10 from memory, taught in grade 2.
+
 ## Needs you
 
 1. **Install on the iPad**: open https://chriswllms05.github.io/Ellie-math/ in Safari (capital E matters), Share → Add to Home Screen.

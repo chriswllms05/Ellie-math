@@ -292,7 +292,7 @@
     if (f.type === 'look') return f.n;
     if (f.type === 'm10') return 10 - Math.abs(5 - f.a);
     if (f.type === 'bond') return f.w * 10 + f.p;
-    if (f.type === 'mul') return ({ 10: 0, 2: 20, 5: 40 })[f.b] + f.a;
+    if (f.type === 'mul') return ({ 10: 0, 2: 20, 5: 40, 3: 60, 4: 80 })[f.b] + f.a;
     if (f.type === 'add') { const big = Math.max(f.a, f.b), small = Math.min(f.a, f.b); return f.a + f.b > 10 && big < 10 ? 100 + (10 - big) * 10 + small : f.a + f.b; }
     if (f.type === 'sub') return f.a > 10 ? 100 + (10 - Math.min(f.b, 9)) * 10 + f.a : f.a;
     return 50;

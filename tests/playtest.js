@@ -86,7 +86,7 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
 
   const ONLY = process.env.ONLY || 'all';
   // ---------- 1. Placement + persona sessions, single day ----------
-  if (ONLY === 'all' || ONLY === 'personas') for (const [name, persona] of [['knower', knower], ['guesser', guesser], ['idk-spammer', idkSpammer], ['counter', counter], ['mixed', mixed]]) {
+  if (ONLY === 'all' || ONLY === 'personas') for (const [name, persona] of [['knower', knower], ['guesser', guesser], ['idk-spammer', idkSpammer], ['counter', counter], ['mixed', mixed]].filter(([n]) => !process.env.PERSONA || process.env.PERSONA === n)) {
     log(`\n== Persona: ${name}`);
     const ctx = await browser.newContext({ viewport: { width: 820, height: 1100 } });
     const page = await ctx.newPage(); await setup(page);
@@ -105,7 +105,7 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
     log('  session:', JSON.stringify({ items: sess.items, fast: sess.fast, slow: sess.slow, wrong: sess.wrong, idk: sess.idk, rushed: sess.rushed, learned: sess.learned.length, min: sess.minutes }));
     if (name === 'guesser') check(sess.rushed > 0, 'guesser gets rushed flags');
     if (name === 'guesser') check(sess.fast <= sess.items * 0.25, 'guesser earns few fast-rights');
-    if (name === 'counter') check(sess.slow > sess.fast, 'counter is mostly slow-right, not fast');
+    if (name === 'counter') { const f = sess.byKind.fact; log('  facts:', JSON.stringify(f), 'big-number work:', JSON.stringify(sess.byKind.proc)); check(f.slow > f.fast, 'counter: 4-second facts are mostly slow-right, not fast'); }
     if (name === 'idk-spammer') { const yours = await page.evaluate(() => EM.countYours()); check(yours === 0, 'idk-spammer owns no facts'); check(sess.fast === 0, 'idk-spammer earns no fast credit via help'); }
     await page.screenshot({ path: `/tmp/em-${name}-summary.png`, fullPage: true });
     await ctx.close();

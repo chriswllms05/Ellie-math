@@ -65,8 +65,10 @@
     clearTimeout(saveT);
     saveT = setTimeout(() => idbPut('state', json).catch(() => {}), 300);
   }
-  function replaceState(obj) { S = migrate(obj); save(); return S; }
-  function resetState() { S = clone(DEFAULT); S.created = Date.now(); save(); return S; }
+  // Replace the state in place so every script holding a reference to EM.S stays valid.
+  function adopt(obj) { for (const k of Object.keys(S)) delete S[k]; Object.assign(S, obj); save(); return S; }
+  function replaceState(obj) { return adopt(migrate(obj)); }
+  function resetState() { const d = clone(DEFAULT); d.created = Date.now(); return adopt(d); }
 
   // ---------- IndexedDB (state mirror + voice clips) ----------
   let dbP = null;
@@ -91,7 +93,7 @@
       const json = await idbGet('state');
       if (!json) return false;
       const s = JSON.parse(json);
-      if ((s.sessions || []).length || Object.keys(s.facts || {}).length) { S = migrate(s); save(); return true; }
+      if ((s.sessions || []).length || Object.keys(s.facts || {}).length) { adopt(migrate(s)); return true; }
     } catch (e) {}
     return false;
   }

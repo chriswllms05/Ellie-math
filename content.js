@@ -64,14 +64,14 @@
   function column(a, b, op, filled, carries, regroupNote) {
     const w = Math.max(String(a).length, String(b).length, String(op === '+' ? a + b : a - b).length);
     const pad = s => String(s).padStart(w, ' ').split('');
-    const A = pad(a), B = pad(b), res = pad(filled.join('').padStart(filled.length, ' ')).map((c, i) => c);
+    const A = pad(a), B = pad(b);
     const cell = (c, cls = '') => `<span class="${cls}">${c.trim() === '' ? '&nbsp;' : c}</span>`;
     let h = '<div class="colalg" aria-hidden="true">';
     h += '<div class="r carries">' + range(0, w - 1).map(i => cell(carries[w - 1 - i] !== undefined ? String(carries[w - 1 - i]) : '', 'carry')).join('') + '</div>';
     h += '<div class="r">' + A.map(c => cell(c)).join('') + '</div>';
     h += `<div class="r op"><span class="opsign">${op}</span>` + B.map(c => cell(c)).join('') + '</div>';
-    const rs = filled.slice().reverse(); // filled is from the right
-    h += '<div class="r res">' + range(0, w - 1).map(i => { const idx = w - 1 - i; const v = rs[idx]; return cell(v === undefined ? '' : String(v), v === undefined ? '' : 'got'); }).join('') + '</div>';
+    // filled is ones-first; column i from the left holds filled[w - 1 - i]
+    h += '<div class="r res">' + range(0, w - 1).map(i => { const v = filled[w - 1 - i]; return cell(v === undefined ? '' : String(v), v === undefined ? '' : 'got'); }).join('') + '</div>';
     if (regroupNote) h += `<div class="note">${regroupNote}</div>`;
     return h + '</div>';
   }
@@ -156,10 +156,11 @@
     const pic = frames(cells);
     if (a <= 10) return two(pic + bond(a, b, stage === 1 ? '?' : A), `What goes with ${b} to make ${a}?`, `What goes with ${b} to make ${a}?`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`);
     const ones = a - 10;
+    if (b <= 2) { const back = range(1, b).map(i => a - i).join(', '); return two(pic + bond(a, b, stage === 1 ? '?' : A), `Start at ${a}. Count back ${b}.`, `Start at ${a}. Count back ${b}.`, `${a}, ${back}. That's ${A}.`, `${a}, ${back}. That's ${A}.`); }
     if (b === 10) return two(pic + bond(a, 10, stage === 1 ? '?' : ones), a === 20 ? '20 is two tens. Take one ten away.' : `${a} is 1 ten and ${ones}. Take the ten away.`, a === 20 ? 'Twenty is two tens. Take one ten away.' : `${a} is one ten and ${ones}. Take the ten away.`, `${A} is left.`, `${A} is left.`);
     if (b === ones) return two(pic + bond(a, 10, b), `${a} is 10 and ${ones}. Take the ${ones} away.`, `${a} is ten and ${ones}. Take the ${ones} away.`, `Just the ten is left: 10.`, `Just the ten is left. Ten.`);
     // Numbers close together (13 − 9, 12 − 8): think addition up through 10 instead of back through 10.
-    if (A <= 3 || b >= 8) return two(pic + bond(a, b, stage === 1 ? '?' : A), `${b} and ${10 - b} make 10. 10 and ${ones} make ${a}. So ${b} and what make ${a}?`, `${b} and ${10 - b} make ten. Ten and ${ones} make ${a}. So ${b} and what make ${a}?`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`);
+    if (A <= 4) { const up = frames([...fill(b, 'a'), ...fill(A, 'e')]); return two(up + bond(a, b, stage === 1 ? '?' : A), `${b} and ${10 - b} make 10, then ${ones} more. ${b} and what make ${a}?`, `${b} and ${10 - b} make ten, then ${ones} more. ${b} and what make ${a}?`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`); }
     return two(pic + bond(b, ones, b - ones), `Take away ${ones} to get to 10. Then ${b - ones} more.`, `Take away ${ones} to get to ten. Then ${b - ones} more.`, `10 take away ${b - ones} is ${A}.`, `Ten take away ${b - ones} is ${A}.`);
   }
 
@@ -226,7 +227,7 @@
     const digits = level === 0 ? pick([2, 3]) : level === 1 ? 3 : 4;
     let n; do { n = rint(10 ** (digits - 1), 10 ** digits - 1); } while (n % to === 0);
     const lo = Math.floor(n / to) * to, hi = lo + to;
-    const stepsSay = range(1, 4).map(i => fmt(lo - (3 - i) * to)).filter(v => Number(v.replace(/,/g, '')) >= 0).concat([fmt(hi)]).join(', ');
+    const stepsSay = range(-2, 1).map(i => lo + i * to).filter(v => v >= 0).map(fmt).join(', ');
     return { type: 'pv', tierVis: tier => tier === 0 ? numberLine(n, to, { dot: true }) : '', scaffTier: 0,
       steps: [
         { ans: lo, html: `<div class="ask">${fmt(n)} is between which two ${placeWord(to)}?</div><div class="eq small">smaller: ${slotN}</div>`, say: `${fmt(n)} is between which two ${placeWord(to)}? Type the smaller one first.`, vis: '' },
@@ -291,22 +292,24 @@
       a = rint(lo, hi); b = rint(lo, hi); tries++;
       if (Math.random() < 0.12) a = Math.floor(a / to) * to + to / 2;
       if (op === '−' && b > a) [a, b] = [b, a];
-    } while (tries < 50 && (nearRound(a, to) && a % to !== to / 2 || nearRound(b, to) && b % to !== to / 2 || (op === '+' && to === 100 && roundN(a, to) + roundN(b, to) > 1000 && level === 0) || (op === '−' && roundN(a, to) === roundN(b, to))));
+    } while (tries < 50 && (nearRound(a, to) && a % to !== to / 2 || nearRound(b, to) && b % to !== to / 2 || (op === '+' && to === 100 && roundN(a, to) + roundN(b, to) > 1000 && level === 0) || (op === '−' && (roundN(a, to) === roundN(b, to) || a - b < 2 * to))));
     const ra = roundN(a, to), rb = roundN(b, to), estv = op === '+' ? ra + rb : ra - rb, exact = op === '+' ? a + b : a - b;
     const opSay = op === '+' ? 'plus' : 'minus', place = placeName(to);
     // Sam's claimed answer: a plausible wrong answer at least one rounding unit off, or the right one.
     const samRight = Math.random() < 0.5;
-    const samVal = samRight ? exact : (op === '+' ? exact - 100 * rint(1, 3) * (to === 1000 ? 10 : 1) : exact + 100 * rint(1, 3) * (to === 1000 ? 10 : 1));
-    const rsam = roundN(samVal, to);
+    // Sam's wrong answers are off by several rounding units so the estimate can catch them; a right answer rounds within one unit of the estimate.
+    let samVal = samRight ? exact : exact + (op === '+' ? -1 : 1) * to * rint(3, 5);
+    if (!samRight && samVal < 2 * to) samVal = exact + to * rint(3, 5);
+    const rsam = roundN(samVal, to), samOk = Math.abs(rsam - estv) <= to;
     const strip = (done) => `<div class="strip">${fmt(a)} → <b>${done > 0 ? fmt(ra) : '__'}</b> &nbsp; ${fmt(b)} → <b>${done > 1 ? fmt(rb) : '__'}</b> &nbsp; ${done > 0 ? fmt(ra) : '__'} ${op} ${done > 1 ? fmt(rb) : '__'} ≈ <b>${done > 2 ? fmt(estv) : '__'}</b></div>`;
     const rndStep = (n, idx) => ({ ans: roundN(n, to), html: `${strip(idx)}<div class="ask">${fmt(n)} rounds to the nearest ${place}:</div><div class="eq">${slotN}</div>`, say: idx === 0 ? `About how much is ${fmt(a)} ${opSay} ${fmt(b)}? First, round ${fmt(a)} to the nearest ${place}.` : `Now round ${fmt(b)} to the nearest ${place}.`, vis: '', rnd: n });
     const steps = [rndStep(a, 0), rndStep(b, 1),
       { ans: estv, html: `${strip(2)}<div class="ask">Now ${op === '+' ? 'add' : 'subtract'} your rounded numbers.</div><div class="eq">${fmt(ra)} ${op} ${fmt(rb)} = ${slotN}</div>`, say: `Now ${op === '+' ? 'add' : 'subtract'} your rounded numbers. ${fmt(ra)} ${opSay} ${fmt(rb)} is about?`, vis: '' }];
     if (altSam) steps.push({ ans: rsam, sam: true, html: `${strip(3)}<div class="ask">Sam says ${fmt(a)} ${op} ${fmt(b)} = <b>${fmt(samVal)}</b>.<br>Round Sam's answer to the nearest ${place}:</div><div class="eq">${slotN}</div>`, say: `Sam says ${fmt(a)} ${opSay} ${fmt(b)} equals ${fmt(samVal)}. Round Sam's answer to the nearest ${place}.`, vis: '' });
     const doneHtml = altSam
-      ? (rsam === estv ? `Your estimate ${fmt(estv)} and Sam's ${fmt(rsam)} match. Sam's answer makes sense. The exact answer is ${fmt(exact)}.` : `${fmt(estv)} and ${fmt(rsam)}? No. Sam's answer is probably wrong. Your estimate caught it! The exact answer is ${fmt(exact)}.`)
+      ? (samOk ? `Your estimate ${fmt(estv)} and Sam's ${fmt(rsam)} are close. Sam's answer makes sense. The exact answer is ${fmt(exact)}.` : `${fmt(estv)} and ${fmt(rsam)}? No. Sam's answer is probably wrong. Your estimate caught it! The exact answer is ${fmt(exact)}.`)
       : `${fmt(a)} ${op} ${fmt(b)} is about <b>${fmt(estv)}</b>. The exact answer is ${fmt(exact)}. Close!`;
-    return { type: 'est', scaffTier: 0, samCaught: altSam && rsam !== estv, steps, strip,
+    return { type: 'est', scaffTier: 0, samCaught: altSam && !samOk, steps, strip,
       tierVis: () => '',
       stepVis: (i, tier) => (i < 2 || steps[i].sam) && tier === 0 ? numberLine(steps[i].rnd || samVal, to, { dot: true }) : '',
       done: { html: doneHtml, say: doneHtml.replace(/<[^>]+>/g, '') },
@@ -329,7 +332,7 @@
         const ha = ra / to, hb = rb / to, unit = placeWord(to), vis = `<div class="flats">${fill(ha, 0).map(() => `<i class="flat a">${to}</i>`).join('')}<span class="opsign">${op}</span>${fill(hb, 0).map(() => `<i class="flat b">${to}</i>`).join('')}</div>`;
         const t = Number(typed);
         if (stage === 1) {
-          let q = `${ha} ${unit} ${op === '+' ? 'and' : 'take away'} ${hb} ${unit}. How many ${unit}? Say it as a number.`;
+          let q = `${ha} ${unit} ${op === '+' ? 'and' : 'take away'} ${hb} ${unit} is how many ${unit}? Type it with its zeros, like ${fmt(ra)}.`;
           if (t === exact) q = `That's the exact answer, good adding! An estimate is quicker: ${fmt(ra)} ${op} ${fmt(rb)}?`;
           else if (t === (op === '+' ? ha + hb : ha - hb)) q = `${t} ${unit}. Each ${place} is ${fmt(to)}. So ${t} ${unit} is?`;
           else if (op === '+' && t === ra - rb) q = `Plus means put them together. ${ha} ${unit} and ${hb} ${unit}?`;
@@ -368,10 +371,14 @@
         let x2 = x - borrow; let note = '';
         const needB = x2 < y && i < cols - 1;
         const snapshot = { filled: filled.slice(), carries: { ...carries } };
-        if (needB) { note = `Regroup: 1 ${names[i + 1].slice(0, -1)} becomes 10 ${names[i]}. Now ${x2 + 10} take away ${y}.`; }
+        const unit = names[i].slice(0, -1), nextUnit = i < cols - 1 ? names[i + 1].slice(0, -1) : '';
+        // A 0 that already lent a ten shows as 9 after regrouping (Dimensions: regroup across zero in two steps).
+        const shown = x2 < 0 ? 9 : needB ? x2 + 10 : x2;
+        const wasNote = borrow ? ` <small>(${x} before; 1 ${unit} went to the ${names[i - 1]})</small>` : '';
+        if (needB) note = x2 < 0 ? `Regroup: 1 ${nextUnit} becomes 10 ${names[i]}. One already went to the ${names[i - 1]}, so 9 ${names[i]}. Now 9 take away ${y}.` : `Regroup: 1 ${nextUnit} becomes 10 ${names[i]}. Now ${x2 + 10} take away ${y}.`;
         const ansCol = needB ? x2 + 10 - y : x2 - y;
-        steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${x2}${borrow ? ` <small>(${x} after regrouping)</small>` : ''} − ${y}${needB ? ` <small>Not enough. ${note}</small>` : ''}</div><div class="eq">${slotN}</div>`,
-          say: `${cap(names[i])}. ${x2} take away ${y}. ${needB ? note : ''}`, vis: () => column(a, b, op, snapshot.filled, snapshot.carries), x: x2, y, needB });
+        steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${Math.max(0, x2)}${wasNote} − ${y}${needB ? ` <small>Not enough. ${note}</small>` : ''}</div><div class="eq">${slotN}</div>`,
+          say: `${cap(names[i])}. ${Math.max(0, x2)} take away ${y}. ${needB ? note : ''}`, vis: () => column(a, b, op, snapshot.filled, snapshot.carries), x: x2, y, needB, shown });
         filled.push(ansCol); if (needB) { carries[i] = x2 + 10; borrow = 1; } else borrow = 0;
       }
     }

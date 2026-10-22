@@ -127,6 +127,8 @@
   }
 
   // ---------- items ----------
+  // All item/step transitions go through here so a quit or a new session cancels pending timers.
+  function later(fn, ms) { const run = R; clearTimeout(R.nextT); R.nextT = setTimeout(() => { if (run === R && !run.ended) fn(); }, ms); }
   const curStep = () => R.cur.steps[R.step];
   const digitsAllowed = () => Math.max(1, String(curStep().ans).length);
   function needsTrick(item) { if (item.kind !== 'fact' || item.mode === 'probe' || item.mode === 'reask' || R.kind === 'placement') return false; const r = S.facts[item.key]; if (r && r.box >= EM.FLUENT_BOX) return false; return !!skillOfFact(item.key, true); }
@@ -224,12 +226,12 @@
   function placementMiss(wasIdk) {
     R.lock = true;
     showMsg('soft', wasIdk ? 'Okay! We\'ll learn that one together.' : 'Okay! We\'ll learn that one.');
-    setTimeout(completeItem, 900);
+    later(completeItem, 900);
   }
   function nextStep(msg) {
     R.lock = true;
     showMsg('good', msg);
-    setTimeout(() => { R.step++; R.phase = 'ask'; R.helpStage = 0; R.helpTries = 0; R.input = ''; R.lock = false; R.msg = null; render(); startStepClock(); }, 700);
+    later(() => { R.step++; R.phase = 'ask'; R.helpStage = 0; R.helpTries = 0; R.input = ''; R.lock = false; R.msg = null; render(); startStepClock(); }, 700);
   }
 
   // ---------- help (two stages) ----------
@@ -252,7 +254,7 @@
       EM.speech.say(worked ? 'You worked it out!' : (R.cur.kind === 'fact' ? EM.sentenceSay(R.cur.f) : `${fmt(st.ans)}.`));
       if (worked) EM.sfx.right();
       R.stepRes[R.stepRes.length - 1].helped = true;
-      setTimeout(() => { if (R.step + 1 < R.cur.steps.length) { R.step++; R.phase = 'ask'; R.helpStage = 0; R.input = ''; R.lock = false; R.msg = null; render(); startStepClock(); } else completeItem(); }, 1100);
+      later(() => { if (R.step + 1 < R.cur.steps.length) { R.step++; R.phase = 'ask'; R.helpStage = 0; R.input = ''; R.lock = false; R.msg = null; render(); startStepClock(); } else completeItem(); }, 1100);
       return;
     }
     R.helpTries++; R.input = ''; updateSlot();
@@ -268,7 +270,7 @@
     const ans = fmt(st.ans);
     showMsg('soft', `It's <b>${ans}</b>. That's okay, we'll see this one again.`);
     EM.speech.say(`It's ${ans}. That's okay. We'll see this one again.`);
-    setTimeout(() => { if (R.step + 1 < R.cur.steps.length) { R.step++; R.phase = 'ask'; R.helpStage = 0; R.input = ''; R.lock = false; R.msg = null; render(); startStepClock(); } else completeItem(); }, 1600);
+    later(() => { if (R.step + 1 < R.cur.steps.length) { R.step++; R.phase = 'ask'; R.helpStage = 0; R.input = ''; R.lock = false; R.msg = null; render(); startStepClock(); } else completeItem(); }, 1600);
   }
 
   // ---------- completing an item: grading, praise, celebrations ----------
@@ -292,20 +294,20 @@
     }
     if (graded) { R.stats[outcome]++; if (outcome === 'fast' || outcome === 'slow') R.stats.times.push(ms); }
     if (it.mode === 'reask' && (outcome === 'fast' || outcome === 'slow')) { const m = R.missed[it.key]; if (m && !m.learned) { m.learned = true; R.stats.learned.push({ label: it.label, idk: m.idk }); } }
-    if (outcome === 'wrong' || outcome === 'idk') { if (!R.missed[it.key]) R.missed[it.key] = { label: it.label, idk: outcome === 'idk', learned: false }; if (it.mode !== 'reask') queueReask(it); if (it.mode === 'probe' && R.kind !== 'placement' && ++R.failedProbes >= 3) R.queue = R.queue.filter((e, i) => i <= R.idx || e.mode !== 'probe'); }
+    if (outcome === 'wrong' || outcome === 'idk') { if (!R.missed[it.key]) R.missed[it.key] = { label: it.label, idk: outcome === 'idk', learned: false }; if (it.mode !== 'reask' && R.kind !== 'placement') queueReask(it); if (it.mode === 'probe' && R.kind !== 'placement' && ++R.failedProbes >= 3) R.queue = R.queue.filter((e, i) => i <= R.idx || e.mode !== 'probe'); }
     if (it.mode === 'probe' && outcome === 'fast') { /* she already knew it: nothing to teach */ }
     // messages
     R.lock = true;
     const after = () => { R.idx++; beginItem(); };
     if (outcome === 'fast' || outcome === 'slow') {
       const multi = it.steps.length > 1;
-      if (R.kind === 'placement') { showMsg('good', outcome === 'fast' ? '⚡' : '✓'); return setTimeout(after, 500); }
-      if (it.mode === 'reask') { showMsg('good', pick(['✓ You remembered!', '✓ Got it this time!'])); EM.sfx.right(); return setTimeout(after, 900); }
+      if (R.kind === 'placement') { showMsg('good', outcome === 'fast' ? '⚡' : '✓'); return later(after, 500); }
+      if (it.mode === 'reask') { showMsg('good', pick(['✓ You remembered!', '✓ Got it this time!'])); EM.sfx.right(); return later(after, 900); }
       if (outcome === 'fast') { showMsg('good', pick(['⚡ You knew it!', '⚡ Quick!', '⚡ Zoom!'])); EM.sfx.fast(); }
       else { showMsg('good', pick(['✓ Right! You figured it out.', '✓ Yes! You worked it out.'])); EM.sfx.right(); }
       if (multi && it.done) { showMsg('good', `✓ ${it.done.html}`); EM.speech.say(it.done.say); }
       const delay = multi ? 2200 : outcome === 'fast' ? 700 : 1100;
-      setTimeout(() => {
+      later(() => {
         if (becameYours) return celebrateYours(it, () => maybeHow(it, outcome, after));
         if (leveledUp) return levelUpNote(it, after);
         maybeHow(it, outcome, after);
@@ -314,7 +316,7 @@
     }
     // miss: help already happened; just move on (message already shown)
     if (!R.msg || R.msg.kind !== 'soft') showMsg('soft', pick(['We\'ll see that one again soon.', 'That one is coming back.']));
-    setTimeout(after, 800);
+    later(after, 800);
   }
   function queueReask(it) {
     const n = R.reasks[it.key] || 0; if (n >= 2) return;
@@ -376,18 +378,33 @@
     overlay(`<h2>Stop for now?</h2><p>What you did so far is saved.</p><button class="btn secondary" data-quit="yes">Yes, stop</button><button class="big-btn" data-close="1" style="margin-top:10px">Keep going</button>`, null);
   }
   function finishSession() {
-    clearTimeout(R.flashT); clearTimeout(R.breakT); EM.speech.stop();
+    if (!R || R.ended) return;
+    R.ended = true;
+    clearTimeout(R.nextT); clearTimeout(R.flashT); clearTimeout(R.breakT); clearTimeout(R.speechT); EM.speech.stop();
     const st = R.stats, answered = st.fast + st.slow + st.wrong + st.idk;
     const minutes = Math.round((Date.now() - R.started) / 6000) / 10;
     if (answered) {
       EM.logSession({ date: Date.now(), kind: R.kind === 'skill' ? 'skill' : R.kind, title: R.title, items: st.items, fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk, rushed: st.rushed, relooks: st.relooks, minutes,
         avg: st.times.length ? Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length) : 0, learned: st.learned.map(l => l.label), fastKeys: st.fastKeys.slice(0, 40), tricks: st.tricks, samCaught: st.samCaught || 0 });
     }
-    if (R.kind === 'placement') { S.placement.done = true; S.placement.at = Date.now(); EM.save(); }
+    if (R.kind === 'placement' && (answered >= 15 || R.idx >= R.queue.length)) { seedLevels(); S.placement.done = true; S.placement.at = Date.now(); EM.save(); }
     R.newSkills = EM.newlyOpened();
     screen = answered ? 'summary' : 'home';
     render();
     if (answered && R.newSkills.length) unlockCeremony(R.newSkills, () => {});
+  }
+
+  // After placement, start each procedure at the highest level she answered fast and right today.
+  function seedLevels() {
+    const today = dayStr(Date.now());
+    for (const sk of EM.SKILLS.filter(s => s.kind === 'proc')) {
+      let level = 0;
+      for (let lv = 0; lv < sk.levels.length; lv++) {
+        const w = EM.levelRec(sk.id, lv).window.filter(x => x.day === today);
+        if (w.length && w.every(x => x.ok && x.fast)) level = lv; else break;
+      }
+      if (level > EM.skillRec(sk.id).level) EM.skillRec(sk.id).level = level;
+    }
   }
 
   // ---------- practice screen ----------

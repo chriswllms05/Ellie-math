@@ -17,7 +17,7 @@ const server = http.createServer((req, res) => { let p = req.url.split('?')[0]; 
   const shot = n => page.screenshot({ path: `${OUT}/em-${n}.png` });
   await shot('01-first-home');
   // seed some progress so the home has a garden, then show screens
-  await page.evaluate(() => { EM.S.placement.done = true; ['add:3+3', 'add:4+4', 'm10:7', 'add:10+5', 'add:2+1'].forEach((k, i) => { const r = EM.factRec(k, true); r.box = 2; EM.S.yours.push(k); }); EM.save(); EM.go('home'); });
+  await page.evaluate(() => { EM.S.placement.done = true; EM.SKILLS.forEach(s => { EM.skillRec(s.id).manual = true; }); ['add:3+3', 'add:4+4', 'm10:7', 'add:10+5', 'add:2+1'].forEach((k, i) => { const r = EM.factRec(k, true); r.box = 2; EM.S.yours.push(k); }); EM.save(); EM.go('home'); });
   await shot('02-home');
   await page.evaluate(() => EM.go('skills')); await shot('03-skills');
   const show = async (name, item, step = 0, help = 0, typed) => {

@@ -158,7 +158,8 @@
     const ones = a - 10;
     if (b === 10) return two(pic + bond(a, 10, stage === 1 ? '?' : ones), a === 20 ? '20 is two tens. Take one ten away.' : `${a} is 1 ten and ${ones}. Take the ten away.`, a === 20 ? 'Twenty is two tens. Take one ten away.' : `${a} is one ten and ${ones}. Take the ten away.`, `${A} is left.`, `${A} is left.`);
     if (b === ones) return two(pic + bond(a, 10, b), `${a} is 10 and ${ones}. Take the ${ones} away.`, `${a} is ten and ${ones}. Take the ${ones} away.`, `Just the ten is left: 10.`, `Just the ten is left. Ten.`);
-    if (A <= 3) return two(pic + bond(a, b, stage === 1 ? '?' : A), `${b} and ${10 - b} make 10. 10 and ${ones} make ${a}. So ${b} and what make ${a}?`, `${b} and ${10 - b} make ten. Ten and ${ones} make ${a}. So ${b} and what make ${a}?`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`);
+    // Numbers close together (13 − 9, 12 − 8): think addition up through 10 instead of back through 10.
+    if (A <= 3 || b >= 8) return two(pic + bond(a, b, stage === 1 ? '?' : A), `${b} and ${10 - b} make 10. 10 and ${ones} make ${a}. So ${b} and what make ${a}?`, `${b} and ${10 - b} make ten. Ten and ${ones} make ${a}. So ${b} and what make ${a}?`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`);
     return two(pic + bond(b, ones, b - ones), `Take away ${ones} to get to 10. Then ${b - ones} more.`, `Take away ${ones} to get to ten. Then ${b - ones} more.`, `10 take away ${b - ones} is ${A}.`, `Ten take away ${b - ones} is ${A}.`);
   }
 
@@ -370,7 +371,7 @@
         if (needB) { note = `Regroup: 1 ${names[i + 1].slice(0, -1)} becomes 10 ${names[i]}. Now ${x2 + 10} take away ${y}.`; }
         const ansCol = needB ? x2 + 10 - y : x2 - y;
         steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${x2}${borrow ? ` <small>(${x} after regrouping)</small>` : ''} − ${y}${needB ? ` <small>Not enough. ${note}</small>` : ''}</div><div class="eq">${slotN}</div>`,
-          say: `${cap(names[i])}. ${x2} take away ${y}. ${needB ? note : ''}`, vis: () => column(a, b, op, snapshot.filled, snapshot.carries, needB ? note : ''), x: x2, y, needB });
+          say: `${cap(names[i])}. ${x2} take away ${y}. ${needB ? note : ''}`, vis: () => column(a, b, op, snapshot.filled, snapshot.carries), x: x2, y, needB });
         filled.push(ansCol); if (needB) { carries[i] = x2 + 10; borrow = 1; } else borrow = 0;
       }
     }

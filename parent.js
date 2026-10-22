@@ -26,6 +26,8 @@
         ${st.rushed ? `<li>🐢 Rushed guesses: ${st.rushed}. Ask her to think first.</li>` : ''}
         ${st.taught && st.taught.n ? `<li>🧑‍🏫 Taught Dot ${st.taught.ok} of ${st.taught.n} facts${st.taught.dotWrong ? `, caught ${st.taught.caught} of ${st.taught.dotWrong} of Dot's mistakes` : ''}. A miss here sends that fact back to practice.</li>` : ''}
         ${st.slow ? `<li>✓ Right but slow (still working it out): ${st.slow}. Normal; that's what practice is for.</li>` : ''}
+      ${st.compChecks && st.compChecks.length ? `<li>🔎 Traced repeated misses to the smaller facts underneath and checked: ${EM.uniq(st.compChecks).map(k => esc(EM.labelFact(EM.FACTS[k]))).join(', ')}.</li>` : ''}
+      ${st.colFacts && st.colFacts.length ? `<li>🧮 Column work slipped on ${st.colFacts.map(k => esc(EM.labelFact(EM.FACTS[k]))).join(', ')}; those facts go into practice.</li>` : ''}
       ${st.slips ? `<li>🖐️ Counting slips (answers off by one): ${st.slips}. That's the sign she's still counting those.</li>` : ''}
       </ul>
       <div class="ask-her"><b>Do this now (60 seconds):</b> ${P.script(R)}</div>
@@ -83,7 +85,8 @@
     const need = Math.ceil(keys.length * 0.8), have = keys.filter(EM.isYours).length, recent = keys.filter(k => S_.facts[k] && S_.facts[k].hersAt > Date.now() - 14 * DAY).length / 2;
     const pace = have >= need ? '<b>Facts to 20: target reached.</b> 🎉' : recent < 1 ? `<b>Pace:</b> ${have} of ${need} facts to 20 are hers. Not enough history yet for a forecast; check back next week.` : (() => { const wkDone = wk + Math.ceil((need - have) / recent); return `<b>Pace:</b> about ${Math.round(recent)} new facts a week. At this pace facts to 20 are solid around <b>week ${wkDone}</b> (target: week 10)${wkDone > 10 ? '. To speed up: add the evening review, or do the parent check and a game below most days.' : '. On track.'}`; })();
     const stuck = Object.keys(S_.facts).filter(k => EM.FACTS[k] && S_.facts[k].box < 2).map(k => { const r = S_.facts[k]; return { k, sc: (r.wrong + r.idk) * 2 + (r.slips || 0) + r.seen * 0.2 }; }).sort((a, b) => b.sc - a.sc).slice(0, 3);
-    const stuckHTML = stuck.length ? `<b>Stuck facts:</b> ${stuck.map(x => esc(EM.labelFact(EM.FACTS[x.k]))).join(', ')}. Try: ${esc(gameFor(stuck[0].k))}` : '<b>Stuck facts:</b> none yet.';
+    const why = k => { const r = (S_.roots || {})[k]; if (!r) return ''; return r.weak.length ? ` <span style="color:var(--muted)">(weak part: ${r.weak.map(c => esc(EM.labelFact(EM.FACTS[c]))).join(', ')})</span>` : ' <span style="color:var(--muted)">(its parts are solid; it\'s putting the steps together)</span>'; };
+    const stuckHTML = stuck.length ? `<b>Stuck facts:</b> ${stuck.map(x => esc(EM.labelFact(EM.FACTS[x.k])) + why(x.k)).join(', ')}. Try: ${esc(gameFor(stuck[0].k))}` : '<b>Stuck facts:</b> none yet.';
     const t = weekSessions(7).reduce((a, s) => { const c = s.column || {}; a.items += c.items || 0; a.clean += c.clean || 0; a.f += c.factSlip || 0; a.r += c.regroupMiss || 0; return a; }, { items: 0, clean: 0, f: 0, r: 0 });
     const school = t.items ? `<b>Column work:</b> ${Math.round(t.clean / t.items * 100)}% of ${t.items} problems clean on the first try. Mistakes: ${t.f} fact slip${t.f === 1 ? '' : 's'}, ${t.r} regrouping step${t.r === 1 ? '' : 's'}.${t.r > t.f ? ' Regrouping is the sticking point: on paper, have her say "not enough ones, regroup a ten" out loud.' : t.f ? ' The slips are facts, not the method; the fact practice will fix those.' : ''}` : '<b>Column work:</b> none this week yet.';
     return `<li>${pace}</li><li>${stuckHTML}</li><li>${school}</li>`;

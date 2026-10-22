@@ -173,8 +173,23 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
     for (let lv = 0; lv < 4; lv++) for (let t = 0; t < 3; t++) for (let i = 0; i < 30; i++) { const it = EM.procItem('mental', lv, t), m = it.label.match(/([\d,]+) ([+−]) ([\d,]+)/), fin = it.steps[it.steps.length - 1].ans; const want = m[2] === '+' ? num(m[1]) + num(m[3]) : num(m[1]) - num(m[3]); if (fin !== want) out.push(`mental ${it.label} gave ${fin}`); if (it.steps.length > 1 && !(it.steps[0].ans > 0)) out.push(`mental first step ${it.label}: ${it.steps[0].ans}`); }
     for (let lv = 0; lv < 2; lv++) for (let t = 0; t < 2; t++) for (let i = 0; i < 30; i++) { const it = EM.procItem('arrays', lv, t), m = it.label.match(/(\d+) rows of (\d+)/); if (it.steps[it.steps.length - 1].ans !== m[1] * m[2]) out.push(`array ${it.label}`); }
     for (let i = 0; i < 60; i++) { const it = EM.procItem('skip', i % 2, 1), by = Number(it.label.match(/by (\d+)s/)[1]); if (it.steps[1].ans - it.steps[0].ans !== by) out.push(`skip ${it.label}`); }
-    for (let lv = 0; lv < 3; lv++) for (let i = 0; i < 40; i++) { const it = EM.procItem('words', lv, i % 2); if (it.steps.some(s => !(s.ans > 0))) out.push(`word ${it.label} -> ${it.steps.map(s => s.ans)}`); if (lv < 2 && it.steps.length !== 1 || lv === 2 && it.steps.length !== 2) out.push(`word steps ${it.label}`); }
+    for (let lv = 0; lv < 3; lv++) for (let i = 0; i < 40; i++) { const it = EM.procItem('words', lv, i % 2); if (it.steps.some(s => !(s.ans > 0))) out.push(`word ${it.label} -> ${it.steps.map(s => s.ans)}`); const real = it.steps.filter(s => !s.choice).length; if (lv < 2 && real !== 1 || lv === 2 && real !== 2) out.push(`word steps ${it.label}`); if ((i % 2 <= 1) !== it.steps[0].choice) out.push(`word choice step missing ${it.label}`); const c = it.steps[0]; if (c.choice && !((c.ans === 1) === /gives|got|more than/.test(c.html) || /fewer|left|rest|How many more/.test(c.html) && c.ans === 2)) out.push(`word choice answer ${c.ans}: ${c.html.slice(0, 90)}`); }
     return out; });
+  const p5Bad = await page3.evaluate(() => { const out = [];
+    const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    if (!eq(EM.components('add:8+5'), ['m10:8', 'bond:5:2', 'add:10+3'])) out.push('8+5 components ' + EM.components('add:8+5'));
+    if (!eq(EM.components('sub:13-8'), ['sub:10-8', 'add:2+3'])) out.push('13-8 components ' + EM.components('sub:13-8'));
+    if (!eq(EM.components('add:6+7'), ['add:6+6'])) out.push('6+7 components');
+    for (const k of Object.keys(EM.FACTS)) for (const c of EM.components(k)) { const f = EM.FACTS[k], g = EM.FACTS[c]; if (!g) out.push(`missing component ${c} of ${k}`); }
+    const snap = JSON.stringify(EM.S); EM.S.facts = {}; EM.S.focus = {};
+    EM.gradeFact('add:8+5', 'wrong', 0); const g = EM.gradeFact('add:8+5', 'idk', 0);
+    if (!eq(g.weakComps, ['m10:8', 'bond:5:2', 'add:10+3'])) out.push('weak comps ' + g.weakComps);
+    const q = EM.buildFactQueue(['doubles'], 20, Date.now()); if (!q.queue.some(e => e.key === 'm10:8')) out.push('focused component not queued');
+    EM.replaceState(JSON.parse(snap));
+    for (let lv = 0; lv < 2; lv++) for (let t = 0; t < 2; t++) for (let i = 0; i < 30; i++) { const it = EM.procItem('trade', lv, t), m = it.label.match(/^(\d+) \w+ as/); if (m) { const n = +m[1]; if (it.steps[0].ans * 10 + it.steps[1].ans !== n) out.push(`trade ${it.label}`); } else { const o = +it.label.match(/and (\d+)/)[1]; if (it.steps[0].ans !== 10 + o) out.push(`trade ${it.label}`); } }
+    if (!EM.SK.subteen.requires.includes('tenminus') || EM.SK.tenminus.facts.length !== 9) out.push('ten take away skill');
+    return out; });
+  check(p5Bad.length === 0, `component routing, trade tens, ten take away (${p5Bad.length} bad)`); p5Bad.slice(0, 6).forEach(b => log('   ', b));
   check(p4Bad.length === 0, `phase 4 answers consistent (${p4Bad.length} bad)`); p4Bad.slice(0, 6).forEach(b => log('   ', b)); regBad.slice(0, 5).forEach(b => log('   ', b));
   // column picture reads left-to-right; Sam answers positive and judged with tolerance; no negatives in help; neighbors count has no repeats
   const more = await page3.evaluate(() => {

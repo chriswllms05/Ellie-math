@@ -33,7 +33,7 @@
       const nm = NAMES[col], nextNm = NAMES[col + 1].slice(0, -1), lab = { 1: 'O', 10: 'T', 100: 'H', 1000: 'Th' };
       const big = broke ? '<i class="disc ghost"></i>' : `<i class="disc d${next} mdrag" role="button" aria-label="Move one ${nextNm}">${next}</i>`;
       const ones = [...fill(x, `<i class="disc d${unit}">${unit}</i>`), ...fill(broke ? 10 : 0, `<i class="disc d${unit} fresh">${unit}</i>`)].join('');
-      const cap = broke ? `1 ${nextNm} became 10 ${nm}. How many ${nm} now?` : `Not enough ${nm}! Drag 1 ${nextNm} over to the ${nm}.`;
+      const cap = broke ? `1 ${nextNm} became 10 ${nm}. How many ${nm} now?` : `${d.short === '1' ? '' : `Not enough ${nm}! `}Drag 1 ${nextNm} over to the ${nm}.`;
       return `<div class="pvc mreg"><div class="col"><div class="lab">${lab[next]}</div><div class="dcs">${big}</div></div><div class="col mdrop"><div class="lab">${lab[unit]}</div><div class="dcs">${ones}</div></div></div><div class="mcap">${cap}</div>`;
     },
     // Number line from lo to hi with a marker she drags. lab: 'ends' | 'mid' | 'all'. tgt: an arrow where it goes (help).
@@ -134,7 +134,7 @@
   EM.manip = {
     make10: (big, small) => widget('make10', { big, small, moved: 0 }),
     split: (w, p) => widget('split', { w, p, moved: 0 }),
-    regroup: (x, col) => widget('regroup', { x, col, broke: 0 }),
+    regroup: (x, col, opts = {}) => widget('regroup', { x, col, broke: 0, short: opts.short ? 1 : 0 }),
     line: (lo, hi, val, opts = {}) => widget('line', { lo, hi, val, lab: opts.labels || 'ends', tgt: opts.target }),
     onLine: null,
     // For tests and keyboard users: set the marker on the line that's on screen.

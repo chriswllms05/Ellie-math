@@ -156,7 +156,7 @@
     else blocks = planDaily();
     R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : "Today's practice", blocks, bi: -1, started: Date.now(),
       stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {}, how: { knew: 0, trick: 0, counted: 0 },
-        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 }, slips: 0, slipKeys: [], column: { items: 0, clean: 0, factSlip: 0, regroupMiss: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlayed: false, idkCount: 0, missStreak: 0, knownBefore: EM.countCollected() };
+        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 }, slips: 0, slipKeys: [], compChecks: [], colFacts: [], column: { items: 0, clean: 0, factSlip: 0, regroupMiss: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlayed: false, idkCount: 0, missStreak: 0, knownBefore: EM.countCollected() };
     screen = 'practice';
     if (kind === 'daily' && S.reply && !S.reply.played) {
       S.reply.played = true; EM.save(); screen = 'home';
@@ -341,7 +341,7 @@
     if (ok) {
       R.lock = true;
       const worked = R.helpStage === 1;
-      showMsg('good', worked ? '✓ You worked it out!' : `✓ ${EM.sentence ? (R.cur.kind === 'fact' ? EM.sentence(R.cur.f) : fmt(st.ans)) : fmt(st.ans)}`);
+      showMsg('good', worked ? '✓ You worked it out!' : `✓ ${R.cur.kind === 'fact' ? EM.sentence(R.cur.f) : st.choices ? esc(st.choices[st.ans - 1]) : fmt(st.ans)}`);
       EM.speech.say(worked ? 'You worked it out!' : (R.cur.kind === 'fact' ? EM.sentenceSay(R.cur.f) : `${fmt(st.ans)}.`));
       if (worked) EM.sfx.right();
       mood('proud');
@@ -359,7 +359,7 @@
     }
     // Second wrong try with the answer showing: never a dead end.
     R.lock = true;
-    const ans = fmt(st.ans);
+    const ans = st.choices ? esc(st.choices[st.ans - 1]) : fmt(st.ans);
     showMsg('soft', `It's <b>${ans}</b>. That's okay, we'll see this one again.`);
     EM.speech.say(`It's ${ans}. That's okay. We'll see this one again.`);
     later(() => { if (R.step + 1 < R.cur.steps.length) { R.step++; R.phase = 'ask'; R.helpStage = 0; R.input = ''; R.lock = false; R.msg = null; render(); startStepClock(); } else completeItem(); }, 1600);
@@ -387,10 +387,17 @@
       if (typeof t0 === 'number' && Math.abs(t0 - it.f.ans) === 1) { R.stats.slips++; if (!R.stats.slipKeys.includes(it.key)) R.stats.slipKeys.push(it.key); const fr = S.facts[it.key]; fr.slips = (fr.slips || 0) + 1; EM.save(); }
       if (quietYours) { R.yoursNow.push(it.label); R.yoursKeys.push(it.key); }
       if (outcome === 'fast') R.stats.fastKeys.push(it.key);
+      // Keeps missing it: check the smaller facts it's built from, a few questions from now (at most 6 checks a session).
+      if (g.weakComps.length && R.kind !== 'placement') {
+        const upcoming = new Set(R.queue.slice(R.idx + 1).map(q => q.key));
+        g.weakComps.filter(c => !upcoming.has(c)).slice(0, 2).forEach((c, j) => { if ((R.compChecks = (R.compChecks || 0) + 1) <= 6) { R.queue.splice(Math.min(R.queue.length, R.idx + 2 + j * 2), 0, EM.factItem(c, 'normal')); R.planned++; R.stats.compChecks.push(c); } });
+      }
     } else if (graded && it.kind === 'proc') {
       const g = EM.gradeProc(it.skillId, it.level, { ok: outcome === 'fast' || outcome === 'slow', fast: outcome === 'fast', scaff: it.scaff, outcome }); leveledUp = g.leveledUp;
       if (it.samCaught && allFirst) R.stats.samCaught = (R.stats.samCaught || 0) + 1;
-      if (it.type === 'regroup') { const c = R.stats.column; c.items++; if (allFirst) c.clean++; res.forEach((r, i) => { if (!r.firstTry) { if (it.steps[i].kind) c.regroupMiss++; else c.factSlip++; } }); }
+      if (it.type === 'regroup') { const c = R.stats.column; c.items++; if (allFirst) c.clean++; res.forEach((r, i) => { if (!r.firstTry) { const st = it.steps[i]; if (st.kind) c.regroupMiss++; else if (!st.final) { c.factSlip++;
+        // A slip in a column is usually a fact she doesn't have yet: send that fact to practice.
+        const fk = st.full !== undefined ? `add:${st.x}+${st.y}` : `sub:${st.shown !== undefined ? st.shown : st.x}-${st.y}`; if (EM.FACTS[fk]) { EM.focusFact(fk); if (!R.stats.colFacts.includes(fk)) R.stats.colFacts.push(fk); } } } }); }
       if (it.type === 'est') res.forEach((r, i) => {
         const bucket = it.steps[i].sam ? 'sam' : i < 2 ? 'round' : 'combine', e = R.stats.est[bucket]; e.n++; if (r.firstTry) e.ok++;
         // the two rounding steps also feed her rounding record
@@ -592,7 +599,7 @@
         ${stageHTML()}
         <div class="msg ${R.msg ? R.msg.kind : ''}" aria-live="polite">${R.msg ? R.msg.html : ''}</div>
       </div>
-      ${curStep().line ? `<div class="pad linepad${hidden ? ' hidden' : ''}"><button class="ok" data-act="ok">Check ✓</button></div>` : `<div class="pad${hidden ? ' hidden' : ''}">${range(1, 9).map(d => `<button data-d="${d}">${d}</button>`).join('')}
+      ${curStep().choices ? `<div class="pad choicepad${hidden ? ' hidden' : ''}">${curStep().choices.map((c, i) => `<button data-choice="${i + 1}">${esc(c)}</button>`).join('')}</div>` : curStep().line ? `<div class="pad linepad${hidden ? ' hidden' : ''}"><button class="ok" data-act="ok">Check ✓</button></div>` : `<div class="pad${hidden ? ' hidden' : ''}">${range(1, 9).map(d => `<button data-d="${d}">${d}</button>`).join('')}
         <button data-act="back" aria-label="Delete">⌫</button><button data-d="0">0</button><button class="ok" data-act="ok" aria-label="Check">✓</button></div>`}
       ${help && R.helpStage === 1 ? '<button class="idk showme hidden" data-act="showme">🙋 Show me</button>' : `<button class="idk${hidden || help ? ' hidden' : ''}" data-act="idk">🙋 I don't know</button>`}
     </main>`;
@@ -648,6 +655,8 @@
     if (zh) return zoneSheet(zh.dataset.zone);
     const tc = e.target.closest('[data-tc]');
     if (tc) { EM.speech.prime(); EM.clips.prime(); S.theme = tc.dataset.tc; EM.save(); EM.theme.apply(); EM.sfx.unlock(); return go('home'); }
+    const ch = e.target.closest('[data-choice]');
+    if (ch) { if (!R || R.lock || R.waitSpeech || !curStep().choices) return; R.input = ch.dataset.choice; R.tLast = performance.now(); return submit(); }
     const tr = e.target.closest('[data-trick]');
     if (tr) return trickTap(tr.dataset.trick);
     const a = e.target.closest('[data-act]');

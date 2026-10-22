@@ -59,6 +59,14 @@ She builds her own avatar on the device (never uploaded; the repo is public). Te
 - **Next units**: In Your Head (Dimensions chapter 2 mental math), Story Problems with bar models (help notices number-grabbing and wrong-operation answers), and a separate "getting ready for times tables" track (skip counting, arrays, ×2 ×5 ×10) that only takes a small share of School work.
 - **Fixed along the way**: the yellow "fill the ten" counters were invisible in help, and the iPad size rules never applied (they were overridden by the base styles). Both fixed.
 
+## Building blocks under the questions (done)
+
+- **Misses traced to their parts**: when she misses a fact twice, the app checks the smaller facts it's built from (8 + 5 → 8 + ? = 10, 5 as 2 and 3, 10 + 3; 13 − 8 → 10 − 8, then 2 + 3; 6 + 7 → 6 + 6). Weak parts get a cold check a few questions later and go to the front of practice for a week. The grown-up card and "3 things" name the weak part, or say the parts are solid and it's the putting-together.
+- **Column slips** send the fact behind the slip (e.g. 7 + 8 in the tens) to practice.
+- **Story problems** start with one tap while the skill is new: is the question mark the whole (add) or a part (subtract)?
+- **Ten Take Away** (10 − n) is its own small skill, required before take-away from teens.
+- **Trade Tens** (14 ones = 1 ten and 4 ones; 1 ten and 4 ones = 14 ones; same with hundreds) comes before column add and subtract.
+
 ## Needs you
 
 1. **Install on the iPad**: open https://chriswllms05.github.io/Ellie-math/ in Safari (capital E matters), Share → Add to Home Screen.

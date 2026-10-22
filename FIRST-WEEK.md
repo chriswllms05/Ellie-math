@@ -30,9 +30,11 @@ What to say: *"This isn't a test and there's nothing to get right. I want the ap
 
 At the end the app shows **For a grown-up**. Read it, then:
 
-1. Praise one specific thing from the card. Specific beats big: *"You knew 7 + 7 fast"* beats *"great job."*
-2. Ask the question the card suggests ("How did you know 6 + 7?"). Listen. "I counted" is an honest answer and a useful one; just say "Okay. One day you won't need to." Don't correct her strategy.
-3. If a flower grew, look at the garden together.
+1. Do the **Do this now (60 seconds)** line on the card. It's picked from today: a quick cover-and-say of facts she just got, or, after a day of counting slips, asking her to show you one fact with the make-10 picture.
+2. Praise one specific thing from the card. Specific beats big: *"You knew 7 + 7 fast"* beats *"great job."*
+3. Ask the question the card suggests ("How did you know 6 + 7?"). Listen. "I counted" is an honest answer and a useful one; just say "Okay. One day you won't need to." Don't correct her strategy.
+4. If a flower grew, look at the garden together.
+5. Optional: in Grown-ups → Your voice, **Record a reply** (10 seconds). It plays when she starts tomorrow's practice.
 
 That's it. Two minutes. Skipping it on a busy day is fine; skipping it most days is what turns this back into an app she does alone.
 
@@ -42,6 +44,10 @@ That's it. Two minutes. Skipping it on a busy day is fine; skipping it most days
 - Rushed guesses near zero on the digest.
 - A handful of flowers (facts she knew fast on two separate days).
 - Finger counting still present. That's expected. Watch the "I counted" percentage over weeks, not days.
+
+## Once a week: the parent check and 3 things
+
+In Grown-ups, tap **Start a parent check**: ask her 5 facts out loud, away from the screen, and tap what happened. "Knew it fast" counts as a real review; "Didn't know" sends the fact back into practice. Then read **This week's 3 things**: the pace forecast, her stuck facts with an off-screen game, and whether column mistakes are fact slips or regrouping.
 
 ## When to change something
 

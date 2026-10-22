@@ -4,7 +4,7 @@
 'use strict';
 (function () {
   const EM = window.EM;
-  const pick = EM.pick, shuffle = EM.shuffle;
+  const pick = EM.pick, shuffle = EM.shuffle, range = EM.range;
   const NAME = () => (EM.S && EM.S.name) || 'Teacher';
   const slot = '<span class="slot">&nbsp;</span>';
   const scene = (dotMood, dotLine) => `<div class="teach-scene">${EM.avatar.draw(undefined, 96, 'teach')}<div class="teach-dot">${EM.theme.dot(dotMood, 84, { glasses: false })}<div class="dot-says">${dotLine}</div></div></div>`;
@@ -36,6 +36,14 @@
     if (f.type === 'sub') {
       if (!wrong) return { ans, line: `${b} and ${ans} make ${a}… so ${ans}?`, wrongDot: false };
       return { ans: ans + 1, line: `${b} and ${ans + 1} make ${a}… so ${ans + 1}?`, wrongDot: true };
+    }
+    if (f.type === 'mul') {
+      if (!wrong) return { ans, line: `${f.a} groups of ${f.b}… ${ans}?`, wrongDot: false };
+      return { ans: ans + f.b, line: `${range(1, f.a + 1).map(i => i * f.b).join(', ')}… ${ans + f.b}?`, wrongDot: true };
+    }
+    if (f.type === 'bond') {
+      if (!wrong) return { ans, line: `${f.p} and ${ans} make ${f.w}?`, wrongDot: false };
+      return { ans: ans + 1, line: `${f.p} and ${ans + 1} make ${f.w}?`, wrongDot: true };
     }
     if (f.type === 'm10') {
       if (!wrong) return { ans, line: `${f.a} and ${ans} make 10, I think?`, wrongDot: false };

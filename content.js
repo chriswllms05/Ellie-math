@@ -76,7 +76,24 @@
     if (regroupNote) h += `<div class="note">${regroupNote}</div>`;
     return h + '</div>';
   }
-  EM.pics = { frames, twoFrames, bond, numberLine, discs, discsPair, column };
+  // Rows of dots: r rows of c, each row in its own tray. flash: fades after a moment so she reads the rows, not counts.
+  function arrayPic(r, c, opts = {}) {
+    return `<div class="arr${opts.flash ? ' flash' : ''}" aria-hidden="true">${range(1, r).map(() => `<div class="arow">${range(1, c).map(i => `<i class="dot ${c > 5 && i > 5 ? 'b' : 'a'}"></i>`).join('')}</div>`).join('')}</div>`;
+  }
+  // Bar models (Singapore style). rows: [{ name, segs: [{ v, t, q }] }]; brace: { row, from, to, t } in value units above a row.
+  function bars(rows, brace) {
+    const max = Math.max(...rows.map(r => r.segs.reduce((s, g) => s + g.v, 0)), brace ? brace.to : 0), X0 = rows.some(r => r.name) ? 96 : 30, Wd = 560 - X0, k = Wd / max;
+    const top = brace ? 44 : 10, rh = 46, gap = 18, H = top + rows.length * (rh + gap) + 4;
+    let s = `<svg class="bars" viewBox="0 0 600 ${H}" role="img" aria-label="Bar model">`;
+    if (brace) { const y = top - 12, x1 = X0 + brace.from * k, x2 = X0 + brace.to * k; s += `<path d="M${x1} ${y + 8} v-8 H${x2} v8" fill="none" stroke-width="3"/><text x="${(x1 + x2) / 2}" y="${y - 8}" text-anchor="middle" class="${brace.q ? 'q' : ''}">${brace.t}</text>`; }
+    rows.forEach((r, ri) => {
+      const y = top + ri * (rh + gap); let x = X0;
+      if (r.name) s += `<text x="${X0 - 10}" y="${y + rh / 2 + 7}" text-anchor="end" class="nm">${r.name}</text>`;
+      for (const g of r.segs) { const w = Math.max(g.v * k, 44); s += `<rect x="${x}" y="${y}" width="${w}" height="${rh}" rx="4" class="${g.q ? 'q' : g.ghost ? 'ghost' : ''}"/><text x="${x + w / 2}" y="${y + rh / 2 + 8}" text-anchor="middle" class="${g.q ? 'q' : ''}">${g.t}</text>`; x += w; }
+    });
+    return s + '</svg>';
+  }
+  EM.pics = { frames, twoFrames, bond, numberLine, discs, discsPair, column, arrayPic, bars };
 
   // ---------- facts ----------
   const FACTS = EM.FACTS = {};
@@ -85,21 +102,25 @@
   const sub = (a, b) => fact(`sub:${a}-${b}`, { type: 'sub', a, b, ans: a - b });
   const m10 = a => fact(`m10:${a}`, { type: 'm10', a, ans: 10 - a });
   const look = n => fact(`look:${n}`, { type: 'look', n, ans: n });
+  const mul = (a, b) => fact(`mul:${a}x${b}`, { type: 'mul', a, b, ans: a * b });
+  const bondF = (w, p) => fact(`bond:${w}:${p}`, { type: 'bond', w, p, ans: w - p });
 
   const SKILLS = EM.SKILLS = [
     // Track A — foundations
     { id: 'look', track: 'A', kind: 'fact', icon: '👀', name: 'Quick Look', desc: 'See how many without counting.', requires: [], facts: range(1, 20).map(look) },
+    { id: 'bonds', track: 'A', kind: 'fact', icon: '🔗', name: 'Number Bonds', desc: '7 is 3 and 4. Split numbers into two parts.', requires: [], facts: range(3, 10).flatMap(w => range(1, Math.floor(w / 2)).map(p => bondF(w, p))) },
     { id: 'm10', track: 'A', kind: 'fact', icon: '🔟', name: 'Partners of 10', desc: 'Which two numbers make 10?', requires: [], facts: range(0, 10).map(m10) },
     { id: 'plus12', track: 'A', kind: 'fact', icon: '➕', name: '+1 +2, −1 −2', desc: 'One more, two more. One less, two less.', requires: [], facts: uniq([...range(0, 10).flatMap(a => [add(a, 1), add(1, a), add(a, 2), add(2, a)]), ...range(1, 12).flatMap(a => [sub(a, 1), ...(a >= 2 ? [sub(a, 2)] : [])])]) },
     { id: 'doubles', track: 'A', kind: 'fact', icon: '👯', name: 'Doubles', desc: '5 + 5, 7 + 7…', requires: [], facts: range(1, 10).map(a => add(a, a)) },
     { id: 'teens', track: 'A', kind: 'fact', icon: '🧱', name: 'Ten and More', desc: '10 + 4 is one ten and 4 ones.', requires: [], facts: uniq(range(1, 10).flatMap(n => [add(10, n), add(n, 10)])) },
     { id: 'to10', track: 'A', kind: 'fact', icon: '🖐️', name: 'Facts to 10', desc: 'Every way to add up to 10.', requires: ['m10'], facts: uniq(range(2, 10).flatMap(s => range(1, s - 1).map(a => add(a, s - a)))) },
     { id: 'near', track: 'A', kind: 'fact', icon: '🪜', name: 'Near Doubles', desc: '6 + 7 is double 6, and 1 more.', requires: ['doubles'], facts: uniq(range(1, 9).flatMap(a => [add(a, a + 1), add(a + 1, a)])) },
-    { id: 'bridge', track: 'A', kind: 'fact', icon: '🌉', name: 'Make a 10', desc: '8 + 5: 8 and 2 make 10, then 3 more.', requires: ['m10', 'teens'], facts: uniq([9, 8, 7, 6, 5, 4, 3].flatMap(a => range(2, 9).filter(b => a + b > 10).flatMap(b => [add(a, b), add(b, a)]))) },
+    { id: 'bridge', track: 'A', kind: 'fact', icon: '🌉', name: 'Make a 10', desc: '8 + 5: 8 and 2 make 10, then 3 more.', requires: ['m10', 'teens', 'bonds'], facts: uniq([9, 8, 7, 6, 5, 4, 3].flatMap(a => range(2, 9).filter(b => a + b > 10).flatMap(b => [add(a, b), add(b, a)]))) },
     { id: 'sub10', track: 'A', kind: 'fact', icon: '➖', name: 'Take Away to 10', desc: 'Think addition: 3 and what make 8?', requires: ['to10'], facts: range(2, 10).flatMap(a => range(1, a).map(b => sub(a, b))) },
     { id: 'subteen', track: 'A', kind: 'fact', icon: '⬇️', name: 'Take Away from Teens', desc: '13 − 5: back to 10, then 2 more.', requires: ['bridge', 'sub10'], facts: range(11, 20).flatMap(a => range(a - 10, 10).map(b => sub(a, b))) },
     // Track B — place value and rounding (procedures with levels)
     { id: 'pv_build', track: 'B', kind: 'proc', type: 'pv', icon: '🪙', name: 'Read the Number', desc: 'Thousands, hundreds, tens, ones.', requires: [], levels: ['3-digit', '4-digit'] },
+    { id: 'place', track: 'B', kind: 'proc', type: 'line', icon: '📍', name: 'Where Does It Go?', desc: 'Put numbers on the number line.', requires: [], levels: ['to 100', 'to 1,000', 'to 10,000'] },
     { id: 'pv_count', track: 'B', kind: 'proc', type: 'pv', icon: '🔢', name: 'Count On', desc: 'By 10s, 100s and 1,000s from any number.', requires: [], levels: ['to 1,000', 'to 10,000'] },
     { id: 'compare', track: 'B', kind: 'proc', type: 'pv', icon: '⚖️', name: 'Which Is Bigger?', desc: 'Start from the biggest place.', requires: ['pv_build@0'], levels: ['3-digit', '4-digit'] },
     { id: 'neighbors', track: 'B', kind: 'proc', type: 'pv', icon: '🏘️', name: 'Neighbors', desc: '437 is between 430 and 440.', requires: ['pv_count@0'], levels: ['tens', 'hundreds', 'thousands'] },
@@ -109,18 +130,26 @@
     { id: 'digit', track: 'B', kind: 'proc', type: 'rnd', icon: '⚡', name: 'The Digit Shortcut', desc: 'Round in your head, any place.', requires: ['r1000'], levels: ['mixed'] },
     // Track C — bridge to school
     { id: 'est', track: 'C', kind: 'proc', type: 'est', icon: '🎯', name: 'About How Much?', desc: 'Round first, then add or subtract.', requires: ['r100@0'], levels: ['add to 100', 'subtract to 100', 'thousands'] },
+    { id: 'mental', track: 'C', kind: 'proc', type: 'mental', icon: '🧠', name: 'In Your Head', desc: '380 + 50: get to 400, then 30 more.', requires: ['pv_count@0'], levels: ['tens and hundreds', 'crossing a hundred', '+9 and +99', '−9 and −99'] },
+    { id: 'words', track: 'C', kind: 'proc', type: 'word', icon: '📖', name: 'Story Problems', desc: 'Draw the bars, then solve.', requires: ['to10'], levels: ['to 20', 'to 1,000', 'two steps'] },
     { id: 'regroup', track: 'C', kind: 'proc', type: 'regroup', icon: '🧮', name: 'Column Add & Subtract', desc: 'Ten ones become one ten.', requires: ['pv_build@0', 'to10'], levels: ['add 3-digit', 'subtract 3-digit', 'add 4-digit', 'subtract 4-digit'] },
   ];
+  // Getting ready for multiplication (Dimensions 3A chapters 4–6): groups, arrays, then the easiest tables.
+  SKILLS.push(
+    { id: 'skip', track: 'D', kind: 'proc', type: 'skip', icon: '🐸', name: 'Skip Counting', desc: '5, 10, 15, 20…', requires: ['doubles'], levels: ['by 2s, 5s, 10s', 'by 3s and 4s'] },
+    { id: 'arrays', track: 'D', kind: 'proc', type: 'array', icon: '🍪', name: 'Rows and Groups', desc: '3 rows of 5 is 15.', requires: ['skip@0'], levels: ['2s, 5s, 10s', '3s and 4s'] },
+    { id: 'times', track: 'D', kind: 'fact', icon: '✖️', name: 'Times 2, 5, 10', desc: '4 × 5: four groups of 5.', requires: ['arrays@0'], facts: [10, 2, 5].flatMap(b => range(1, 10).map(a => mul(a, b))) },
+  );
   EM.SK = Object.fromEntries(SKILLS.map(s => [s.id, s]));
-  EM.TRACKS = { A: { name: 'Foundations', skills: SKILLS.filter(s => s.track === 'A').map(s => s.id) }, B: { name: 'Number sense', skills: SKILLS.filter(s => s.track === 'B').map(s => s.id) }, C: { name: 'Bridge', skills: SKILLS.filter(s => s.track === 'C').map(s => s.id) } };
+  EM.TRACKS = { A: { name: 'Foundations', skills: SKILLS.filter(s => s.track === 'A').map(s => s.id) }, B: { name: 'Number sense', skills: SKILLS.filter(s => s.track === 'B').map(s => s.id) }, C: { name: 'Bridge', skills: SKILLS.filter(s => s.track === 'C').map(s => s.id) }, D: { name: 'Times', skills: SKILLS.filter(s => s.track === 'D').map(s => s.id) } };
   // Which rungs ask her to name her trick before typing (while the fact is still learning).
   EM.TRICK_SKILLS = { to10: ['5 and more', 'partners', 'I just know'], near: ['double it', 'make 10', 'I just know'], bridge: ['make 10', 'double it', 'I just know'], sub10: ['think addition', 'partners', 'I just know'], subteen: ['subtract from 10', 'back to 10', 'I just know'] };
 
   // ---------- fact items ----------
-  const sayFact = f => ({ add: `${f.a} plus ${f.b}`, sub: `${f.a} minus ${f.b}`, m10: `${f.a} plus what makes 10?`, look: 'How many dots?' })[f.type];
-  const labelFact = f => ({ add: `${f.a} + ${f.b}`, sub: `${f.a} − ${f.b}`, m10: `${f.a} + ? = 10`, look: `Quick Look: ${f.n} dots` })[f.type];
-  const sentence = f => ({ add: `${f.a} + ${f.b} = ${f.ans}`, sub: `${f.a} − ${f.b} = ${f.ans}`, m10: `${f.a} + ${f.ans} = 10`, look: `${f.n} dots` })[f.type];
-  const sentenceSay = f => ({ add: `${f.a} plus ${f.b} is ${f.ans}`, sub: `${f.a} minus ${f.b} is ${f.ans}`, m10: `${f.a} and ${f.ans} make 10`, look: `${f.n} dots` })[f.type];
+  const sayFact = f => ({ add: `${f.a} plus ${f.b}`, sub: `${f.a} minus ${f.b}`, m10: `${f.a} plus what makes 10?`, look: 'How many dots?', bond: `${f.p} and what make ${f.w}?`, mul: `${f.a} times ${f.b}` })[f.type];
+  const labelFact = f => ({ add: `${f.a} + ${f.b}`, sub: `${f.a} − ${f.b}`, m10: `${f.a} + ? = 10`, look: `Quick Look: ${f.n} dots`, bond: `Bond ${f.w}: ${f.p} and ?`, mul: `${f.a} × ${f.b}` })[f.type];
+  const sentence = f => ({ add: `${f.a} + ${f.b} = ${f.ans}`, sub: `${f.a} − ${f.b} = ${f.ans}`, m10: `${f.a} + ${f.ans} = 10`, look: `${f.n} dots`, bond: `${f.p} and ${f.ans} make ${f.w}`, mul: `${f.a} × ${f.b} = ${f.ans}` })[f.type];
+  const sentenceSay = f => ({ add: `${f.a} plus ${f.b} is ${f.ans}`, sub: `${f.a} minus ${f.b} is ${f.ans}`, m10: `${f.a} and ${f.ans} make 10`, look: `${f.n} dots`, bond: `${f.p} and ${f.ans} make ${f.w}`, mul: `${f.a} times ${f.b} is ${f.ans}` })[f.type];
   EM.labelFact = labelFact; EM.sentence = sentence; EM.sentenceSay = sentenceSay;
 
   // Two-stage help for a fact. Returns { vis, html, say } for stage 1 (question) or 2 (answer).
@@ -132,6 +161,16 @@
       const how = n <= 5 ? `${n}.` : n < 10 ? `A row of 5 and ${n - 5} more.` : n === 10 ? 'A full frame of 10.' : `A full ten and ${n - 10} more.`;
       if (stage === 1) return { vis: pic, flash: true, html: n > 10 ? 'Look again. See the full ten. How many more?' : 'Look again. See the row of 5.', say: n > 10 ? 'Look again. See the full ten. How many more?' : 'Look again. See the row of five.' };
       return { vis: pic, html: `${how} That's <b>${n}</b>. Type <b>${n}</b>.`, say: `${how} That's ${n}. Type ${n}.` };
+    }
+    if (f.type === 'mul') {
+      const { a, b } = f, seq = range(1, a).map(i => fmt(i * b)), pic = arrayPic(a, b);
+      if (b === 10) return two(pic, `${a} tens. How many is that?`, `${a} tens. How many is that?`, `${a} tens is ${A}.`, `${a} tens is ${A}.`);
+      return two(pic, `${a} rows of ${b}. Skip-count by ${b}s, ${a} time${a === 1 ? '' : 's'}.`, `${a} rows of ${b}. Skip count by ${b}s, ${a} times.`, `${seq.join(', ')}. That's ${A}.`, `${seq.join(', ')}. That's ${A}.`);
+    }
+    if (f.type === 'bond') {
+      const { w, p } = f;
+      if (stage === 1) return { vis: EM.manip.split(w, p), html: `${w} is ${p} and how many more?`, say: `${w} is ${p} and how many more? Move ${p} counters into the box.` };
+      return { vis: frames([...fill(p, 'b'), ...fill(A, 'a')]) + bond(w, p, A), html: `${p} and ${A} make ${w}. Type <b>${A}</b>.`, say: `${p} and ${A} make ${w}. Type ${A}.` };
     }
     if (f.type === 'm10') {
       const a = f.a, pic = frames([...fill(a, 'a'), ...fill(10 - a, 'e')]);
@@ -148,7 +187,7 @@
       if (small <= 2) return two(frames(seq) + bd, `Start at ${big}. Count on ${small}.`, `Start at ${big}. Count on ${small}.`, `${big}, ${range(1, small).map(i => big + i).join(', ')}. That's ${A}.`, `${big}, ${range(1, small).map(i => big + i).join(', ')}. That's ${A}.`);
       if (big - small === 1) return two(twoFrames([small, 'a'], [...fill(small, 'a'), 'b']) + bd, `Double ${small} is ${small * 2}. And 1 more?`, `Double ${small} is ${small * 2}. And one more?`, `${small * 2} and 1 more is ${A}.`, `${small * 2} and one more is ${A}.`);
       if (A === 10) return two(frames(seq) + bd, `${a} and ${b}. Fill the frame. How many?`, `${a} and ${b}. Fill the frame. How many?`, `${a} and ${b} make 10. They're partners.`, `${a} and ${b} make ten. They're partners.`);
-      if (A > 10) { const need = 10 - big, rest = small - need; const cells = [...fill(big, 'a'), ...fill(need, 'c'), ...fill(rest, 'b')]; return two(frames(cells) + bond(small, need, rest), `${big} and ${need} make 10. Then ${rest} more. How many?`, `${big} and ${need} make ten. Then ${rest} more. How many?`, `10 and ${rest} is ${A}.`, `Ten and ${rest} is ${A}.`); }
+      if (A > 10) { const need = 10 - big, rest = small - need; const cells = [...fill(big, 'a'), ...fill(need, 'c'), ...fill(rest, 'b')]; return two(stage === 1 ? EM.manip.make10(big, small) : frames(cells) + bond(small, need, rest), `${big} and ${need} make 10. Then ${rest} more. How many?`, `${big} and ${need} make ten. Then ${rest} more. How many?`, `10 and ${rest} is ${A}.`, `Ten and ${rest} is ${A}.`); }
       return two(frames(seq) + bd, `${big} and ${small}. Find the row of 5 first. How many in all?`, `${big} and ${small}. Find the row of five first. How many in all?`, `${big} and ${small} make ${A}.${A > 5 ? ` A row of 5 and ${A - 5}.` : ''}`, `${big} and ${small} make ${A}.`);
     }
     // subtraction
@@ -169,8 +208,9 @@
   function factItem(key, mode) {
     const f = FACTS[key];
     const slot = '<span class="slot">&nbsp;</span>';
-    const eq = { add: `${f.a} + ${f.b} = ${slot}`, sub: `${f.a} − ${f.b} = ${slot}`, m10: `${f.a} + ${slot} = 10` }[f.type];
-    const step = { ans: f.ans, html: f.type === 'look' ? `<div class="ask">How many dots?</div><div class="eq">${slot}</div>` : `<div class="eq">${eq}</div>`, say: sayFact(f), vis: f.type === 'look' ? frames(fill(f.n, 'a')) : '' };
+    const eq = { add: `${f.a} + ${f.b} = ${slot}`, sub: `${f.a} − ${f.b} = ${slot}`, m10: `${f.a} + ${slot} = 10`, bond: `${f.p} + ${slot} = ${f.w}`, mul: `${f.a} × ${f.b} = ${slot}` }[f.type];
+    const vis = f.type === 'look' ? frames(fill(f.n, 'a')) : f.type === 'bond' ? `<div class="bondq">${Math.random() < 0.5 ? bond(f.w, f.p, '?') : bond(f.w, '?', f.p)}</div>` : '';
+    const step = { ans: f.ans, html: f.type === 'look' ? `<div class="ask">How many dots?</div><div class="eq">${slot}</div>` : `<div class="eq">${eq}</div>`, say: sayFact(f), vis };
     return { key, skillId: null, kind: 'fact', type: f.type, f, mode, steps: [step], help: (i, stage) => factHelp(f, stage), label: labelFact(f) };
   }
   EM.factItem = factItem;
@@ -418,12 +458,12 @@
           return { vis, html: `${st.x} + ${st.y}${st.cin ? ' + 1' : ''} = ${s}. ${st.carryOut ? `Write <b>${st.ans}</b>, carry the 1 ten.` : `Write <b>${st.ans}</b>.`} Type <b>${st.ans}</b>.`, say: `${s}. ${st.carryOut ? `Type ${st.ans} and carry the ten.` : `Type ${st.ans}.`}` };
         }
         if (st.kind === 'left') return stage === 1 ? { vis: st.vis(), html: `One ${names[st.col].slice(0, -1)} moved to the ${names[st.col - 1]}. ${st.x} take away 1?`, say: `One moved over. ${st.x} take away one?` } : { vis: st.vis(), html: `${st.x} take away 1 is <b>${st.ans}</b>. Type <b>${st.ans}</b>.`, say: `${st.ans}. Type ${st.ans}.` };
-        if (st.kind === 'regroup') return stage === 1 ? { vis: frames(fill(10, 'a').concat(fill(st.x, 'b'))), html: `1 ${names[st.col + 1].slice(0, -1)} is 10 ${names[st.col]}. 10 and ${st.x} make?`, say: `One ${names[st.col + 1].slice(0, -1)} is ten ${names[st.col]}. Ten and ${st.x} make?` } : { vis: frames(fill(10, 'a').concat(fill(st.x, 'b'))), html: `10 and ${st.x} make <b>${st.ans}</b>. Type <b>${st.ans}</b>.`, say: `${st.ans}. Type ${st.ans}.` };
+        if (st.kind === 'regroup') return stage === 1 ? { vis: EM.manip.regroup(st.x, st.col), html: `1 ${names[st.col + 1].slice(0, -1)} is 10 ${names[st.col]}. 10 and ${st.x} make?`, say: `One ${names[st.col + 1].slice(0, -1)} is ten ${names[st.col]}. Ten and ${st.x} make?` } : { vis: frames(fill(10, 'a').concat(fill(st.x, 'b'))), html: `10 and ${st.x} make <b>${st.ans}</b>. Type <b>${st.ans}</b>.`, say: `${st.ans}. Type ${st.ans}.` };
         if (st.kind === 'zero') return stage === 1 ? { vis: frames(fill(9, 'a').concat(['x'])), html: `Regroup: now there are 10. One goes to the ${names[st.col - 1]}. 10 take away 1?`, say: `Now there are ten. One goes over. Ten take away one?` } : { vis: frames(fill(9, 'a').concat(['x'])), html: `10 take away 1 is <b>9</b>. Type <b>9</b>.`, say: `Nine. Type nine.` };
         const start = st.shown !== undefined ? st.shown : st.needB ? st.x + 10 : st.x, cells = fill(start, 'a'); for (let k = 0; k < st.y; k++) cells[start - 1 - k] = 'x';
         const vis = frames(cells);
         const reg = st.needB ? `Not enough ${names[st.col]} to take ${st.y} away, so regroup: 1 ${names[st.col + 1].slice(0, -1)} becomes 10 ${names[st.col]}. Now ${start} take away ${st.y}. ` : '';
-        if (stage === 1) return { vis, html: `${reg}${start} take away ${st.y}. ${st.y} and what make ${start}?`, say: `${reg}${start} take away ${st.y}. ${st.y} and what make ${start}?` };
+        if (stage === 1) return { vis: st.needB && st.x >= 0 ? EM.manip.regroup(st.x, st.col) : vis, html: `${reg}${start} take away ${st.y}. ${st.y} and what make ${start}?`, say: `${reg}${start} take away ${st.y}. ${st.y} and what make ${start}?` };
         return { vis, html: `${st.y} and ${st.ans} make ${start}. Write <b>${st.ans}</b>. Type <b>${st.ans}</b>.`, say: `${st.y} and ${st.ans} make ${start}. Type ${st.ans}.` };
       }, label: `${fmt(a)} ${op} ${fmt(b)} in columns` };
   }
@@ -432,6 +472,114 @@
     const da = String(a).split('').reverse().map(Number), db = String(b).split('').reverse().map(Number);
     for (let i = 0; i < Math.min(da.length, db.length) - 1; i++) { if (opAdd ? da[i] + db[i] >= 10 : da[i] < db[i]) return true; }
     return false;
+  }
+
+  // ---------- mental math (Dimensions 3A chapter 2) ----------
+  function genMental(level, tier) {
+    const add = Math.random() < 0.5, op = add ? '+' : '−', opSay = add ? 'plus' : 'minus';
+    let n, m, steps = [], help;
+    if (level === 0) { // only one place changes
+      const big = Math.random() < 0.4, unit = big ? 100 : 10, d = big ? 4 : 3;
+      let tries = 0; do { n = d === 3 ? rint(110, 989) : rint(1100, 9899); m = rint(1, 8) * unit; tries++; } while (tries < 60 && (add ? (Math.floor(n / unit) % 10) + m / unit > 9 : (Math.floor(n / unit) % 10) < m / unit));
+      const ans = add ? n + m : n - m, word = big ? 'hundreds' : 'tens', have = Math.floor(n / unit) % 10;
+      steps.push({ ans, html: `<div class="eq">${fmt(n)} ${op} ${fmt(m)} = ${slotN}</div>`, say: `${fmt(n)} ${opSay} ${fmt(m)}.`, vis: tier === 0 ? discs(n, { four: d === 4 }) : '' });
+      help = stage => stage === 1 ? { vis: discs(n, { four: d === 4, counts: true }), html: `Only the ${word} change. ${have} ${word} ${add ? 'and' : 'take away'} ${m / unit} ${word}?`, say: `Only the ${word} change. ${have} ${word} ${add ? 'and' : 'take away'} ${m / unit}?` } : { vis: discs(ans, { four: d === 4, counts: true }), html: `${have} ${add ? '+' : '−'} ${m / unit} is ${add ? have + m / unit : have - m / unit} ${word}. It's <b>${fmt(ans)}</b>. Type <b>${fmt(ans)}</b>.`, say: `It's ${fmt(ans)}. Type ${fmt(ans)}.` };
+    } else if (level === 1) { // crossing the next hundred (or thousand)
+      const big = Math.random() < 0.3, unit = big ? 100 : 10, nextU = unit * 10;
+      let tries = 0; do { n = big ? rint(11, 98) * 100 : rint(11, 98) * 10; m = rint(2, 9) * unit; tries++; } while (tries < 60 && (add ? (n % nextU) + m <= nextU : (n % nextU) >= m || n - m < 0 || n % nextU === 0));
+      const ans = add ? n + m : n - m, edge = add ? Math.ceil(n / nextU) * nextU : Math.floor(n / nextU) * nextU, first = Math.abs(edge - n), rest = m - first;
+      if (tier === 0) steps.push({ ans: first, html: `<div class="ask">${fmt(n)} ${op} ${fmt(m)}: ${add ? `how many to get up to ${fmt(edge)}?` : `how many to take to get down to ${fmt(edge)}?`}</div><div class="eq">${slotN}</div>`, say: `${fmt(n)} ${opSay} ${fmt(m)}. ${add ? `How many to get up to ${fmt(edge)}?` : `How many to take away to get down to ${fmt(edge)}?`}`, vis: '', part: true });
+      steps.push({ ans, html: `<div class="eq">${fmt(n)} ${op} ${fmt(m)} = ${slotN}</div>`, say: `${fmt(n)} ${opSay} ${fmt(m)}.`, vis: '' });
+      help = (stage, i) => steps[i].part
+        ? (stage === 1 ? { vis: numberLine(n, nextU, { dot: true, halfway: false }), html: `${fmt(n)} is ${first} ${add ? 'away from' : 'past'} ${fmt(edge)}. How many?`, say: `How far is ${fmt(n)} from ${fmt(edge)}?` } : { vis: '', html: `${fmt(n)} ${op} ${first} = ${fmt(edge)}. Type <b>${first}</b>.`, say: `${first}. Type ${first}.` })
+        : (stage === 1 ? { vis: '', html: `Get to ${fmt(edge)} first: that uses ${first}. Then ${add ? 'add' : 'take away'} the other ${rest}.`, say: `Get to ${fmt(edge)} first. That uses ${first}. Then ${add ? 'add' : 'take away'} the other ${rest}.` } : { vis: '', html: `${fmt(edge)} ${op} ${rest} = <b>${fmt(ans)}</b>. Type <b>${fmt(ans)}</b>.`, say: `${fmt(edge)} ${opSay} ${rest} is ${fmt(ans)}. Type ${fmt(ans)}.` });
+    } else { // +9/+99 and −9/−99: use the friendly number, then fix it
+      const plus = level === 2, ninety = Math.random() < 0.45, m0 = ninety ? 99 : 9, round = m0 + 1;
+      n = ninety ? rint(120, 899) : rint(23, 489);
+      const opP = plus ? '+' : '−', opS = plus ? 'plus' : 'minus', mid = plus ? n + round : n - round, ans = plus ? n + m0 : n - m0;
+      if (tier === 0) steps.push({ ans: mid, html: `<div class="ask">${fmt(n)} ${opP} ${m0}: ${m0} is almost ${round}. First ${fmt(n)} ${opP} ${round} =</div><div class="eq">${slotN}</div>`, say: `${fmt(n)} ${opS} ${m0}. ${m0} is almost ${round}. First, ${fmt(n)} ${opS} ${round}.`, vis: '', part: true });
+      steps.push({ ans, html: `<div class="eq">${fmt(n)} ${opP} ${m0} = ${slotN}</div>${tier === 0 ? `<div class="ask"><small>Now ${plus ? 'take 1 back' : 'give 1 back'}.</small></div>` : ''}`, say: tier === 0 ? `Now ${plus ? 'take one back' : 'give one back'}. ${fmt(n)} ${opS} ${m0}?` : `${fmt(n)} ${opS} ${m0}.`, vis: '' });
+      help = (stage, i) => steps[i].part
+        ? (stage === 1 ? { vis: '', html: `${opP === '+' ? 'Add' : 'Take away'} ${round === 10 ? '1 ten' : '1 hundred'}. What's ${fmt(n)} ${opP} ${round}?`, say: `${fmt(n)} ${opS} ${round}?` } : { vis: '', html: `${fmt(n)} ${opP} ${round} = <b>${fmt(mid)}</b>. Type <b>${fmt(mid)}</b>.`, say: `${fmt(mid)}. Type ${fmt(mid)}.` })
+        : (stage === 1 ? { vis: '', html: `${fmt(n)} ${opP} ${round} is ${fmt(mid)}. That's 1 too ${plus ? 'many' : 'far'}, so ${plus ? 'take 1 back' : 'give 1 back'}.`, say: `${fmt(n)} ${opS} ${round} is ${fmt(mid)}. That's one too ${plus ? 'many' : 'far'}. So ${plus ? 'take one back' : 'give one back'}.` } : { vis: '', html: `${fmt(mid)} ${plus ? '−' : '+'} 1 = <b>${fmt(ans)}</b>. Type <b>${fmt(ans)}</b>.`, say: `${fmt(ans)}. Type ${fmt(ans)}.` });
+      m = m0;
+    }
+    const last = steps[steps.length - 1];
+    return { type: 'mental', steps, help: (i, stage) => help(stage, i), label: last.html.replace(/<[^>]+>/g, '').replace(/=.*/, '').trim(), done: { html: `${last.html.replace(/<[^>]+>/g, '').replace(/=.*/, '= ')}<b>${fmt(last.ans)}</b>`, say: `${fmt(last.ans)}.` } };
+  }
+
+  // ---------- skip counting and arrays ----------
+  function genSkip(level, tier) {
+    const by = level === 0 ? pick([2, 5, 10, 2, 5]) : pick([3, 4]), start = by * rint(0, level === 0 ? 5 : 3), seq = range(0, 5).map(i => start + i * by);
+    const shown = seq.slice(0, 4);
+    const steps = [0, 1].map(j => ({ ans: seq[4 + j], html: `<div class="seq">${shown.map(fmt).join(', ')}, ${j ? `${fmt(seq[4])}, ` : ''}${slotN}</div><div class="ask"><small>Counting by ${by}s</small></div>`, say: j ? 'And the next one?' : `Count by ${by}s. ${shown.join(', ')}. What comes next?`, vis: tier === 0 ? numberLineHops(seq.slice(0, 4 + j), by) : '' }));
+    return { type: 'skip', steps, label: `Count by ${by}s from ${start}`,
+      help: (i, stage) => { const prev = seq[3 + i], nx = seq[4 + i]; return stage === 1 ? { vis: numberLineHops(seq.slice(0, 4 + i), by), html: `Jump ${by} more from ${fmt(prev)}.`, say: `Jump ${by} more from ${prev}.` } : { vis: numberLineHops(seq.slice(0, 5 + i), by), html: `${fmt(prev)} + ${by} = <b>${fmt(nx)}</b>. Type <b>${fmt(nx)}</b>.`, say: `${prev} plus ${by} is ${nx}. Type ${nx}.` }; },
+      done: { html: `${seq.map(fmt).join(', ')}!`, say: seq.join(', ') } };
+  }
+  function numberLineHops(vals, by) {
+    const lo = vals[0], hi = vals[vals.length - 1] + by, X0 = 30, X1 = 570, x = v => X0 + (v - lo) / (hi - lo) * (X1 - X0), Y = 80;
+    let s = `<svg class="nl hops" viewBox="0 0 600 120" aria-hidden="true"><line x1="${X0}" y1="${Y}" x2="${X1}" y2="${Y}" stroke-width="3"/>`;
+    vals.forEach((v, i) => { s += `<line x1="${x(v)}" y1="${Y - 8}" x2="${x(v)}" y2="${Y + 8}" stroke-width="3"/><text x="${x(v)}" y="${Y + 32}" text-anchor="middle">${fmt(v)}</text>`; if (i) s += `<path d="M${x(vals[i - 1])} ${Y - 10} Q${(x(vals[i - 1]) + x(v)) / 2} ${Y - 56} ${x(v)} ${Y - 10}" fill="none" stroke-width="3" style="stroke:var(--a)"/><text class="muted" x="${(x(vals[i - 1]) + x(v)) / 2}" y="${Y - 40}" text-anchor="middle">+${by}</text>`; });
+    return s + '</svg>';
+  }
+  function genArray(level, tier) {
+    const c = level === 0 ? pick([2, 5, 10]) : pick([3, 4]), r = rint(2, c === 10 ? 5 : level === 0 ? 6 : 5), ans = r * c, seq = range(1, r).map(i => i * c);
+    const pic = arrayPic(r, c, { flash: tier >= 1 });
+    const steps = tier === 0 ? [
+      { ans: r, html: `<div class="ask">How many rows?</div><div class="eq">${slotN}</div>`, say: 'How many rows?', vis: arrayPic(r, c) },
+      { ans: c, html: `<div class="ask">How many in each row?</div><div class="eq">${slotN}</div>`, say: 'How many in each row?', vis: arrayPic(r, c) },
+      { ans, html: `<div class="ask">${r} rows of ${c}. How many in all?</div><div class="eq">${r} × ${c} = ${slotN}</div>`, say: `${r} rows of ${c}. How many in all?`, vis: arrayPic(r, c) },
+    ] : [{ ans, html: `<div class="ask">Look fast! ${r} rows of ${c}.</div><div class="eq">${r} × ${c} = ${slotN}</div>`, say: `${r} rows of ${c}. How many in all?`, vis: pic }];
+    return { type: 'array', steps, label: `${r} rows of ${c}`,
+      help: (i, stage) => { const st = steps[i]; if (st.ans === r && tier === 0 && i === 0) return stage === 1 ? { vis: arrayPic(r, c), html: 'Rows go across. Count them going down.', say: 'Rows go across. Count them going down.' } : { vis: arrayPic(r, c), html: `${r} rows. Type <b>${r}</b>.`, say: `${r} rows. Type ${r}.` };
+        if (tier === 0 && i === 1) return stage === 1 ? { vis: arrayPic(r, c), html: 'Look at just the top row. How many?', say: 'Look at just the top row. How many?' } : { vis: arrayPic(r, c), html: `${c} in each row. Type <b>${c}</b>.`, say: `${c} in each row. Type ${c}.` };
+        return stage === 1 ? { vis: arrayPic(r, c), html: `Skip-count by ${c}s, one row at a time.`, say: `Skip count by ${c}s, one row at a time.` } : { vis: arrayPic(r, c), html: `${seq.map(fmt).join(', ')}. That's <b>${fmt(ans)}</b>. Type <b>${fmt(ans)}</b>.`, say: `${seq.join(', ')}. That's ${ans}. Type ${ans}.` }; },
+      done: { html: `${r} × ${c} = <b>${ans}</b>`, say: `${r} times ${c} is ${ans}.` } };
+  }
+
+  // ---------- story problems with bar models ----------
+  const WHO = ['Mia', 'Leo', 'Ava', 'Sam', 'Nora', 'Eli', 'Zoe', 'Max'], THINGS = ['stickers', 'shells', 'marbles', 'cards', 'beads', 'stamps', 'apples', 'books'];
+  function genWord(level, tier) {
+    const [A, B] = shuffle(WHO.slice()), th = pick(THINGS), sm = level === 0, R = (lo, hi) => sm ? rint(lo, hi) : rint(lo * 10 + rint(0, 9), hi * 10 + rint(0, 9));
+    let text, steps = [], grabs = [], model, bigShow = tier === 0;
+    const q = (t, ans, say) => ({ ans, html: `<div class="ask">${t}</div><div class="eq">${slotN}</div>`, say: say || t, vis: '' });
+    if (level < 2) {
+      const kind = pick(['join', 'separate', 'part', 'more', 'diff']);
+      let a = R(sm ? 4 : 12, sm ? 12 : 60), b = R(sm ? 2 : 6, sm ? 8 : 39), ans;
+      if (kind === 'join') { ans = a + b; text = `${A} has ${fmt(a)} ${th}. ${B} gives ${A} ${fmt(b)} more. How many ${th} does ${A} have now?`; model = bars([{ segs: [{ v: a, t: fmt(a) }, { v: b, t: fmt(b) }] }], { from: 0, to: a + b, t: '?', q: true }); grabs = [a - b]; }
+      if (kind === 'separate') { if (b > a) [a, b] = [b, a]; if (a === b) a++; ans = a - b; text = `${A} had ${fmt(a)} ${th}. ${A} gave ${fmt(b)} to ${B}. How many ${th} does ${A} have left?`; model = bars([{ segs: [{ v: b, t: fmt(b), ghost: true }, { v: ans, t: '?', q: true }] }], { from: 0, to: a, t: fmt(a) }); grabs = [a + b]; }
+      if (kind === 'part') { const w = a + b; ans = a; text = `There are ${fmt(w)} ${th}. ${fmt(b)} are red and the rest are blue. How many are blue?`; model = bars([{ segs: [{ v: b, t: fmt(b) }, { v: a, t: '?', q: true }] }], { from: 0, to: w, t: fmt(w) }); grabs = [w + b]; }
+      if (kind === 'more') { ans = a + b; text = `${A} has ${fmt(a)} ${th}. ${B} has ${fmt(b)} more than ${A}. How many ${th} does ${B} have?`; model = bars([{ name: A, segs: [{ v: a, t: fmt(a) }] }, { name: B, segs: [{ v: a, t: fmt(a) }, { v: b, t: fmt(b) }] }], { row: 1, from: 0, to: a + b, t: '?', q: true }); grabs = [a - b]; }
+      if (kind === 'diff') { if (b > a) [a, b] = [b, a]; if (a === b) a++; ans = a - b; text = `${A} has ${fmt(a)} ${th}. ${B} has ${fmt(b)}. How many more ${th} does ${A} have than ${B}?`; model = bars([{ name: A, segs: [{ v: b, t: fmt(b) }, { v: ans, t: '?', q: true }] }, { name: B, segs: [{ v: b, t: fmt(b) }] }]); grabs = [a + b]; }
+      grabs.push(a, b);
+      steps.push(q(text, ans));
+    } else { // two steps
+      const kind = pick(['getgive', 'fewertotal']);
+      if (kind === 'getgive') { const a = R(12, 50), b = R(6, 30), c = rint(5, Math.min(a + b - 1, sm ? 15 : 60)); text = `${A} had ${fmt(a)} ${th}. ${A} got ${fmt(b)} more, then gave ${fmt(c)} away.`; steps.push(q(`${text} <br><small>First: how many after getting more?</small>`, a + b, `${text} First, how many after getting more?`), q(`Then ${A} gave ${fmt(c)} away. How many now?`, a + b - c)); model = bars([{ segs: [{ v: a, t: fmt(a) }, { v: b, t: fmt(b) }] }], { from: 0, to: a + b, t: `${fmt(a + b)}, then − ${fmt(c)}` }); grabs = [a + b + c, a - b]; }
+      else { const a = R(20, 60), b = R(4, 15), fewer = a - b; text = `${A} has ${fmt(a)} ${th}. ${B} has ${fmt(b)} fewer than ${A}.`; steps.push(q(`${text} <br><small>First: how many does ${B} have?</small>`, fewer, `${text} First, how many does ${B} have?`), q(`How many ${th} do they have altogether?`, a + fewer)); model = bars([{ name: A, segs: [{ v: a, t: fmt(a) }] }, { name: B, segs: [{ v: fewer, t: '?', q: true }, { v: b, t: fmt(b), ghost: true }] }]); grabs = [a + b, a + a]; }
+    }
+    steps.forEach(st => { st.vis = bigShow ? model : ''; st.say = st.say.replace(/<[^>]+>/g, ''); });
+    const lead = typed => grabs.includes(typed) ? (typed === grabs[0] ? `Hmm, read it again. Does it end up with more or fewer ${th}? ` : `That's a number from the story. What does the question ask? `) : '';
+    return { type: 'word', steps, label: `Story: ${text.slice(0, 40)}…`,
+      help: (i, stage, typed) => { const st = steps[i]; return stage === 1 ? { vis: model, html: `${lead(typed)}Look at the bars. Which part is the question mark?`, say: `${lead(typed)}Look at the bars. Which part is the question mark?` } : { vis: model, html: `It's <b>${fmt(st.ans)}</b>. Type <b>${fmt(st.ans)}</b>.`, say: `It's ${fmt(st.ans)}. Type ${fmt(st.ans)}.` }; },
+      done: { html: `Yes, <b>${fmt(steps[steps.length - 1].ans)}</b> ${th}!`, say: `Yes! ${fmt(steps[steps.length - 1].ans)} ${th}.` } };
+  }
+
+  // Where does it go? Drag the marker; close enough counts (within 5% of the line).
+  function genPlace(level, tier) {
+    let lo = 0, hi = 100;
+    if (level === 1) hi = 1000;
+    else if (level === 2) { if (Math.random() < 0.5) hi = 10000; else { lo = rint(1, 8) * 1000; hi = lo + 1000; } }
+    const span = hi - lo, step = span / 100, tick = span / 10, mid = lo + span / 2;
+    let n; do { n = lo + rint(3, 97) * step; } while (n % tick === 0 && Math.random() < 0.8);
+    const labels = tier === 0 ? 'mid' : 'ends', below = Math.floor((n - lo) / tick) * tick + lo;
+    const near = n < mid ? 'less' : 'more';
+    return { type: 'line', steps: [{ ans: n, tol: span * 0.05, line: { lo, hi }, html: `<div class="ask">Where does <b>${fmt(n)}</b> go? <small>Drag the marker, then tap Check.</small></div>`, say: `Where does ${fmt(n)} go on the number line?`, vis: EM.manip.line(lo, hi, null, { labels }) }],
+      help: (i, stage) => stage === 1
+        ? { vis: EM.manip.line(lo, hi, null, { labels: 'all' }), html: `Halfway is ${fmt(mid)}. ${fmt(n)} is ${near} than halfway. It's between ${fmt(below)} and ${fmt(below + tick)}.`, say: `Halfway is ${fmt(mid)}. ${fmt(n)} is ${near} than halfway. It's between ${fmt(below)} and ${fmt(below + tick)}.` }
+        : { vis: EM.manip.line(lo, hi, null, { labels: 'all', target: n }), html: `It goes at the green arrow. Drag the marker there.`, say: 'It goes at the green arrow. Drag the marker there.' },
+      done: { html: `${fmt(n)} goes right about there!`, say: `Yes! ${fmt(n)} goes right there.` }, label: `Place ${fmt(n)} on ${fmt(lo)} to ${fmt(hi)}` };
   }
 
   // ---------- procedure item factory ----------
@@ -444,9 +592,14 @@
     else if (skillId === 'neighbors') g = genNeighbors(level);
     else if (skillId === 'est') g = genEst(level, level >= 1 && (estAlt++ % 2 === 1));
     else if (skillId === 'regroup') g = genRegroup(level, tier);
+    else if (skillId === 'place') g = genPlace(level, tier);
+    else if (skillId === 'mental') g = genMental(level, tier);
+    else if (skillId === 'skip') g = genSkip(level, tier);
+    else if (skillId === 'arrays') g = genArray(level, tier);
+    else if (skillId === 'words') g = genWord(level, tier);
     else g = genRound(skillId, level);
     // The teaching scaffold (dot already placed on the line) is shown only at tier 0; answers given with it never count toward fluency.
-    const scaff = tier === 0 && ['neighbors', 'r10', 'r100', 'r1000', 'est'].includes(skillId);
+    const scaff = tier === 0 && ['neighbors', 'r10', 'r100', 'r1000', 'est', 'place'].includes(skillId);
     const item = { key: `${skillId}:${g.label}`, skillId, kind: 'proc', level, tier, scaff, ...g };
     // per-step visual: tier-dependent for single-step items; stepVis for multi-step
     item.visFor = i => item.stepVis ? item.stepVis(i, tier) : (item.steps[i].vis || (item.tierVis ? item.tierVis(tier) : ''));
@@ -458,7 +611,7 @@
   function placementItems() {
     const items = [];
     const take = (arr, n) => shuffle(arr.slice()).slice(0, n);
-    for (const id of ['look', 'm10', 'plus12', 'doubles', 'teens', 'to10', 'near', 'bridge', 'sub10', 'subteen']) take(EM.SK[id].facts, id === 'look' ? 3 : 4).forEach(k => items.push(factItem(k, 'probe')));
+    for (const id of ['look', 'bonds', 'm10', 'plus12', 'doubles', 'teens', 'to10', 'near', 'bridge', 'sub10', 'subteen']) take(EM.SK[id].facts, id === 'look' ? 3 : 4).forEach(k => items.push(factItem(k, 'probe')));
     const procs = [['pv_build', 0], ['pv_build', 1], ['pv_count', 0], ['pv_count', 1], ['compare', 1], ['neighbors', 0], ['neighbors', 1], ['r10', 0], ['r10', 1], ['r100', 0], ['r100', 1], ['r1000', 0]];
     procs.forEach(([id, lv]) => items.push(procItem(id, lv, 2)));
     return shuffle(items);

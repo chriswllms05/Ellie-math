@@ -45,6 +45,8 @@ async function nav(page, sel) { await clearOverlays(page); const w = await page.
 async function type(page, s) { for (const ch of String(s)) await page.keyboard.press(ch); }
 async function answer(page, value, { delayMs = 0 } = {}) {
   if (delayMs) await page.evaluate(d => { window.__perf += d; }, delayMs);
+  // Number-line steps take a marker position instead of typed digits.
+  if (await page.evaluate(() => { const R = EM._run(); return !!(R && R.cur && R.cur.steps[R.step].line); })) { await page.evaluate(v => EM.manip.setLine(v), Number(value)); await page.keyboard.press('Enter'); return; }
   await type(page, value);
   await page.keyboard.press('Enter');
 }
@@ -166,7 +168,14 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
   const estBad = await page3.evaluate(() => { const out = []; for (let i = 0; i < 60; i++) { const it = EM.procItem('est', i % 3, 1); const [r1, r2, c] = it.steps; const to = it.steps[0].ans % 1000 === 0 && it.level === 2 ? 1000 : 100; if (![ '+', '−'].some(op => (op === '+' ? r1.ans + r2.ans : r1.ans - r2.ans) === c.ans)) out.push(it.label + ' -> ' + it.steps.map(s => s.ans).join(',')); } return out; });
   check(estBad.length === 0, `estimation steps consistent (${estBad.length} bad)`); estBad.slice(0, 5).forEach(b => log('   ', b));
   const regBad = await page3.evaluate(() => { const out = []; for (let lv = 0; lv < 4; lv++) for (let i = 0; i < 40; i++) { const it = EM.procItem('regroup', lv, 1); const m = it.label.match(/([\d,]+) ([+−]) ([\d,]+)/); const a = Number(m[1].replace(/,/g, '')), b = Number(m[3].replace(/,/g, '')); const total = m[2] === '+' ? a + b : a - b; const fin = it.steps[it.steps.length - 1].ans; if (fin !== total) out.push(it.label + ' final ' + fin); const cols = it.steps.filter(s => !s.final && !s.kind).map(s => s.ans); const digits = String(total).padStart(cols.length - 1, '0').split('').reverse().map(Number); for (let c = 0; c < cols.length - 1; c++) if (cols[c] !== digits[c]) out.push(`${it.label} col${c} ${cols[c]} vs ${digits[c]}`); } return out; });
-  check(regBad.length === 0, `regrouping steps consistent (${regBad.length} bad)`); regBad.slice(0, 5).forEach(b => log('   ', b));
+  check(regBad.length === 0, `regrouping steps consistent (${regBad.length} bad)`);
+  const p4Bad = await page3.evaluate(() => { const out = []; const num = s => Number(s.replace(/,/g, ''));
+    for (let lv = 0; lv < 4; lv++) for (let t = 0; t < 3; t++) for (let i = 0; i < 30; i++) { const it = EM.procItem('mental', lv, t), m = it.label.match(/([\d,]+) ([+−]) ([\d,]+)/), fin = it.steps[it.steps.length - 1].ans; const want = m[2] === '+' ? num(m[1]) + num(m[3]) : num(m[1]) - num(m[3]); if (fin !== want) out.push(`mental ${it.label} gave ${fin}`); if (it.steps.length > 1 && !(it.steps[0].ans > 0)) out.push(`mental first step ${it.label}: ${it.steps[0].ans}`); }
+    for (let lv = 0; lv < 2; lv++) for (let t = 0; t < 2; t++) for (let i = 0; i < 30; i++) { const it = EM.procItem('arrays', lv, t), m = it.label.match(/(\d+) rows of (\d+)/); if (it.steps[it.steps.length - 1].ans !== m[1] * m[2]) out.push(`array ${it.label}`); }
+    for (let i = 0; i < 60; i++) { const it = EM.procItem('skip', i % 2, 1), by = Number(it.label.match(/by (\d+)s/)[1]); if (it.steps[1].ans - it.steps[0].ans !== by) out.push(`skip ${it.label}`); }
+    for (let lv = 0; lv < 3; lv++) for (let i = 0; i < 40; i++) { const it = EM.procItem('words', lv, i % 2); if (it.steps.some(s => !(s.ans > 0))) out.push(`word ${it.label} -> ${it.steps.map(s => s.ans)}`); if (lv < 2 && it.steps.length !== 1 || lv === 2 && it.steps.length !== 2) out.push(`word steps ${it.label}`); }
+    return out; });
+  check(p4Bad.length === 0, `phase 4 answers consistent (${p4Bad.length} bad)`); p4Bad.slice(0, 6).forEach(b => log('   ', b)); regBad.slice(0, 5).forEach(b => log('   ', b));
   // column picture reads left-to-right; Sam answers positive and judged with tolerance; no negatives in help; neighbors count has no repeats
   const more = await page3.evaluate(() => {
     const out = [], strip = h => h.replace(/&nbsp;/g, '').replace(/<[^>]+>/g, '').trim();
@@ -176,11 +185,52 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
     for (let i = 0; i < 60; i++) { const it = EM.procItem('neighbors', i % 3, 1); const say = it.help(0, 1).say; const nums = (say.match(/[\d,]+/g) || []).map(x => x.replace(/,/g, '')); for (let j = 1; j < nums.length; j++) if (nums[j] === nums[j - 1]) out.push(`repeated neighbor count: ${say}`); }
     for (let i = 0; i < 40; i++) { const it = EM.procItem('regroup', 1 + 2 * (i % 2), 1); for (const st of it.steps) if (/-\d/.test(st.html + st.say)) out.push(`negative in column prompt ${it.label}: ${st.say}`); }
     for (let lv = 0; lv < 4; lv++) for (let i = 0; i < 40; i++) { for (const tier of [0, 1, 2]) { const it = EM.procItem('regroup', lv, tier); for (const st of it.steps) { const t = st.html.replace(/<[^>]+>/g, ' '); let m = t.match(/(\d+) − (\d+) = \?/); if (m && Number(m[1]) - Number(m[2]) !== st.ans) out.push(`false prompt ${it.label} t${tier}: ${t.trim()} expects ${st.ans}`); m = t.match(/(\d+) \+ (\d+)(?: \+ (\d+))? = \?/); if (m && (Number(m[1]) + Number(m[2]) + Number(m[3] || 0)) % 10 !== st.ans % 10) out.push(`false prompt ${it.label} t${tier}: ${t.trim()} expects ${st.ans}`); } } }
+    // catch-up queue: at most 8 learning facts, each 3 times; no new facts while the set is full; easiest first
+    { const snap = JSON.stringify(EM.S); EM.S.facts = {}; const keys = EM.SK.to10.facts.filter(k => !EM.SK.doubles.facts.includes(k)).slice(0, 15); keys.forEach((k, i) => { const r = EM.factRec(k, true); r.box = 0; r.last = i; }); EM.SK.doubles.facts.forEach(k => { const r = EM.factRec(k, true); r.box = 2; r.due = 0; });
+      const { queue } = EM.buildFactQueue(['to10', 'doubles', 'bridge'], 30); const lc = {}; queue.forEach(e => { if (keys.includes(e.key)) lc[e.key] = (lc[e.key] || 0) + 1; });
+      if (Object.keys(lc).length > 8) out.push('active set too big: ' + Object.keys(lc).length); if (Object.values(lc).some(n => n !== 3)) out.push('active facts not seen 3 times: ' + JSON.stringify(lc)); if (queue.some(e => e.mode === 'probe')) out.push('probes added while active set full');
+      EM.S.facts = {}; const q2 = EM.buildFactQueue(['bridge'], 20).queue.filter(e => e.mode === 'probe').map(e => EM.FACTS[e.key]); if (!q2.length || Math.max(q2[0].a, q2[0].b) !== 9) out.push('make-10 probes not easiest-first: ' + q2.map(f => f.a + '+' + f.b).join(','));
+      EM.replaceState(JSON.parse(snap)); }
+    // turn-around credit: when 8+5 becomes hers, 5+8 needs one more fast day
+    { const snap = JSON.stringify(EM.S); EM.S.facts = {}; const r = EM.factRec('add:8+5', true); r.box = 1; r.due = 0; r.advDay = ''; EM.gradeFact('add:8+5', 'fast', 1000); const p = EM.S.facts['add:5+8']; if (!p || p.box !== 1) out.push('turn-around not credited'); EM.replaceState(JSON.parse(snap)); }
     // state stays bound after reset/restore
     const before = EM.S; EM.resetState(); const same1 = EM.S === before; EM.replaceState(JSON.parse(JSON.stringify(EM.DEFAULT))); const same2 = EM.S === before; if (!same1 || !same2) out.push('state object rebinds on reset/restore');
     return out;
   });
   check(more.length === 0, `review regressions (${more.length} problems)`); more.slice(0, 12).forEach(b => log('   ', b));
+
+  // Phase 2: number bonds, number line, drag widgets, her world's surprises.
+  const p2 = await page3.evaluate(() => {
+    const out = [];
+    if (EM.SK.bonds.facts.length !== 24) out.push(`bonds has ${EM.SK.bonds.facts.length} facts, want 24`);
+    if (!EM.SK.bridge.requires.includes('bonds')) out.push('Make 10 not gated on bonds');
+    if (!EM.world.zoneFacts().m10.includes('bond:7:3')) out.push('bonds not in the Partners zone');
+    for (let i = 0; i < 60; i++) { const it = EM.procItem('place', i % 3, i % 2), st = it.steps[0]; const { lo, hi } = st.line; if (st.ans <= lo || st.ans >= hi || st.tol !== (hi - lo) * 0.05) out.push(`place item off: ${it.label}`); }
+    const snap = JSON.stringify(EM.S); EM.S.facts = {}; EM.S.unlockedSeen = {};
+    if (EM.isOpen('bridge')) out.push('bridge open with no facts');
+    EM.S.unlockedSeen.bridge = true; if (!EM.isOpen('bridge')) out.push('opened skill got re-locked');
+    EM.replaceState(JSON.parse(snap));
+    if (EM.world.canPlace(400, 300)) out.push('surprise can cover a zone'); if (!EM.world.canPlace(500, 120)) out.push('surprise cannot go in the sky');
+    const t = document.createElement('div'); t.id = 'p2'; t.style.cssText = 'position:fixed;left:0;top:0;width:700px;background:#fff;z-index:99';
+    t.innerHTML = `<div id="w1">${EM.manip.make10(8, 5)}</div><div id="w2">${EM.manip.regroup(3, 0)}</div><div id="w3">${EM.manip.line(0, 100, null)}</div>`;
+    document.body.appendChild(t);
+    return out;
+  });
+  const box = async sel => (await page3.$(sel)).boundingBox();
+  const dragTo = async (from, to) => { const a = await box(from), b = await box(to); await page3.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page3.mouse.down(); await page3.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 6 }); await page3.mouse.up(); };
+  await page3.click('#w1 .mtray .mdrag'); // tap
+  if (await page3.$eval('#w1 .manip', e => e.dataset.moved) !== '1') p2.push('tap did not move a counter');
+  await dragTo('#w1 .mtray .mdrag', '#w1 .mframes');
+  if (await page3.$eval('#w1 .manip', e => e.dataset.moved) !== '2') p2.push('drag into the frame did not count');
+  { const a = await box('#w1 .mtray .mdrag'); await page3.mouse.move(a.x + 10, a.y + 10); await page3.mouse.down(); await page3.mouse.move(690, a.y + 200, { steps: 6 }); await page3.mouse.up(); }
+  if (await page3.$eval('#w1 .manip', e => e.dataset.moved) !== '2') p2.push('drop outside the frame counted');
+  await dragTo('#w2 .mdrag', '#w2 .mdrop');
+  if (await page3.$$eval('#w2 .mdrop .disc', d => d.length) !== 13) p2.push('ten-disc did not break into 10 ones');
+  await page3.evaluate(() => { window.__onLine = EM.manip.onLine; EM.manip.onLine = null; });
+  { const b = await box('#w3 svg'); await page3.mouse.click(b.x + b.width * (300 / 600), b.y + b.height / 2); }
+  { const v = await page3.$eval('#w3 .manip', e => e.dataset.val); if (v !== '50') p2.push(`line tap at the middle gave ${v}`); }
+  await page3.evaluate(() => { EM.manip.onLine = window.__onLine; document.getElementById('p2').remove(); });
+  check(p2.length === 0, `phase 2 widgets and skills (${p2.length} problems)`); p2.forEach(b => log('   ', b));
   await ctx3.close();
   }
 

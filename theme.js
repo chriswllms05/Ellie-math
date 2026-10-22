@@ -116,6 +116,8 @@
     el.textContent = `:root{${vars(t.light)}} @media (prefers-color-scheme: dark){:root{${vars(t.dark)}}}`;
     document.documentElement.dataset.theme = t.id;
     const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = t.light.accent;
+    // Home-screen icon in her world's colors (Safari reads this when you tap Add to Home Screen).
+    if (EM.S && EM.S.theme) document.querySelectorAll('link[rel=apple-touch-icon], link[rel=icon]').forEach(l => { l.href = `icon-${t.id}-180.png`; });
   }
 
   // The collection scene: one item per fact that's hers.

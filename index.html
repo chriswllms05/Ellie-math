@@ -132,7 +132,10 @@ h2 { font-size:20px; margin:0 0 10px; }
 .pvc .cnt { text-align:center; font-weight:800; margin-top:4px; }
 .disc { display:inline-grid; place-items:center; width:26px; height:26px; border-radius:50%; font-style:normal; font-size:9px; font-weight:800; color:#fff; }
 .disc.d1 { background:var(--d1); } .disc.d10 { background:var(--d10); } .disc.d100 { background:var(--d100); } .disc.d1000 { background:var(--d1000); }
-.pvpair { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; } .pvtitle { font-weight:800; text-align:center; margin-bottom:4px; }
+.pvpair { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+.pvpair.trio { gap:8px; flex-wrap:nowrap; }
+.pvpair.trio .pvc { gap:3px; } .pvpair.trio .col { min-width:40px; padding:2px; } .pvpair.trio .dcs { width:38px; min-height:56px; gap:2px; } .pvpair.trio .disc { width:17px; height:17px; font-size:7px; } .pvpair.trio .lab { font-size:11px; } .pvpair.trio .cnt { font-size:14px; } .pvpair.trio .pvtitle { font-size:15px; }
+@media (max-width:520px) { .pvpair.trio { flex-wrap:wrap; } } .pvtitle { font-weight:800; text-align:center; margin-bottom:4px; }
 .flats { display:flex; gap:4px; flex-wrap:wrap; justify-content:center; align-items:center; max-width:520px; }
 .flat { display:inline-grid; place-items:center; width:40px; height:40px; border-radius:8px; font-style:normal; font-size:11px; font-weight:800; color:#fff; background:var(--a); }
 .flat.b { background:var(--b); } .flats .opsign { font-size:28px; font-weight:800; padding:0 8px; }

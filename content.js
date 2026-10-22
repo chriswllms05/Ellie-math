@@ -59,7 +59,7 @@
     }
     return h + '</div>';
   }
-  function discsTrio(ns) { const four = Math.max(...ns) >= 1000; return `<div class="pvpair">${ns.map(n => `<div><div class="pvtitle">${fmt(n)}</div>${discs(n, { four, counts: true })}</div>`).join('')}</div>`; }
+  function discsTrio(ns) { const four = Math.max(...ns) >= 1000; return `<div class="pvpair trio">${ns.map(n => `<div><div class="pvtitle">${fmt(n)}</div>${discs(n, { four, counts: true })}</div>`).join('')}</div>`; }
   function discsPair(a, b) { return `<div class="pvpair"><div><div class="pvtitle">${fmt(a)}</div>${discs(a, { four: Math.max(a, b) >= 1000, counts: true })}</div><div><div class="pvtitle">${fmt(b)}</div>${discs(b, { four: Math.max(a, b) >= 1000, counts: true })}</div></div>`; }
   // Vertical algorithm display. rows: [a, b], op, filled: array of result digits from the right (strings), carries: {colIdx: n}
   function column(a, b, op, filled, carries, regroupNote) {

@@ -5,6 +5,10 @@
 (function () {
   const EM = window.EM;
   const synth = window.speechSynthesis;
+  // Play like a video even when the iPad is on silent (Safari 16.4+); otherwise silent mode mutes every sound.
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  const badVoices = new Set(); // voices that failed to speak this session; skipped from then on
+  const diag = { lastError: '', lastVoice: '', started: false, fellBack: false };
   let voice = null, primed = false, current = null, fallbackT = 0, seq = 0;
 
   // Siri's own voice isn't available to web apps, but the free Enhanced and Premium voices an iPad can download are.
@@ -26,8 +30,9 @@
   }
   function pickVoice() {
     const list = ranked(); if (!list.length) return;
+    const ok = list.filter(v => !badVoices.has(v.voiceURI));
     const want = EM.S && EM.S.settings.voiceURI;
-    voice = (want && list.find(v => v.voiceURI === want)) || list[0];
+    voice = (want && ok.find(v => v.voiceURI === want)) || ok[0] || null;
   }
   if (synth) { pickVoice(); synth.addEventListener && synth.addEventListener('voiceschanged', pickVoice); }
 
@@ -47,14 +52,20 @@
       let done = false;
       const finish = ok => { if (done) return; done = true; clearTimeout(fallbackT); if (current === u) current = null; res(ok); };
       const u = new SpeechSynthesisUtterance(words);
+      const tried = voice;
       if (voice) u.voice = voice;
+      diag.lastVoice = voice ? voice.name : '(iPad default)'; diag.started = false;
+      // A downloaded voice can fail silently in Safari (reported on iOS 26). If it errors or never starts,
+      // stop using it and say the same words with the next-best voice (finally the iPad's default).
+      const retry = why => { if (done || !tried) return false; badVoices.add(tried.voiceURI); diag.lastError = why; diag.fellBack = true; clearTimeout(startT); done = true; clearTimeout(fallbackT); try { synth.cancel(); } catch (e) {} pickVoice(); say(words, opts).then(res); return true; }; // next-best voice, then the iPad default
+      const startT = setTimeout(() => { if (!diag.started) retry('did not start'); }, 2500);
       u.rate = opts.rate || (quality(voice || {name: ''}) >= 2 ? 0.98 : 0.92); u.pitch = 1;
-      u.onend = () => finish(true);
-      u.onerror = () => finish(false);
+      u.onend = () => { clearTimeout(startT); finish(true); };
+      u.onerror = e => { clearTimeout(startT); diag.lastError = (e && e.error) || 'error'; if (!retry(diag.lastError)) finish(false); };
       current = u;
       // Safari sometimes never fires onend: release after an estimate of the spoken length (re-armed when speech actually starts).
       fallbackT = setTimeout(() => finish(false), estimateMs(words) + 1500);
-      u.onstart = () => { clearTimeout(fallbackT); fallbackT = setTimeout(() => finish(false), estimateMs(words) + 800); };
+      u.onstart = () => { diag.started = true; clearTimeout(startT); clearTimeout(fallbackT); fallbackT = setTimeout(() => finish(false), estimateMs(words) + 800); };
       try { synth.speak(u); } catch (e) { finish(false); }
       // A later say() supersedes this one.
       const guard = setInterval(() => { if (mySeq !== seq) { clearInterval(guard); finish(false); } if (done) clearInterval(guard); }, 200);
@@ -66,7 +77,7 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && synth) { try { synth.cancel(); synth.resume && synth.resume(); } catch (e) {} } });
   const voices = () => ranked().map(v => ({ uri: v.voiceURI, name: v.name.replace(/\s*\((Enhanced|Premium)\)/i, ''), lang: v.lang, q: quality(v) }));
   function setVoice(uri) { if (EM.S) { EM.S.settings.voiceURI = uri || ''; EM.save(); } pickVoice(); }
-  EM.speech = { prime, say, stop, enabled, estimateMs, voices, setVoice, pick: pickVoice, get voice() { return voice; }, get quality() { return voice ? quality(voice) : 0; } };
+  EM.speech = { prime, say, stop, enabled, estimateMs, voices, setVoice, pick: pickVoice, diag, supported: () => !!synth, get voice() { return voice; }, get quality() { return voice ? quality(voice) : 0; } };
 
   // ---------- parent voice clips (MediaRecorder -> IndexedDB blobs) ----------
   const CLIP_KEYS = ['clip:1', 'clip:2', 'clip:3', 'clip:4', 'clip:5'];
@@ -129,6 +140,9 @@
 
   // ---------- small synthesized sounds (no files) ----------
   let ctx = null;
+  // iPad only lets web sound start inside a tap: create and wake the sound engine on every touch, so later chimes can play.
+  function wake() { try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state !== 'running') ctx.resume(); } catch (e) {} }
+  ['pointerdown', 'touchend', 'keydown'].forEach(t => document.addEventListener(t, () => { wake(); prime(); }, { capture: true, passive: true }));
   function tone(seqs) {
     try {
       ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
@@ -149,6 +163,7 @@
     yours: () => tone([[523, 0.12], [659, 0.12], [784, 0.12], [1047, 0.3]]),
     unlock: () => tone([[392, 0.15], [523, 0.15], [659, 0.15], [784, 0.15], [1047, 0.4]]),
     gentle: () => tone([[330, 0.18]]),
+    state: () => (ctx ? ctx.state : 'not started'),
     tick: () => tone([[990, 0.05]]),
   };
 })();

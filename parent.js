@@ -243,6 +243,7 @@
     const vs = EM.speech.voices(), cur = EM.speech.voice, tag = q => q >= 4 ? ' ★ Siri' : q >= 3 ? ' ★ Premium' : q >= 2 ? ' ★ Enhanced' : '';
     if (!vs.length) return '<p style="color:var(--muted)">No voices found on this device yet.</p>';
     return `<label class="set">Voice <select data-voice="1">${vs.map(v => `<option value="${esc(v.uri)}" ${cur && cur.voiceURI === v.uri ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})${tag(v.q)}</option>`).join('')}</select> <button class="btn secondary small" data-act="voicetest">▶ Hear it</button></label>
+      <label class="set">Sound check <button class="btn secondary small" data-act="soundcheck">🔊 Run a sound check</button></label><div id="soundcheck"></div>
       ${EM.speech.quality < 2 ? `<p class="warn-banner">For a much more natural voice (free, works offline): on the iPad open <b>Settings → Accessibility → Spoken Content → Voices → English</b>, pick a voice marked <b>Premium</b> or <b>Enhanced</b> (Ava, Zoe and Evan are good), and download it. Then close and reopen Ellie Math and choose it here.</p>` : ''}`;
   }
   function settingsHTML(S_) {
@@ -303,6 +304,14 @@
         }
         case 'export': return exportBackup();
         case 'import': return document.getElementById('importFile').click();
+        case 'soundcheck': {
+          const out = document.getElementById('soundcheck'); EM.speech.prime(); EM.sfx.right();
+          const show = (extra = '') => { const d = EM.speech.diag, vs = EM.speech.voices(); out.innerHTML = `<p class="warn-banner" style="font-size:14px;line-height:1.5">Chime: sound engine ${esc(EM.sfx.state())}${navigator.audioSession ? ', plays on silent' : ', may be muted when the iPad is on silent'}.<br>Voice: ${EM.speech.supported() ? `${d.started ? 'spoke' : 'did not speak'} using ${esc(d.lastVoice || '?')}${d.fellBack ? ` (a voice failed with “${esc(d.lastError)}”, so it switched)` : d.lastError ? ` (error: ${esc(d.lastError)})` : ''}` : 'speech is not available in this browser'}.<br>Voices Safari offers (${vs.length}): ${esc(vs.slice(0, 8).map(v => v.name).join(', ') || 'none')}${extra}</p>`; };
+          out.innerHTML = '<p>Listening…</p>';
+          EM.speech.say('This is Dot. If you can hear me, the sound is working.').then(() => show());
+          setTimeout(() => show(' (still checking)'), 3500);
+          return;
+        }
         case 'voicetest': EM.speech.prime(); EM.speech.say(`Hi${S().name ? ', ' + S().name : ''}! 8 plus 5 is 13. You didn't count that one, you just knew it!`); return;
         case 'changePin': {
           const a = prompt('New 4-digit PIN'); if (!/^\d{4}$/.test(a || '')) { if (a !== null) alert('Four digits, please.'); return; }

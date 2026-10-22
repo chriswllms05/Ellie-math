@@ -172,8 +172,7 @@
     return `
       <label class="set">Child's name <input type="text" data-set="name" value="${esc(S_.name)}" maxlength="20"></label>
       <label class="set">An answer counts as "known" within <select data-set="fastSec">${[2, 3, 4, 5, 6].map(v => `<option value="${v}" ${st.fastSec === v ? 'selected' : ''}>${v} s (+0.6 s per extra digit)</option>`).join('')}</select></label>
-      <label class="set">Parts per daily session <select data-set="blocks">${[1, 2, 3].map(v => `<option value="${v}" ${st.blocks === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-      <label class="set">Minutes per part <select data-set="blockMin">${[3, 4, 5, 6, 7].map(v => `<option value="${v}" ${st.blockMin === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <label class="set">Daily practice length <select data-set="minutes">${[10, 15, 20].map(v => `<option value="${v}" ${(st.minutes || 15) === v ? 'selected' : ''}>${v} minutes</option>`).join('')}</select></label>
       <label class="set">Read prompts aloud <input type="checkbox" data-set="tts" ${st.tts ? 'checked' : ''}></label>
       <label class="set">School work: estimating by rounding <input type="checkbox" data-bridge="est" ${st.bridge.est !== false ? 'checked' : ''}></label>
       <label class="set">School work: column add/subtract with regrouping <input type="checkbox" data-bridge="regroup" ${st.bridge.regroup !== false ? 'checked' : ''}></label>

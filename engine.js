@@ -30,7 +30,7 @@
     taught: {},       // Dot's notebook: facts she taught Dot
     theme: '',        // garden | ocean | space, picked by her on first launch
     created: 0,
-    settings: { fastSec: 3, blockMin: 5, blocks: 3, tts: true, pin: '', pinHint: '', bridge: { est: true, regroup: true }, roundFocus: 'auto', clockOnDigit: true },
+    settings: { fastSec: 3, minutes: 15, blockMin: 5, blocks: 3, tts: true, pin: '', pinHint: '', bridge: { est: true, regroup: true }, roundFocus: 'auto', clockOnDigit: true },
     facts: {},        // key -> fact record (Leitner)
     skills: {},       // id -> { level, levels: { [level]: { window: [] } }, manual: false, lastReview: '' }
     sessions: [],     // { date, kind, items, fast, slow, wrong, idk, rushed, minutes, learned: [...], fastKeys: [...] }
@@ -139,6 +139,13 @@
     // First time hers: a celebration (big if she once missed it). Back again after slipping: a rescue.
     const becameYours = wasBelow && r.box >= FLUENT_BOX && !wasEverHers, rescued = wasBelow && r.box >= FLUENT_BOX && wasEverHers;
     if (becameYours && !S.yours.includes(key)) S.yours.push(key);
+    if (becameYours) {
+      const f = EM.FACTS[key];
+      if (f && f.type === 'add' && f.a !== f.b) {
+        const pk = `add:${f.b}+${f.a}`, p = EM.FACTS[pk] && factRec(pk, true);
+        if (p && p.box < 1) { p.box = 1; p.due = startOfDay(now + DAY); p.peak = Math.max(p.peak || 0, 1); p.linked = key; }
+      }
+    }
     save();
     return { becameYours, rescued, hadTrouble };
   }
@@ -248,28 +255,54 @@
 
   // ---------- queues ----------
   // Facts block: learning first, a few cold probes of new facts, due reviews, then more new; not-yet-due only as filler.
+  // Easiest first within a skill: make 10 with +9 before +6, take 9 from a teen before 6, smaller sums before bigger.
+  function difficulty(k) {
+    const f = EM.FACTS[k]; if (!f) return 99;
+    if (f.type === 'look') return f.n;
+    if (f.type === 'm10') return 10 - Math.abs(5 - f.a);
+    if (f.type === 'bond') return f.w * 10 + f.p;
+    if (f.type === 'add') { const big = Math.max(f.a, f.b), small = Math.min(f.a, f.b); return f.a + f.b > 10 && big < 10 ? 100 + (10 - big) * 10 + small : f.a + f.b; }
+    if (f.type === 'sub') return f.a > 10 ? 100 + (10 - Math.min(f.b, 9)) * 10 + f.a : f.a;
+    return 50;
+  }
+  // Subtraction facts open as soon as their addition partner is hers, even before the subtraction skill opens.
+  function familyKeys() {
+    const out = [];
+    for (const id of ['sub10', 'subteen']) {
+      if (isOpen(id)) continue;
+      for (const k of EM.SK[id].facts) { const f = EM.FACTS[k], c = f.a - f.b; if (EM.isCollected(`add:${f.b}+${c}`) || EM.isCollected(`add:${c}+${f.b}`)) out.push(k); }
+    }
+    return out;
+  }
+  // Facts block for catching up: a small active set of unknown facts (each seen three times, spaced),
+  // mixed into mostly known and due facts. New facts enter only when the active set has room, easiest first.
+  const ACTIVE = 8;
   function buildFactQueue(skillIds, len, now = Date.now(), opts = {}) {
-    let keys = uniq(skillIds.flatMap(id => EM.SK[id].facts));
-    // Evening review: only facts she is learning or that are due today; nothing new.
+    const order = new Map();
+    let keys = uniq([...skillIds.flatMap(id => EM.SK[id].facts), ...(opts.extraKeys || [])]);
+    keys.forEach((k, i) => order.set(k, i));
     if (opts.dueOnly) keys = keys.filter(k => S.facts[k] && (S.facts[k].box < 1 || startOfDay(S.facts[k].due) <= now));
     const rec = k => S.facts[k];
-    const learning = shuffle(keys.filter(k => rec(k) && rec(k).box < 1));
+    const learning = keys.filter(k => rec(k) && rec(k).box < 1).sort((a, b) => (rec(a).last || 0) - (rec(b).last || 0));
+    const active = learning.slice(0, ACTIVE);
     const due = keys.filter(k => rec(k) && rec(k).box >= 1 && startOfDay(rec(k).due) <= now).sort((a, b) => rec(a).due - rec(b).due);
-    const unseen = shuffle(keys.filter(k => !rec(k)));
+    const unseen = keys.filter(k => !rec(k)).sort((a, b) => difficulty(a) - difficulty(b) || order.get(a) - order.get(b));
     const notDue = shuffle(keys.filter(k => rec(k) && rec(k).box >= 1 && startOfDay(rec(k).due) > now));
-    const q = [], used = new Set();
-    const push = (k, mode) => { if (!used.has(k) && q.length < len) { used.add(k); q.push({ key: k, mode }); } };
-    learning.slice(0, 6).forEach(k => push(k, 'normal'));
-    unseen.slice(0, Math.max(0, Math.min(5, 8 - q.length))).forEach(k => push(k, 'probe'));
-    due.forEach(k => push(k, 'normal'));
-    learning.forEach(k => push(k, 'normal'));
-    unseen.slice(0, 10).forEach(k => push(k, 'probe'));
-    notDue.slice(0, 4).forEach(k => push(k, 'normal'));
-    shuffle(q);
-    // open with something she has at least once gotten right, when possible
-    const first = q.findIndex(e => rec(e.key) && rec(e.key).box >= 1);
-    if (first > 0) q.unshift(q.splice(first, 1)[0]);
-    return { queue: q, spare: due.filter(k => !used.has(k)) };
+    const probes = opts.dueOnly ? [] : unseen.slice(0, Math.min(3, Math.max(0, ACTIVE - learning.length)));
+    const unknownSlots = active.length * 3 + probes.length;
+    const knownWant = Math.max(len - unknownSlots, unknownSlots * 2);
+    const known = [...due, ...notDue.slice(0, 6)].slice(0, knownWant);
+    const base = shuffle([...known.map(k => ({ key: k, mode: 'normal' })), ...probes.map(k => ({ key: k, mode: 'probe' }))]);
+    // open with something she has gotten right before
+    const first = base.findIndex(e => rec(e.key) && rec(e.key).box >= 1);
+    if (first > 0) base.unshift(base.splice(first, 1)[0]);
+    // weave each active fact in three times, about four items apart
+    active.forEach((k, j) => {
+      let p = Math.min(base.length, 1 + j * 2);
+      ['normal', 'rehearse', 'rehearse'].forEach(mode => { base.splice(Math.min(p, base.length), 0, { key: k, mode }); p += 5; });
+    });
+    const used = new Set(base.map(e => e.key));
+    return { queue: base, spare: due.filter(k => !used.has(k)) };
   }
   // Procedure block: weighted toward skills not yet fluent; fluent skills get a light review every few days.
   function pickProcSkills(skillIds, n, now = Date.now()) {
@@ -284,7 +317,7 @@
     }
     return shuffle(out);
   }
-  Object.assign(EM, { buildFactQueue, pickProcSkills });
+  Object.assign(EM, { buildFactQueue, pickProcSkills, difficulty, familyKeys });
 
   // ---------- session log ----------
   function logSession(sess) {

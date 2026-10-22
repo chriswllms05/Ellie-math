@@ -23,7 +23,7 @@
   EM.go = go; EM.render = render;
 
   // ---------- home ----------
-  function todayDone() { const d = dayStr(Date.now()), need = S.settings.blockMin * S.settings.blocks / 2; return S.sessions.some(s => dayStr(s.date) === d && s.kind === 'daily' && (s.items >= 15 || (s.minutes || 0) >= need)); }
+  function todayDone() { const d = dayStr(Date.now()), need = (S.settings.minutes || 15) / 2; return S.sessions.some(s => dayStr(s.date) === d && s.kind === 'daily' && (s.items >= 15 || (s.minutes || 0) >= need)); }
   const GROW = { garden: ['sprout', 'sprouts'], ocean: ['egg', 'eggs'], space: ['baby star', 'baby stars'], classroom: ['outline', 'outlines'] };
   const HI = () => T().id === 'classroom' ? 'Good morning' : 'Hi';
   // Her world, full width, with Dot and a speech bubble perched in the sky.
@@ -33,7 +33,7 @@
     return `<div class="world${opts.inset ? ' inset' : ''}">${w.svg}${bubble ? `<div class="perch">${me}${D(opts.mood || 'calm', 64)}<div class="bubble">${bubble}</div></div>` : ''}</div>`;
   }
   function worldCounts() { const w = EM.world.render(); return { yours: w.yours, sprouts: w.sprouts }; }
-  const partsToday = () => S.settings.blocks + (EM.teach.items(3).length ? 1 : 0);
+  const partsToday = () => planDaily().length;
   const dueTonight = () => EM.buildFactQueue(openIds('A'), 20, Date.now(), { dueOnly: true }).queue.length > 0;
   // The end-of-day card waits on home until a grown-up opens it.
   function cardLine() {
@@ -86,7 +86,7 @@
       <p class="tap-hint">Tap a ${({ garden: 'flower bed', ocean: 'coral reef', space: 'constellation', classroom: 'sticker chart' })[t.id]} to look closer</p>
       ${surpriseHTML(known)}
       ${cardLine()}
-      <button class="big-btn" data-act="today">${done ? 'Practice again' : "Today's practice"}<span>${done ? "You already did today's. Extra is fine!" : `About 15 minutes, ${partsToday()} short parts`}</span></button>
+      <button class="big-btn" data-act="today">${done ? 'Practice again' : "Today's practice"}<span>${done ? "You already did today's. Extra is fine!" : `About ${S.settings.minutes || 15} minutes, ${partsToday()} short parts`}</span></button>
       ${done && dueTonight() ? '<button class="btn secondary" data-act="evening" style="margin-bottom:12px">Evening review <span style="font-size:14px;color:var(--muted)">5 minutes, just the facts that are due</span></button>' : ''}
       <button class="btn secondary" data-act="skills">Pick a skill</button>
       <div class="card"><h2>How to play</h2><ul>
@@ -129,20 +129,28 @@
   function procQueueItems(ids, n) {
     return EM.pickProcSkills(ids, n).map(id => { const rec = EM.skillRec(id); return EM.procItem(id, rec.level, EM.procTier(id, rec.level)); });
   }
+  // The daily plan adapts to where she is: while facts to 20 are behind, facts get two bursts (start and later) and
+  // big numbers shrink to a short review once those skills are solid. Times scale with the chosen session length.
+  function factsBehind() { const ids = ['m10', 'plus12', 'doubles', 'teens', 'to10', 'near', 'bridge', 'sub10', 'subteen']; const keys = EM.uniq(ids.flatMap(id => EM.SK[id].facts)); return keys.filter(EM.isYours).length / keys.length < 0.8; }
+  function planDaily() {
+    const k = (S.settings.minutes || 15) / 15, behind = factsBehind();
+    const bigDone = openIds('B').every(id => EM.skillSummary(id).done);
+    const factBlock = (name, cap, len) => ({ name, cap: cap * k, build: () => factQueueItems(openIds('A'), len, { extraKeys: EM.familyKeys() }) });
+    const blocks = [factBlock('Foundations', behind ? 4.5 : 4, 30)];
+    blocks.push({ name: 'Big numbers', cap: (bigDone ? 1.5 : behind ? 2.5 : 3) * k, build: () => ({ items: procQueueItems(openIds('B'), bigDone ? 4 : 10), spare: [] }) });
+    if (behind) blocks.push(factBlock('Quick facts', 3, 16));
+    blocks.push({ name: 'School work', cap: (behind ? 3 : 5) * k, build: () => { const ids = openIds('C'); return { items: ids.length ? procQueueItems(ids, 8) : procQueueItems(openIds('B'), 8), spare: [] }; } });
+    const teachItems = EM.teach.items(3);
+    if (teachItems.length) blocks.push({ name: 'Teach Dot', cap: 2 * k, build: () => ({ items: teachItems, spare: [] }) });
+    return blocks;
+  }
   function startSession(kind, opt = {}) {
     EM.speech.prime();
     let blocks = [];
     if (kind === 'placement') blocks = [{ name: 'Looking', cap: 10, build: () => ({ items: EM.placementItems(), spare: [] }) }];
     else if (kind === 'skill') { const sk = EM.SK[opt.id]; blocks = [{ name: sk.name, cap: 5, build: () => sk.kind === 'fact' ? factQueueItems([sk.id], 20) : { items: procQueueItems([sk.id], 12), spare: [] } }]; }
     else if (kind === 'evening') blocks = [{ name: 'Review', cap: 5, build: () => factQueueItems(openIds('A'), 20, { dueOnly: true }) }];
-    else {
-      const cap = S.settings.blockMin;
-      blocks = [{ name: 'Foundations', cap, build: () => factQueueItems(openIds('A'), 40) }];
-      if (S.settings.blocks >= 2) blocks.push({ name: 'Big numbers', cap, build: () => ({ items: procQueueItems(openIds('B'), 12), spare: [] }) });
-      const teachItems = EM.teach.items(3);
-      if (teachItems.length) blocks.push({ name: 'Teach Dot', cap: 4, build: () => ({ items: teachItems, spare: [] }) });
-      if (S.settings.blocks >= 3) blocks.splice(blocks.length - 1, 0, { name: 'School work', cap, build: () => { const ids = openIds('C'); return { items: ids.length ? procQueueItems(ids, 8) : procQueueItems(openIds('B'), 10), spare: [] }; } });
-    }
+    else blocks = planDaily();
     R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : "Today's practice", blocks, bi: -1, started: Date.now(),
       stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {}, how: { knew: 0, trick: 0, counted: 0 },
         byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlayed: false, idkCount: 0, missStreak: 0, knownBefore: EM.countCollected() };
@@ -181,7 +189,7 @@
   function later(fn, ms) { const run = R; clearTimeout(R.nextT); R.nextT = setTimeout(() => { if (run === R && !run.ended) fn(); }, ms); }
   const curStep = () => R.cur.steps[R.step];
   const digitsAllowed = () => Math.max(1, String(curStep().ans).length);
-  function needsTrick(item) { if (item.kind !== 'fact' || item.mode === 'probe' || item.mode === 'reask' || R.kind === 'placement') return false; const r = S.facts[item.key]; if (r && r.box >= EM.FLUENT_BOX) return false; return !!skillOfFact(item.key, true); }
+  function needsTrick(item) { if (item.kind !== 'fact' || item.mode === 'probe' || item.mode === 'reask' || item.mode === 'rehearse' || R.kind === 'placement') return false; const r = S.facts[item.key]; if (r && r.box >= EM.FLUENT_BOX) return false; return !!skillOfFact(item.key, true); }
   function skillOfFact(key, trickOnly) { for (const id of Object.keys(EM.TRICK_SKILLS)) if (EM.SK[id].facts.includes(key)) return id; if (trickOnly) return null; return EM.SKILLS.find(s => s.kind === 'fact' && s.facts.includes(key)).id; }
 
   function beginItem() {
@@ -356,7 +364,7 @@
     const samOnly = it.type === 'est' && !allFirst && res.every((r, i) => r.firstTry || it.steps[i].sam);
     const outcome = allFast ? 'fast' : (allFirst || samOnly) ? 'slow' : anyIdk ? 'idk' : 'wrong';
     const ms = res.reduce((a, r) => a + (r.ms || 0), 0);
-    const graded = it.mode !== 'reask';
+    const graded = it.mode !== 'reask' && it.mode !== 'rehearse';
     R.stats.items++;
     let becameYours = false, leveledUp = false, quietYours = false, rescued = false;
     if (graded && it.kind === 'fact') {
@@ -378,7 +386,7 @@
     if (R.kind !== 'placement') saveInflight();
     if (it.mode === 'reask' && (outcome === 'fast' || outcome === 'slow')) { const m = R.missed[it.key]; if (m && !m.learned) { m.learned = true; R.stats.learned.push({ label: it.label, idk: m.idk }); } }
     if (graded) R.missStreak = (outcome === 'wrong' || outcome === 'idk') ? R.missStreak + 1 : 0;
-    if (outcome === 'wrong' || outcome === 'idk') { if (!R.missed[it.key]) R.missed[it.key] = { label: it.label, idk: outcome === 'idk', learned: false }; if (it.mode !== 'reask' && R.kind !== 'placement') queueReask(it); if (it.mode === 'probe' && R.kind !== 'placement' && ++R.failedProbes >= 3) R.queue = R.queue.filter((e, i) => i <= R.idx || e.mode !== 'probe'); }
+    if (outcome === 'wrong' || outcome === 'idk') { if (!R.missed[it.key]) R.missed[it.key] = { label: it.label, idk: outcome === 'idk', learned: false }; if (graded && R.kind !== 'placement') queueReask(it); if (it.mode === 'probe' && R.kind !== 'placement' && ++R.failedProbes >= 3) R.queue = R.queue.filter((e, i) => i <= R.idx || e.mode !== 'probe'); }
     // Hard-day recovery: after two misses in a row, slip in a fact she owns for a quick win.
     if (R.missStreak >= 2 && it.kind === 'fact' && R.kind !== 'placement') {
       const upcoming = new Set(R.queue.slice(R.idx + 1).map(q => q.key));
@@ -392,6 +400,7 @@
       const multi = it.steps.length > 1;
       if (R.kind === 'placement') { showMsg('good', outcome === 'fast' ? '⚡' : '✓'); return later(after, 500); }
       if (it.mode === 'reask') { showMsg('good', pick(['✓ You remembered!', '✓ Got it this time!'])); EM.sfx.right(); mood('proud'); return later(after, 900); }
+      if (it.mode === 'rehearse') { showMsg('good', outcome === 'fast' ? pick(['⚡ Again! Getting quicker.', '⚡ You remembered it!']) : '✓ Got it again!'); EM.sfx.right(); mood('happy'); return later(after, 800); }
       if (quietYours) { showMsg('good', `${T().big} ${esc(it.label)} is yours!`); EM.sfx.fast(); mood('happy'); }
       else if (rescued) { showMsg('good', `💧 Rescued! ${esc(it.label)} is back.`); EM.sfx.fast(); mood('happy'); }
       else if (outcome === 'fast') { showMsg('good', pick(['⚡ You knew it!', '⚡ Quick!', '⚡ Zoom!'])); EM.sfx.fast(); mood('happy'); }
@@ -434,7 +443,7 @@
   }
   // "How did you know?" every 4th fast fact (not in placement)
   function maybeHow(it, outcome, next) {
-    if (R.kind === 'placement' || it.kind !== 'fact' || outcome !== 'fast' || it.mode === 'reask') return next();
+    if (R.kind === 'placement' || it.kind !== 'fact' || outcome !== 'fast' || it.mode === 'reask' || it.mode === 'rehearse') return next();
     R.howCount++;
     if (R.howCount % 4 !== 0) return next();
     overlay(`<div class="celebrate-row">${D('think', 64)}</div><h2>How did you know?</h2><p>${esc(it.label)}</p><div class="how">
@@ -581,7 +590,7 @@
     if (R.kind === 'placement') {
       $app.innerHTML = `<main class="wrap">
         ${worldHTML(`Thank you! Look, you planted ${R.planted} ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} in your ${T().place} today!`, { mood: 'cheer', fresh: R.plantedKeys.slice(0, 60) })}
-        <p class="sub">Now I know where to start. Tomorrow we begin for real: ${S.settings.blocks} short parts, about ${S.settings.blockMin * S.settings.blocks} minutes.</p>
+        <p class="sub">Now I know where to start. Tomorrow we begin for real: a few short parts, about ${S.settings.minutes || 15} minutes.</p>
         <div class="tiles"><div class="tile"><b>${st.fast}</b><span>⚡ Knew it fast</span></div><div class="tile"><b>${st.slow}</b><span>✓ Figured it out</span></div><div class="tile"><b>${st.wrong + st.idk}</b><span>🧠 To learn</span></div></div>
         ${st.idk ? `<div class="note">🙋 You said "I don't know" ${st.idk} time${st.idk > 1 ? 's' : ''}. That's exactly right. Now I know what to teach.</div>` : ''}
         ${gcard}

@@ -238,8 +238,10 @@
 
   // ---------- queues ----------
   // Facts block: learning first, a few cold probes of new facts, due reviews, then more new; not-yet-due only as filler.
-  function buildFactQueue(skillIds, len, now = Date.now()) {
-    const keys = uniq(skillIds.flatMap(id => EM.SK[id].facts));
+  function buildFactQueue(skillIds, len, now = Date.now(), opts = {}) {
+    let keys = uniq(skillIds.flatMap(id => EM.SK[id].facts));
+    // Evening review: only facts she is learning or that are due today; nothing new.
+    if (opts.dueOnly) keys = keys.filter(k => S.facts[k] && (S.facts[k].box < 1 || startOfDay(S.facts[k].due) <= now));
     const rec = k => S.facts[k];
     const learning = shuffle(keys.filter(k => rec(k) && rec(k).box < 1));
     const due = keys.filter(k => rec(k) && rec(k).box >= 1 && startOfDay(rec(k).due) <= now).sort((a, b) => rec(a).due - rec(b).due);

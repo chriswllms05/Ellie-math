@@ -20,6 +20,8 @@ async function setup(page, opts = {}) {
     const RealDate = Date;
     class FakeDate extends RealDate { constructor(...a) { if (!a.length) super(base + window.__offset); else super(...a); } static now() { return base + window.__offset; } }
     window.Date = FakeDate;
+    // virtual time for performance.now so "slow" answers don't need real waiting
+    window.__perf = 0; const realNow = performance.now.bind(performance); performance.now = () => realNow() + window.__perf;
     Object.defineProperty(window, 'speechSynthesis', { value: undefined, configurable: true });
   }, { now: opts.now || new Date(2026, 9, 22, 16, 0, 0).getTime() });
   page.on('pageerror', e => { failures++; log('  PAGE ERROR:', e.message); });
@@ -41,7 +43,7 @@ async function clearOverlays(page) { for (let i = 0; i < 10; i++) { const o = aw
 async function nav(page, sel) { await clearOverlays(page); await page.click(sel); await page.waitForTimeout(80); }
 async function type(page, s) { for (const ch of String(s)) await page.keyboard.press(ch); }
 async function answer(page, value, { delayMs = 0 } = {}) {
-  if (delayMs) await page.waitForTimeout(delayMs);
+  if (delayMs) await page.evaluate(d => { window.__perf += d; }, delayMs);
   await type(page, value);
   await page.keyboard.press('Enter');
 }
@@ -69,7 +71,7 @@ async function play(page, persona, { maxItems = 400 } = {}) {
   return n;
 }
 const knower = { move: R => ({ value: R.ans, delay: 50 }) };
-const counter = { move: R => ({ value: R.ans, delay: R.kind === 'fact' ? 3600 : 50 }) };         // right but slow on facts
+const counter = { move: R => ({ value: R.ans, delay: 4200 }) };         // right but slow: still counting
 const guesser = { move: R => ({ value: Math.floor(Math.random() * 20), delay: 0 }), help: R => Math.floor(Math.random() * 20) }; // rapid random
 const idkSpammer = { move: () => 'idk', help: () => 999 };
 const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.ans + 1, delay: 300 } : { value: R.ans, delay: n % 2 ? 50 : 3600 } };

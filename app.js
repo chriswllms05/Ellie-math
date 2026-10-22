@@ -76,8 +76,8 @@
 
   // ---------- sessions ----------
   const openIds = track => EM.TRACKS[track].skills.filter(EM.isOpen);
-  function factQueueItems(ids, len) {
-    const { queue, spare } = EM.buildFactQueue(ids, len);
+  function factQueueItems(ids, len, opts) {
+    const { queue, spare } = EM.buildFactQueue(ids, len, Date.now(), opts);
     return { items: queue.map(q => EM.factItem(q.key, q.mode)), spare };
   }
   function procQueueItems(ids, n) {
@@ -88,7 +88,7 @@
     let blocks = [];
     if (kind === 'placement') blocks = [{ name: 'Looking', cap: 10, build: () => ({ items: EM.placementItems(), spare: [] }) }];
     else if (kind === 'skill') { const sk = EM.SK[opt.id]; blocks = [{ name: sk.name, cap: 5, build: () => sk.kind === 'fact' ? factQueueItems([sk.id], 20) : { items: procQueueItems([sk.id], 12), spare: [] } }]; }
-    else if (kind === 'evening') blocks = [{ name: 'Review', cap: 5, build: () => factQueueItems(openIds('A'), 20) }];
+    else if (kind === 'evening') blocks = [{ name: 'Review', cap: 5, build: () => factQueueItems(openIds('A'), 20, { dueOnly: true }) }];
     else {
       const cap = S.settings.blockMin;
       blocks = [{ name: 'Foundations', cap, build: () => factQueueItems(openIds('A'), 24) }];
@@ -292,7 +292,7 @@
     }
     if (graded) { R.stats[outcome]++; if (outcome === 'fast' || outcome === 'slow') R.stats.times.push(ms); }
     if (it.mode === 'reask' && (outcome === 'fast' || outcome === 'slow')) { const m = R.missed[it.key]; if (m && !m.learned) { m.learned = true; R.stats.learned.push({ label: it.label, idk: m.idk }); } }
-    if (outcome === 'wrong' || outcome === 'idk') { if (!R.missed[it.key]) R.missed[it.key] = { label: it.label, idk: outcome === 'idk', learned: false }; if (it.mode !== 'reask') queueReask(it); if (it.mode === 'probe' && ++R.failedProbes >= 3) R.queue = R.queue.filter((e, i) => i <= R.idx || e.mode !== 'probe'); }
+    if (outcome === 'wrong' || outcome === 'idk') { if (!R.missed[it.key]) R.missed[it.key] = { label: it.label, idk: outcome === 'idk', learned: false }; if (it.mode !== 'reask') queueReask(it); if (it.mode === 'probe' && R.kind !== 'placement' && ++R.failedProbes >= 3) R.queue = R.queue.filter((e, i) => i <= R.idx || e.mode !== 'probe'); }
     if (it.mode === 'probe' && outcome === 'fast') { /* she already knew it: nothing to teach */ }
     // messages
     R.lock = true;

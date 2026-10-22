@@ -80,7 +80,7 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
 (async () => {
   await new Promise(r => server.listen(0, r));
   const port = server.address().port, URL_ = `http://localhost:${port}/index.html`;
-  const browser = await chromium.launch({ executablePath: EXE });
+  const browser = await chromium.launch({ executablePath: EXE, args: ['--mute-audio', '--disable-audio-output', '--autoplay-policy=no-user-gesture-required'] });
 
   const ONLY = process.env.ONLY || 'all';
   // ---------- 1. Placement + persona sessions, single day ----------

@@ -1,6 +1,7 @@
 /* Ellie Math service worker: cached copy first if the network is slow, never caches a bad response, updates on the next launch. */
-const VERSION = 'ellie-math-v5';
-const FILES = ['./', './index.html', './engine.js', './content.js', './audio.js', './app.js', './parent.js', './theme.js', './world.js', './avatar.js', './teach.js', './fonts/fredoka-latin-500-normal.woff2', './fonts/fredoka-latin-600-normal.woff2', './fonts/fredoka-latin-700-normal.woff2', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
+const VERSION = 'ellie-math-v6';
+const JS = ['engine', 'content', 'audio', 'theme', 'world', 'avatar', 'teach', 'parent', 'app'].map(n => `./${n}.js?v=6`);
+const FILES = ['./', './index.html', ...JS, './fonts/fredoka-latin-500-normal.woff2', './fonts/fredoka-latin-600-normal.woff2', './fonts/fredoka-latin-700-normal.woff2', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
@@ -11,6 +12,8 @@ self.addEventListener('fetch', e => {
       if (r && r.ok) { const copy = r.clone(); caches.open(VERSION).then(c => c.put(e.request, copy)); return r; }
       return cached || r;
     }).catch(() => cached || caches.match('./index.html'));
+    // Versioned scripts never change, so serve them from cache; only the page itself races the network.
+    if (cached && /\.js\?v=/.test(e.request.url)) return cached;
     if (!cached) return net;
     // Network first, but a slow network should not keep a cached app off the screen.
     const slow = new Promise(res => setTimeout(() => res(cached), 2500));

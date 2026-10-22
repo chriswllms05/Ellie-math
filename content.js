@@ -114,7 +114,7 @@
   EM.SK = Object.fromEntries(SKILLS.map(s => [s.id, s]));
   EM.TRACKS = { A: { name: 'Foundations', skills: SKILLS.filter(s => s.track === 'A').map(s => s.id) }, B: { name: 'Number sense', skills: SKILLS.filter(s => s.track === 'B').map(s => s.id) }, C: { name: 'Bridge', skills: SKILLS.filter(s => s.track === 'C').map(s => s.id) } };
   // Which rungs ask her to name her trick before typing (while the fact is still learning).
-  EM.TRICK_SKILLS = { to10: ['count on', 'I just know'], near: ['double it', 'make 10', 'I just know'], bridge: ['make 10', 'double it', 'I just know'], sub10: ['think addition', 'count back', 'I just know'], subteen: ['back to 10', 'think addition', 'I just know'] };
+  EM.TRICK_SKILLS = { to10: ['5 and more', 'partners', 'I just know'], near: ['double it', 'make 10', 'I just know'], bridge: ['make 10', 'double it', 'I just know'], sub10: ['think addition', 'partners', 'I just know'], subteen: ['subtract from 10', 'back to 10', 'I just know'] };
 
   // ---------- fact items ----------
   const sayFact = f => ({ add: `${f.a} plus ${f.b}`, sub: `${f.a} minus ${f.b}`, m10: `${f.a} plus what makes 10?`, look: 'How many dots?' })[f.type];
@@ -130,7 +130,7 @@
     if (f.type === 'look') {
       const n = f.n, pic = frames(fill(n, 'a'));
       const how = n <= 5 ? `${n}.` : n < 10 ? `A row of 5 and ${n - 5} more.` : n === 10 ? 'A full frame of 10.' : `A full ten and ${n - 10} more.`;
-      if (stage === 1) return { vis: pic, flash: true, html: 'Look again. See the row of 5.', say: 'Look again. See the row of five.' };
+      if (stage === 1) return { vis: pic, flash: true, html: n > 10 ? 'Look again. See the full ten. How many more?' : 'Look again. See the row of 5.', say: n > 10 ? 'Look again. See the full ten. How many more?' : 'Look again. See the row of five.' };
       return { vis: pic, html: `${how} That's <b>${n}</b>. Type <b>${n}</b>.`, say: `${how} That's ${n}. Type ${n}.` };
     }
     if (f.type === 'm10') {
@@ -149,7 +149,7 @@
       if (big - small === 1) return two(twoFrames([small, 'a'], [...fill(small, 'a'), 'b']) + bd, `Double ${small} is ${small * 2}. And 1 more?`, `Double ${small} is ${small * 2}. And one more?`, `${small * 2} and 1 more is ${A}.`, `${small * 2} and one more is ${A}.`);
       if (A === 10) return two(frames(seq) + bd, `${a} and ${b}. Fill the frame. How many?`, `${a} and ${b}. Fill the frame. How many?`, `${a} and ${b} make 10. They're partners.`, `${a} and ${b} make ten. They're partners.`);
       if (A > 10) { const need = 10 - big, rest = small - need; const cells = [...fill(big, 'a'), ...fill(need, 'c'), ...fill(rest, 'b')]; return two(frames(cells) + bond(small, need, rest), `${big} and ${need} make 10. Then ${rest} more. How many?`, `${big} and ${need} make ten. Then ${rest} more. How many?`, `10 and ${rest} is ${A}.`, `Ten and ${rest} is ${A}.`); }
-      return two(frames(seq) + bd, `${big} and ${small} more. How many?`, `${big} and ${small} more. How many?`, `${big} and ${small} make ${A}.${A > 5 ? ` A row of 5 and ${A - 5}.` : ''}`, `${big} and ${small} make ${A}.`);
+      return two(frames(seq) + bd, `${big} and ${small}. Find the row of 5 first. How many in all?`, `${big} and ${small}. Find the row of five first. How many in all?`, `${big} and ${small} make ${A}.${A > 5 ? ` A row of 5 and ${A - 5}.` : ''}`, `${big} and ${small} make ${A}.`);
     }
     // subtraction
     const { a, b } = f, cells = fill(a, 'a');
@@ -162,6 +162,7 @@
     if (b === ones) return two(pic + bond(a, 10, b), `${a} is 10 and ${ones}. Take the ${ones} away.`, `${a} is ten and ${ones}. Take the ${ones} away.`, `Just the ten is left: 10.`, `Just the ten is left. Ten.`);
     // Numbers close together (13 − 9, 12 − 8): think addition up through 10 instead of back through 10.
     if (A <= 4) { const up = frames([...fill(b, 'a'), ...fill(A, 'e')]); return two(up + bond(a, b, stage === 1 ? '?' : A), `${b} and ${10 - b} make 10, then ${ones} more. ${b} and what make ${a}?`, `${b} and ${10 - b} make ten, then ${ones} more. ${b} and what make ${a}?`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`, `${b} and ${A} make ${a}. So ${a} take away ${b} is ${A}.`); }
+    if (b >= 6) { const fromTen = [...fill(10 - b, 'a'), ...fill(b, 'x'), ...fill(ones, 'b')]; return two(frames(fromTen) + bond(a, 10, ones), `Take ${b} from the 10. What's left? Then put it with the ${ones}.`, `Take ${b} from the ten. What's left? Then put it with the ${ones}.`, `10 take away ${b} is ${10 - b}. ${10 - b} and ${ones} make ${A}.`, `Ten take away ${b} is ${10 - b}. ${10 - b} and ${ones} make ${A}.`); }
     return two(pic + bond(b, ones, b - ones), `Take away ${ones} to get to 10. Then ${b - ones} more.`, `Take away ${ones} to get to ten. Then ${b - ones} more.`, `10 take away ${b - ones} is ${A}.`, `Ten take away ${b - ones} is ${A}.`);
   }
 
@@ -373,8 +374,10 @@
       if (opAdd) {
         const s = x + y + carry, isLast = i === cols - 1, ansCol = isLast ? s : s % 10, note = carry ? ` and the ${carry} we carried` : '';
         const snapshot = { filled: filled.slice(), carries: { ...carries } };
-        steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${x} + ${y}${carry ? ` + ${carry}` : ''} = ?${hint && !isLast && s >= 10 ? ' <small>Write the ones digit. The ten gets carried.</small>' : ''}</div><div class="eq">${slotN}</div>`,
-          say: `${cap(names[i])}. ${x} plus ${y}${note}. ${hint && !isLast && s >= 10 ? 'Type just the ones digit. The ten carries over.' : ''}`,
+        // Once hints fade she has to remember the carry herself; the prompt never states a false sum.
+        const addQ = hint ? `${x} + ${y}${carry ? ` + ${carry}` : ''} = ?` : `add ${x} and ${y}${i > 0 ? ' <small>plus anything you carried</small>' : ''}`;
+        steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${addQ}${hint && !isLast && s >= 10 ? ' <small>Write the ones digit. The ten gets carried.</small>' : ''}</div><div class="eq">${slotN}</div>`,
+          say: `${cap(names[i])}. ${x} plus ${y}${hint ? note : i > 0 ? ', plus anything you carried' : ''}. ${hint && !isLast && s >= 10 ? 'Type just the ones digit. The ten carries over.' : ''}`,
           vis: () => column(a, b, op, snapshot.filled, snapshot.carries), full: s, carryOut: !isLast && s >= 10 ? 1 : 0, x, y, cin: carry });
         filled.push(ansCol); if (!isLast && s >= 10) carries[i + 1] = 1; carry = !isLast && s >= 10 ? 1 : 0;
       } else {
@@ -387,8 +390,17 @@
         const wasNote = borrow ? ` <small>(${x} before; 1 ${unit} went to the ${names[i - 1]})</small>` : '';
         if (needB) note = x2 < 0 ? `Regroup: 1 ${nextUnit} becomes 10 ${names[i]}. One already went to the ${names[i - 1]}, so 9 ${names[i]}. Now 9 take away ${y}.` : `Regroup: 1 ${nextUnit} becomes 10 ${names[i]}. Now ${x2 + 10} take away ${y}.`;
         const ansCol = needB ? x2 + 10 - y : x2 - y;
-        steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${Math.max(0, x2)}${hint ? wasNote : ''} − ${y}${hint && needB ? ` <small>Not enough. ${note}</small>` : ''}</div><div class="eq">${slotN}</div>`,
-          say: `${cap(names[i])}. ${Math.max(0, x2)} take away ${y}. ${hint && needB ? note : ''}`, vis: () => column(a, b, op, snapshot.filled, snapshot.carries), x: x2, y, needB, shown });
+        const vis = () => column(a, b, op, snapshot.filled, snapshot.carries);
+        if (hint) {
+          steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${Math.max(0, x2)}${wasNote} − ${y}${needB ? ` <small>Not enough. ${note}</small>` : ''}</div><div class="eq">${slotN}</div>`,
+            say: `${cap(names[i])}. ${Math.max(0, x2)} take away ${y}. ${needB ? note : ''}`, vis, x: x2, y, needB, shown });
+        } else {
+          // Every prompt is a true statement: first the bookkeeping (what's left, regroup), then the subtraction.
+          if (borrow && x2 >= 0) steps.push({ ans: x2, col: i, kind: 'left', html: `<div class="ask">${cap(names[i])}: there were ${x}. One ${unit} went to the ${names[i - 1]}. How many ${names[i]} are left?</div><div class="eq">${slotN}</div>`, say: `${cap(names[i])}. There were ${x}. One went to the ${names[i - 1]}. How many are left?`, vis, x, y });
+          if (x2 < 0) steps.push({ ans: 9, col: i, kind: 'zero', html: `<div class="ask">${cap(names[i])}: there were 0, and one ${unit} has to go to the ${names[i - 1]}. Regroup 1 ${nextUnit} into 10 ${names[i]}, then give one away. How many ${names[i]} now?</div><div class="eq">${slotN}</div>`, say: `${cap(names[i])}. There were zero. Regroup one ${nextUnit} into ten ${names[i]}, then give one away. How many now?`, vis, x, y });
+          else if (needB) steps.push({ ans: x2 + 10, col: i, kind: 'regroup', html: `<div class="ask">${cap(names[i])}: ${x2} take away ${y}? Not enough! Regroup 1 ${nextUnit} into 10 ${names[i]}. How many ${names[i]} now?</div><div class="eq">${slotN}</div>`, say: `${cap(names[i])}. ${x2} take away ${y}? Not enough. Regroup one ${nextUnit} into ten ${names[i]}. How many now?`, vis, x: x2, y });
+          steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${shown} − ${y} = ?</div><div class="eq">${slotN}</div>`, say: `${cap(names[i])}. ${shown} take away ${y}.`, vis, x: x2, y, needB, shown });
+        }
         filled.push(ansCol); if (needB) { carries[i] = x2 + 10; borrow = 1; } else borrow = 0;
       }
     }
@@ -405,7 +417,10 @@
           if (stage === 1) return { vis, html: `${st.x} and ${st.y}${st.cin ? ' and 1' : ''}. How many? ${st.carryOut ? `That's more than 10, so write only the ones digit.` : ''}`, say: `${st.x} and ${st.y}${st.cin ? ' and one' : ''}. How many? ${st.carryOut ? 'That is more than ten, so type only the ones digit.' : ''}` };
           return { vis, html: `${st.x} + ${st.y}${st.cin ? ' + 1' : ''} = ${s}. ${st.carryOut ? `Write <b>${st.ans}</b>, carry the 1 ten.` : `Write <b>${st.ans}</b>.`} Type <b>${st.ans}</b>.`, say: `${s}. ${st.carryOut ? `Type ${st.ans} and carry the ten.` : `Type ${st.ans}.`}` };
         }
-        const start = st.needB ? st.x + 10 : st.x, cells = fill(start, 'a'); for (let k = 0; k < st.y; k++) cells[start - 1 - k] = 'x';
+        if (st.kind === 'left') return stage === 1 ? { vis: st.vis(), html: `One ${names[st.col].slice(0, -1)} moved to the ${names[st.col - 1]}. ${st.x} take away 1?`, say: `One moved over. ${st.x} take away one?` } : { vis: st.vis(), html: `${st.x} take away 1 is <b>${st.ans}</b>. Type <b>${st.ans}</b>.`, say: `${st.ans}. Type ${st.ans}.` };
+        if (st.kind === 'regroup') return stage === 1 ? { vis: frames(fill(10, 'a').concat(fill(st.x, 'b'))), html: `1 ${names[st.col + 1].slice(0, -1)} is 10 ${names[st.col]}. 10 and ${st.x} make?`, say: `One ${names[st.col + 1].slice(0, -1)} is ten ${names[st.col]}. Ten and ${st.x} make?` } : { vis: frames(fill(10, 'a').concat(fill(st.x, 'b'))), html: `10 and ${st.x} make <b>${st.ans}</b>. Type <b>${st.ans}</b>.`, say: `${st.ans}. Type ${st.ans}.` };
+        if (st.kind === 'zero') return stage === 1 ? { vis: frames(fill(9, 'a').concat(['x'])), html: `Regroup: now there are 10. One goes to the ${names[st.col - 1]}. 10 take away 1?`, say: `Now there are ten. One goes over. Ten take away one?` } : { vis: frames(fill(9, 'a').concat(['x'])), html: `10 take away 1 is <b>9</b>. Type <b>9</b>.`, say: `Nine. Type nine.` };
+        const start = st.shown !== undefined ? st.shown : st.needB ? st.x + 10 : st.x, cells = fill(start, 'a'); for (let k = 0; k < st.y; k++) cells[start - 1 - k] = 'x';
         const vis = frames(cells);
         const reg = st.needB ? `Not enough ${names[st.col]} to take ${st.y} away, so regroup: 1 ${names[st.col + 1].slice(0, -1)} becomes 10 ${names[st.col]}. Now ${start} take away ${st.y}. ` : '';
         if (stage === 1) return { vis, html: `${reg}${start} take away ${st.y}. ${st.y} and what make ${start}?`, say: `${reg}${start} take away ${st.y}. ${st.y} and what make ${start}?` };

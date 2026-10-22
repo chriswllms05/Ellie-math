@@ -23,6 +23,11 @@
       if (!wrong) return { ans, line: `Double ${a}… that's ${ans}?`, wrongDot: false };
       return { ans: ans + 2, line: `Double ${a}… that's ${ans + 2}?`, wrongDot: true };
     }
+    if (f.type === 'sub' && a > 10 && b >= 6 && b < 10) {
+      const ones = a - 10;
+      if (!wrong) return { ans, line: `10 take away ${b} is ${10 - b}, and ${ones} more… ${ans}?`, wrongDot: false };
+      return { ans: ans + 1, line: `10 take away ${b} is ${11 - b}, and ${ones} more… ${ans + 1}?`, wrongDot: true };
+    }
     if (f.type === 'sub' && a > 10 && b > a - 10) {
       const ones = a - 10, more = b - ones;
       if (!wrong) return { ans, line: `Take away ${ones} to get to 10, then ${more} more… ${ans}?`, wrongDot: false };
@@ -30,7 +35,7 @@
     }
     if (f.type === 'sub') {
       if (!wrong) return { ans, line: `${b} and ${ans} make ${a}… so ${ans}?`, wrongDot: false };
-      return { ans: ans + 1, line: `I counted back on my fingers: ${a}, ${a - 1}, ${a - 2}… I think ${ans + 1}?`, wrongDot: true };
+      return { ans: ans + 1, line: `${b} and ${ans + 1} make ${a}… so ${ans + 1}?`, wrongDot: true };
     }
     if (f.type === 'm10') {
       if (!wrong) return { ans, line: `${f.a} and ${ans} make 10, I think?`, wrongDot: false };
@@ -38,7 +43,7 @@
     }
     // count-on style
     if (!wrong) return { ans, line: `Is it ${ans}?`, wrongDot: false };
-    return { ans: ans + 1, line: `I counted on my fingers: ${big}, ${big + 1}, ${big + 2}… is it ${ans + 1}?`, wrongDot: true };
+    return { ans: ans + 1, line: `${big} and ${small} more… ${ans + 1}?`, wrongDot: true };
   }
 
   // "Teach me how": the strategy steps for facts that have one.
@@ -50,6 +55,10 @@
     }
     if (f.type === 'add' && Math.abs(a - b) === 1 && small > 1) {
       return [{ ans: small, q: `Double ${slot} is ${small * 2}.`, s: `Double what is ${small * 2}?` }, { ans, q: `And 1 more is ${slot}`, s: `And one more is?` }];
+    }
+    if (f.type === 'sub' && a > 10 && b >= 6 && b < 10) {
+      const ones = a - 10;
+      return [{ ans: 10 - b, q: `10 take away ${b} is ${slot}.`, s: `Ten take away ${b} is?` }, { ans, q: `${10 - b} and ${ones} make ${slot}`, s: `${10 - b} and ${ones} make?` }];
     }
     if (f.type === 'sub' && a > 10 && b > a - 10 && b !== 10) {
       const ones = a - 10;

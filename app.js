@@ -11,7 +11,11 @@
   let screen = 'home', R = null, overlayQueue = [];
 
   // ---------- navigation ----------
-  function go(s) { screen = s; render(); window.scrollTo(0, 0); }
+  function go(s) {
+    if (screen === 'parent' && s !== 'parent' && EM.parent.lock) EM.parent.lock();
+    if (screen === 'avatar' && s !== 'avatar') delete S.avatarDraft;
+    screen = s; render(); window.scrollTo(0, 0);
+  }
   function render() {
     const views = { avatar: () => { $app.innerHTML = EM.avatar.builder(!S.avatar); }, world: renderWorld, home: renderHome, skills: renderSkills, practice: renderPractice, summary: renderSummary, parent: () => EM.parent.render($app, { go, startSession }), break: renderBreak };
     (views[screen] || renderHome)();
@@ -25,10 +29,19 @@
   // Her world, full width, with Dot and a speech bubble perched in the sky.
   function worldHTML(bubble, opts = {}) {
     const w = EM.world.render(opts);
-    const me = S.avatar ? EM.avatar.draw(undefined, 50, opts.mood === 'cheer' ? 'cheer' : 'wave') : '';
-    return `<div class="world${opts.inset ? ' inset' : ''}">${w.svg}${bubble ? `<div class="perch">${me}${D(opts.mood || 'calm', 60)}<div class="bubble">${bubble}</div></div>` : ''}</div>`;
+    const me = S.avatar ? EM.avatar.draw(undefined, 64, opts.mood === 'cheer' ? 'cheer' : 'wave') : '';
+    return `<div class="world${opts.inset ? ' inset' : ''}">${w.svg}${bubble ? `<div class="perch">${me}${D(opts.mood || 'calm', 64)}<div class="bubble">${bubble}</div></div>` : ''}</div>`;
   }
   function worldCounts() { const w = EM.world.render(); return { yours: w.yours, sprouts: w.sprouts }; }
+  const partsToday = () => S.settings.blocks + (EM.teach.items(3).length ? 1 : 0);
+  const dueTonight = () => EM.buildFactQueue(openIds('A'), 20, Date.now(), { dueOnly: true }).queue.length > 0;
+  // The end-of-day card waits on home until a grown-up opens it.
+  function cardLine() {
+    const c = S.card; if (!c || dayStr(c.date) !== dayStr(Date.now())) return '';
+    return c.seen ? `<div class="cardline seen">✓ Your grown-up saw today's card!</div>` : `<div class="cardline">📬 Today's card is waiting for your grown-up.</div>`;
+  }
+  let lastHomeSay = 0;
+  function sayOnce(text) { if (Date.now() - lastHomeSay > 5 * 60000) { lastHomeSay = Date.now(); EM.speech.say(String(text).replace(/<[^>]+>/g, '')); } }
   function surpriseHTML(known) {
     const t = T(), next = EM.world.nextMilestone(known);
     if (!next) return '';
@@ -40,14 +53,14 @@
     const first = !S.theme;
     $app.innerHTML = `<main class="wrap">
       ${first ? '' : '<button class="back" data-act="home">‹ Back</button>'}
-      <div class="home-top">${D('wow', 72)}<h1>${first ? `Hi, ${esc(NAME())}!` : 'Pick your world'}</h1></div>
+      <div class="home-top">${D('wow', 72)}<h1>${first ? (S.name ? `Hi, ${esc(S.name)}!` : 'Hi there!') : 'Pick your world'}</h1></div>
       <div class="bubble">${first ? "I'm Dot. Before we start, pick your world. Every fact you really learn adds something to it." : 'You can change your world any time. Everything you earned comes with you.'}</div>
       ${EM.theme.picker(S.theme)}
     </main>`;
     EM.speech.say(first ? "Hi! I'm Dot. Pick your world." : 'Pick your world.');
   }
   function renderHome() {
-    const known = EM.countYours(), name = esc(NAME()), t = T();
+    const known = EM.countCollected(), name = esc(NAME()), t = T();
     if (!S.theme) return renderWorld();
     if (!S.avatar) { screen = 'avatar'; return render(); }
     if (!S.placement.done) {
@@ -72,8 +85,9 @@
       ${worldHTML(hello, { mood: done ? 'proud' : 'calm' })}
       <p class="tap-hint">Tap a ${({ garden: 'flower bed', ocean: 'coral reef', space: 'constellation', classroom: 'sticker chart' })[t.id]} to look closer</p>
       ${surpriseHTML(known)}
-      <button class="big-btn" data-act="today">${done ? 'Practice again' : "Today's practice"}<span>${done ? "You already did today's. Extra is fine!" : `About ${S.settings.blockMin * S.settings.blocks} minutes, ${S.settings.blocks} short parts`}</span></button>
-      ${done ? '<button class="btn secondary" data-act="evening" style="margin-bottom:12px">Evening review <span style="font-size:14px;color:var(--muted)">5 minutes, just the facts that are due</span></button>' : ''}
+      ${cardLine()}
+      <button class="big-btn" data-act="today">${done ? 'Practice again' : "Today's practice"}<span>${done ? "You already did today's. Extra is fine!" : `About 15 minutes, ${partsToday()} short parts`}</span></button>
+      ${done && dueTonight() ? '<button class="btn secondary" data-act="evening" style="margin-bottom:12px">Evening review <span style="font-size:14px;color:var(--muted)">5 minutes, just the facts that are due</span></button>' : ''}
       <button class="btn secondary" data-act="skills">Pick a skill</button>
       <div class="card"><h2>How to play</h2><ul>
         <li>🧠 Think first, then type.</li>
@@ -84,6 +98,7 @@
       <p style="text-align:center;margin:0"><button class="worldbtn" data-act="world">🎨 Change my world</button> &nbsp; <button class="worldbtn" data-act="avatar">🙂 Change me</button></p>
       <button class="grownup" data-hold="parent"><span class="fillbar"></span>Grown-ups: press and hold</button>
     </main>`;
+    sayOnce(hello);
   }
   function renderSkills() {
     const card = s => {
@@ -124,12 +139,13 @@
       const cap = S.settings.blockMin;
       blocks = [{ name: 'Foundations', cap, build: () => factQueueItems(openIds('A'), 40) }];
       if (S.settings.blocks >= 2) blocks.push({ name: 'Big numbers', cap, build: () => ({ items: procQueueItems(openIds('B'), 12), spare: [] }) });
-      blocks.push({ name: 'Teach Dot', cap: 4, build: () => ({ items: EM.teach.items(3), spare: [] }) });
+      const teachItems = EM.teach.items(3);
+      if (teachItems.length) blocks.push({ name: 'Teach Dot', cap: 4, build: () => ({ items: teachItems, spare: [] }) });
       if (S.settings.blocks >= 3) blocks.splice(blocks.length - 1, 0, { name: 'School work', cap, build: () => { const ids = openIds('C'); return { items: ids.length ? procQueueItems(ids, 8) : procQueueItems(openIds('B'), 10), spare: [] }; } });
     }
     R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : "Today's practice", blocks, bi: -1, started: Date.now(),
       stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {}, how: { knew: 0, trick: 0, counted: 0 },
-        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlays: 0, knownBefore: EM.countYours() };
+        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlayed: false, idkCount: 0, missStreak: 0, knownBefore: EM.countCollected() };
     screen = 'practice';
     nextBlock();
   }
@@ -138,7 +154,7 @@
     if (R.bi >= R.blocks.length) return finishSession();
     const b = R.blocks[R.bi];
     const built = b.build();
-    R.queue = built.items; R.spare = built.spare || []; R.idx = 0; R.reasks = {}; R.planned = R.queue.length; R.blockStart = Date.now(); R.failedProbes = 0;
+    R.queue = built.items; R.spare = built.spare || []; R.idx = 0; R.reasks = {}; R.reaskTotal = 0; R.planned = R.queue.length; R.blockStart = Date.now(); R.failedProbes = 0;
     if (!R.queue.length) { if (R.bi + 1 < R.blocks.length) return nextBlock(); return finishSession(); }
     beginItem();
   }
@@ -172,6 +188,7 @@
     clearTimeout(R.flashT); clearTimeout(R.speechT);
     if (R.idx >= R.queue.length || (R.idx > 0 && blockTimeUp())) return endOfBlock();
     const it = R.queue[R.idx];
+    clearTimeout(R.showT);
     R.cur = it; R.step = 0; R.phase = 'ask'; R.helpStage = 0; R.helpTries = 0; R.input = ''; R.lock = false; R.msg = null; R.trick = null; R.stepRes = []; R.relooked = false;
     R.waitReady = it.type === 'look'; R.mood = 'think';
     R.waitTrick = needsTrick(it);
@@ -262,7 +279,8 @@
     clearTimeout(R.flashT);
     R.stepRes.push({ ok: false, fast: false, ms: 0, firstTry: false, idk: true });
     if (R.kind === 'placement') return placementMiss(true);
-    enterHelp(pick(['Thanks for being honest!', 'Good call asking.', 'Smart. Let\'s figure it out.']));
+    R.idkCount++;
+    enterHelp(R.idkCount <= 2 ? pick(['Thanks for being honest!', 'Good call asking.', 'Smart. Let\'s figure it out.']) : "Okay. Let's look at it together.");
   }
   function placementMiss(wasIdk) {
     R.lock = true;
@@ -285,9 +303,22 @@
     setVisual(h.vis);
     if (h.flash && R.cur.type === 'look') { R.flashT = setTimeout(() => setVisual('<div class="cover">How many?</div>'), 1800); }
     EM.speech.say(`${lead} ${h.say}`);
+    const item = R.cur, step = R.step;
+    clearTimeout(R.showT);
+    R.showT = setTimeout(() => { if (R && R.cur === item && R.step === step && R.phase === 'help' && R.helpStage === 1) { const b = document.querySelector('.showme'); if (b) b.classList.remove('hidden'); } }, 3000);
+  }
+  function showMe() {
+    if (!R || R.lock || R.phase !== 'help' || R.helpStage !== 1) return;
+    clearTimeout(R.showT);
+    R.helpTries++; R.helpStage = 2; R.input = ''; updateSlot();
+    const h = R.cur.help(R.step, 2);
+    showMsg('help', `<b>Good. Let's look together.</b> ${h.html}`); setVisual(h.vis);
+    const b = document.querySelector('.showme'); if (b) b.remove();
+    EM.speech.say(`Good. Let's look together. ${h.say}`);
   }
   function helpSubmit(ok) {
     const st = curStep();
+    clearTimeout(R.showT); const sb = document.querySelector('.showme'); if (sb && !ok) sb.remove();
     if (ok) {
       R.lock = true;
       const worked = R.helpStage === 1;
@@ -327,10 +358,12 @@
     const ms = res.reduce((a, r) => a + (r.ms || 0), 0);
     const graded = it.mode !== 'reask';
     R.stats.items++;
-    let becameYours = false, leveledUp = false;
+    let becameYours = false, leveledUp = false, quietYours = false, rescued = false;
     if (graded && it.kind === 'fact') {
       if (!S.facts[it.key]) { R.planted++; R.plantedKeys.push(it.key); }
-      const g = EM.gradeFact(it.key, outcome, ms); becameYours = g.becameYours;
+      const g = EM.gradeFact(it.key, outcome, ms);
+      becameYours = g.becameYours && g.hadTrouble; quietYours = g.becameYours && !g.hadTrouble; rescued = g.rescued;
+      if (quietYours) { R.yoursNow.push(it.label); R.yoursKeys.push(it.key); }
       if (outcome === 'fast') R.stats.fastKeys.push(it.key);
     } else if (graded && it.kind === 'proc') {
       const g = EM.gradeProc(it.skillId, it.level, { ok: outcome === 'fast' || outcome === 'slow', fast: outcome === 'fast', scaff: it.scaff, outcome }); leveledUp = g.leveledUp;
@@ -344,8 +377,14 @@
     if (graded) { R.stats[outcome]++; R.stats.byKind[it.kind][outcome]++; if (outcome === 'fast' || outcome === 'slow') R.stats.times.push(ms); }
     if (R.kind !== 'placement') saveInflight();
     if (it.mode === 'reask' && (outcome === 'fast' || outcome === 'slow')) { const m = R.missed[it.key]; if (m && !m.learned) { m.learned = true; R.stats.learned.push({ label: it.label, idk: m.idk }); } }
+    if (graded) R.missStreak = (outcome === 'wrong' || outcome === 'idk') ? R.missStreak + 1 : 0;
     if (outcome === 'wrong' || outcome === 'idk') { if (!R.missed[it.key]) R.missed[it.key] = { label: it.label, idk: outcome === 'idk', learned: false }; if (it.mode !== 'reask' && R.kind !== 'placement') queueReask(it); if (it.mode === 'probe' && R.kind !== 'placement' && ++R.failedProbes >= 3) R.queue = R.queue.filter((e, i) => i <= R.idx || e.mode !== 'probe'); }
-    if (it.mode === 'probe' && outcome === 'fast') { /* she already knew it: nothing to teach */ }
+    // Hard-day recovery: after two misses in a row, slip in a fact she owns for a quick win.
+    if (R.missStreak >= 2 && it.kind === 'fact' && R.kind !== 'placement') {
+      const upcoming = new Set(R.queue.slice(R.idx + 1).map(q => q.key));
+      const win = EM.shuffle(Object.keys(S.facts).filter(k => EM.FACTS[k] && EM.FACTS[k].type !== 'look' && S.facts[k].box >= EM.FLUENT_BOX && !upcoming.has(k)))[0];
+      if (win) { R.queue.splice(R.idx + 1, 0, EM.factItem(win, 'normal')); R.missStreak = 0; }
+    }
     // messages
     R.lock = true;
     const after = () => { R.idx++; beginItem(); };
@@ -353,10 +392,12 @@
       const multi = it.steps.length > 1;
       if (R.kind === 'placement') { showMsg('good', outcome === 'fast' ? '⚡' : '✓'); return later(after, 500); }
       if (it.mode === 'reask') { showMsg('good', pick(['✓ You remembered!', '✓ Got it this time!'])); EM.sfx.right(); mood('proud'); return later(after, 900); }
-      if (outcome === 'fast') { showMsg('good', pick(['⚡ You knew it!', '⚡ Quick!', '⚡ Zoom!'])); EM.sfx.fast(); mood('happy'); }
+      if (quietYours) { showMsg('good', `${T().big} ${esc(it.label)} is yours!`); EM.sfx.fast(); mood('happy'); }
+      else if (rescued) { showMsg('good', `💧 Rescued! ${esc(it.label)} is back.`); EM.sfx.fast(); mood('happy'); }
+      else if (outcome === 'fast') { showMsg('good', pick(['⚡ You knew it!', '⚡ Quick!', '⚡ Zoom!'])); EM.sfx.fast(); mood('happy'); }
       else { showMsg('good', pick(['✓ Right! You figured it out.', '✓ Yes! You worked it out.'])); EM.sfx.right(); mood('proud'); }
       if (multi && it.done) { showMsg('good', `✓ ${it.done.html}`); EM.speech.say(it.done.say); }
-      const delay = multi ? 2200 : outcome === 'fast' ? 700 : 1100;
+      const delay = multi ? 2200 : quietYours || rescued ? 1100 : outcome === 'fast' ? 700 : 1100;
       later(() => {
         if (becameYours) return celebrateYours(it, () => maybeHow(it, outcome, after));
         if (leveledUp) return levelUpNote(it, after);
@@ -371,6 +412,7 @@
   // Teach Dot: only the final answer decides; a miss is a real retention miss and the fact goes back to learning.
   function completeTeach(it, res) {
     const ok = res[res.length - 1].firstTry, t = R.stats.taught;
+    R.stats.items++;
     EM.teach.record(it, ok);
     t.n++; if (ok) t.ok++; if (it.dotWrong) { t.dotWrong++; if (ok) t.caught++; }
     R.lock = true;
@@ -380,7 +422,8 @@
     later(() => { R.idx++; beginItem(); }, ok ? 2200 : 1400);
   }
   function queueReask(it) {
-    const n = R.reasks[it.key] || 0; if (n >= 2) return;
+    const n = R.reasks[it.key] || 0; if (n >= 2 || R.reaskTotal >= 4) return;
+    R.reaskTotal++;
     R.reasks[it.key] = n + 1;
     while (R.queue.length < R.idx + 4 && R.spare.length) R.queue.push(EM.factItem(R.spare.shift(), 'normal'));
     let copy;
@@ -402,11 +445,12 @@
   }
   function celebrateYours(it, next) {
     R.yoursNow.push(it.label); R.yoursKeys.push(it.key);
-    const n = EM.countYours();
+    const n = EM.countCollected();
     confetti();
     EM.sfx.yours();
-    overlay(`<div class="celebrate-row">${S.avatar ? EM.avatar.draw(undefined, 78, 'cheer') : ''}${D('cheer', 92)}<span class="big-item">${T().item(n)}</span></div><h2>${esc(it.label)} is YOURS!</h2><p>You knew it fast today <b>and</b> another day. That's what really knowing looks like.<br>${T().newLine(n)} You now know <b>${n}</b> fact${n > 1 ? 's' : ''} for keeps.</p><button class="big-btn" data-close="1">Yes!</button>`, next);
-    EM.speech.say(`${it.label.replace('−', 'minus').replace('+', 'plus').replace('?', 'what')} is yours! You now really know ${n} facts.`).then(() => { if (R.clipPlays < 2) { R.clipPlays++; EM.clips.play(); } });
+    overlay(`<div class="celebrate-row">${S.avatar ? EM.avatar.draw(undefined, 78, 'cheer') : ''}${D('cheer', 92)}<span class="big-item">${T().item(n)}</span></div><h2>${esc(it.label)} is YOURS!</h2><p>You didn't know it before. <b>Now you do.</b><br>${T().newLine(n)}</p><button class="big-btn" data-close="1">Yes!</button>`, next);
+    const tok = overlayTok;
+    EM.speech.say(`${it.label.replace('−', 'minus').replace('+', 'plus').replace('?', 'what')} is yours! You didn't know it before. Now you do.`).then(() => playClip(tok));
   }
   function levelUpNote(it, next) {
     const sk = EM.SK[it.skillId], rec = EM.skillRec(it.skillId);
@@ -420,20 +464,20 @@
       // Many at once (after placement): one ceremony, not a parade.
       EM.sfx.unlock(); confetti();
       overlay(`<div class="celebrate-row">${D('cheer', 92)}</div><h2>${skills.length} skills unlocked!</h2><p>${skills.map(s => `${s.icon} <b>${esc(s.name)}</b>`).join('<br>')}</p><button class="big-btn" data-close="1">Awesome</button>`, next);
-      EM.speech.say(`${skills.length} skills unlocked!`).then(() => EM.clips.play());
+      { const tok = overlayTok; EM.speech.say(`${skills.length} skills unlocked!`).then(() => playClip(tok)); }
       return;
     }
     const sk = skills[0];
     EM.sfx.unlock(); confetti();
     overlay(`<div class="celebrate-row">${D('wow', 84)}<span class="celebrate">${sk.icon}</span></div><h2>New skill unlocked!</h2><p><b>${esc(sk.name)}</b><br>${esc(sk.desc)}</p><button class="big-btn" data-close="1">Awesome</button>`, () => unlockCeremony(skills.slice(1), next));
-    EM.speech.say(`New skill unlocked. ${sk.name}.`).then(() => EM.clips.play());
+    { const tok = overlayTok; EM.speech.say(`New skill unlocked. ${sk.name}.`).then(() => playClip(tok)); }
   }
   function milestoneCeremony(list) {
     if (!list.length) return;
     const [at, emoji, name] = list[0], t = T();
     EM.sfx.yours(); confetti();
     overlay(`<div class="celebrate-row">${S.avatar ? EM.avatar.draw(undefined, 70, 'cheer') : ''}${D('wow', 80)}<span class="milestone-big">${emoji}</span></div><h2>Surprise!</h2><p>You really know <b>${at}</b> facts, so ${name} moved into your ${t.place}!</p><button class="big-btn" data-close="1">Hello, ${name.replace(/^(a|an|the) /, '')}!</button>`, () => milestoneCeremony(list.slice(1)));
-    EM.speech.say(`Surprise! ${name} moved into your ${t.place}!`).then(() => EM.clips.play());
+    { const tok = overlayTok; EM.speech.say(`Surprise! ${name} moved into your ${t.place}!`).then(() => playClip(tok)); }
   }
   function zoneSheet(id) {
     overlay(`${EM.world.zoneView(id)}<button class="big-btn" data-close="1" style="margin-top:14px">Back</button>`, null);
@@ -443,9 +487,11 @@
     const cols = ['#ef6a4c', '#f0b429', '#3d8bd6', '#c45cd6', '#4fb5a6'];
     for (let i = 0; i < 40; i++) { const d = document.createElement('div'); d.className = 'confetti'; d.style.left = Math.random() * 100 + 'vw'; d.style.background = cols[i % cols.length]; d.style.animationDelay = Math.random() * 0.6 + 's'; document.body.appendChild(d); setTimeout(() => d.remove(), 2400); }
   }
-  let overlayNext = null;
+  let overlayNext = null, overlayTok = 0;
+  // One parent clip per session at most, for its best moment, and only if that moment is still on screen.
+  function playClip(tok) { if (!R || R.clipPlayed) return; if (tok !== undefined && tok !== overlayTok) return; R.clipPlayed = true; EM.clips.play(); }
   function overlay(html, next) {
-    overlayNext = next;
+    overlayNext = next; overlayTok++;
     let o = document.getElementById('overlay');
     if (!o) { o = document.createElement('div'); o.id = 'overlay'; o.className = 'overlay'; document.body.appendChild(o); }
     o.innerHTML = `<div class="sheet">${html}</div>`;
@@ -464,10 +510,11 @@
     delete S.inflight;
     if (answered) EM.logSession(sessionRecord()); else EM.save();
     if (R.kind === 'placement' && (answered >= 15 || R.idx >= R.queue.length)) { seedLevels(); S.placement.done = true; S.placement.at = Date.now(); EM.save(); }
-    R.newSkills = EM.newlyOpened();
+    R.newSkills = answered ? EM.newlyOpened() : [];
+    if (answered && R.kind !== 'skill') { S.card = { date: Date.now(), html: EM.parent.grownupCard(R), seen: false }; EM.save(); }
     screen = answered ? 'summary' : 'home';
     render();
-    const ms = EM.world.crossed(R.knownBefore, EM.countYours());
+    const ms = EM.world.crossed(R.knownBefore, EM.countCollected());
     if (answered) unlockCeremony(R.newSkills, () => milestoneCeremony(ms));
   }
 
@@ -523,20 +570,21 @@
       </div>
       <div class="pad${hidden ? ' hidden' : ''}">${range(1, 9).map(d => `<button data-d="${d}">${d}</button>`).join('')}
         <button data-act="back" aria-label="Delete">⌫</button><button data-d="0">0</button><button class="ok" data-act="ok" aria-label="Check">✓</button></div>
-      <button class="idk${hidden || help ? ' hidden' : ''}" data-act="idk">🙋 I don't know</button>
+      ${help && R.helpStage === 1 ? '<button class="idk showme hidden" data-act="showme">🙋 Show me</button>' : `<button class="idk${hidden || help ? ' hidden' : ''}" data-act="idk">🙋 I don't know</button>`}
     </main>`;
   }
 
   // ---------- summary + grown-up card ----------
   function renderSummary() {
-    const st = R.stats, known = EM.countYours();
+    const st = R.stats, known = EM.countCollected();
+    const gcard = `<details class="gwrap"><summary>For a grown-up 👋</summary>${EM.parent.grownupCard(R)}</details>`;
     if (R.kind === 'placement') {
       $app.innerHTML = `<main class="wrap">
         ${worldHTML(`Thank you! Look, you planted ${R.planted} ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} in your ${T().place} today!`, { mood: 'cheer', fresh: R.plantedKeys.slice(0, 60) })}
         <p class="sub">Now I know where to start. Tomorrow we begin for real: ${S.settings.blocks} short parts, about ${S.settings.blockMin * S.settings.blocks} minutes.</p>
         <div class="tiles"><div class="tile"><b>${st.fast}</b><span>⚡ Knew it fast</span></div><div class="tile"><b>${st.slow}</b><span>✓ Figured it out</span></div><div class="tile"><b>${st.wrong + st.idk}</b><span>🧠 To learn</span></div></div>
         ${st.idk ? `<div class="note">🙋 You said "I don't know" ${st.idk} time${st.idk > 1 ? 's' : ''}. That's exactly right. Now I know what to teach.</div>` : ''}
-        ${EM.parent.grownupCard(R)}
+        ${gcard}
         <p style="margin-top:20px"><button class="big-btn" data-act="home">Done</button></p>
       </main>`;
       return;
@@ -544,23 +592,25 @@
     const notes = [];
     if (R.yoursNow.length) notes.push(`${T().big} New ${R.yoursNow.length > 1 ? T().many : T().one}: <b>${R.yoursNow.map(esc).join(', ')}</b>. Those are yours now.`);
     if (st.learned.length) notes.push(`🧠 You didn't know <b>${esc(st.learned[0].label)}</b>${st.learned.length > 1 ? ` and ${st.learned.length - 1} more` : ''} at the start. Then you learned ${st.learned.length > 1 ? 'them' : 'it'}. That's brave, and it's how your brain grows.`);
-    if (st.rushed) notes.push(`🐢 ${st.rushed} answer${st.rushed > 1 ? 's were' : ' was'} super quick and wrong. Think first, then tap.`);
     if (st.taught.n) notes.push(`🧑‍🏫 You taught Dot ${st.taught.ok} of ${st.taught.n}${st.taught.dotWrong ? ` and caught ${st.taught.caught} of Dot's ${st.taught.dotWrong} mistake${st.taught.dotWrong > 1 ? 's' : ''}` : ''}. Great teaching!`);
     if (st.samCaught) notes.push(`🕵️ Your estimate caught ${st.samCaught} of Sam's mistakes!`);
-    if (!R.yoursNow.length) notes.push(`⭐ Facts you get right fast on two different days become yours. Come back tomorrow!`);
+    const missed = st.wrong + st.idk, graded = st.fast + st.slow + missed;
+    if (graded && missed > graded / 2) notes.unshift(`💪 You stuck with ${missed} tough ones today. Dot is proud of you. Tough days are how brains grow.`);
+    if (!R.yoursNow.length) { const tomorrow = Object.values(S.facts).filter(r => r.box === 1 && EM.startOfDay(r.due) <= EM.startOfDay(Date.now() + DAY)).length; notes.push(tomorrow ? `🌱 Tomorrow, ${tomorrow} ${tomorrow === 1 ? GROW[T().id][0] + ' is' : GROW[T().id][1] + ' are'} ready to turn into ${T().many}. Know them fast and they're yours!` : `⭐ Facts you get right fast on two different days become yours. Come back tomorrow!`); }
     $app.innerHTML = `<main class="wrap">
       ${worldHTML(R.yoursKeys.length ? `Nice work, ${esc(NAME())}! Look what's new in your ${T().place}!` : R.planted ? `Nice work, ${esc(NAME())}! You planted ${R.planted} new ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} today.` : `Nice work, ${esc(NAME())}! Your ${GROW[T().id][1]} are getting stronger.`, { mood: 'cheer', fresh: [...R.yoursKeys, ...R.plantedKeys], freshDeco: EM.world.crossed(R.knownBefore, known).map(m => m[0]) })}
       <p class="sub" style="text-align:center">${R.title} · ${st.items} questions</p>
       <div class="tiles">
         <div class="tile"><b>${st.fast}</b><span>⚡ Knew it fast</span></div>
         <div class="tile"><b>${st.slow}</b><span>✓ Figured it out</span></div>
-        <div class="tile"><b>${st.wrong + st.idk}</b><span>🧠 Learned with help</span></div>
+        <div class="tile"><b>${st.wrong + st.idk}</b><span>🧠 To practice</span></div>
       </div>
       ${notes.map(n => `<div class="note">${n}</div>`).join('')}
-      ${EM.parent.grownupCard(R)}
+      ${gcard}
       <p style="margin-top:20px"><button class="big-btn" data-act="home">Done</button></p>
     </main>`;
-    if (st.learned.length && R.kind === 'daily') setTimeout(() => EM.clips.play(), 600);
+    const top = document.querySelector('.perch .bubble'); if (top) EM.speech.say(top.textContent);
+    if (st.learned.length && R.kind === 'daily') setTimeout(() => playClip(), 2500);
   }
 
   // ---------- events ----------
@@ -569,7 +619,7 @@
     if (d) return typeDigit(d.dataset.d);
     const av = e.target.closest('[data-av]');
     if (av) { const ni = document.getElementById('avName'); if (ni) S.name = ni.value.trim(); EM.avatar.set(av.dataset.av, av.dataset.val); EM.sfx.right(); return render(); }
-    if (e.target.closest('[data-av-done]')) { const ni = document.getElementById('avName'); if (ni) S.name = ni.value.trim(); S.avatar = EM.avatar.get(); EM.save(); EM.sfx.unlock(); EM.speech.say(S.name ? `Nice to meet you, ${S.name}!` : 'Nice to meet you!'); return go('home'); }
+    if (e.target.closest('[data-av-done]')) { const ni = document.getElementById('avName'); if (ni) S.name = ni.value.trim(); S.avatar = EM.avatar.get(); delete S.avatarDraft; EM.save(); EM.sfx.unlock(); EM.speech.say(S.name ? `Nice to meet you, ${S.name}!` : 'Nice to meet you!'); return go('home'); }
     const zh = e.target.closest('[data-zone]');
     if (zh) return zoneSheet(zh.dataset.zone);
     const tc = e.target.closest('[data-tc]');
@@ -597,6 +647,7 @@
       case 'ok': return submit();
       case 'back': return backspace();
       case 'idk': return idk();
+      case 'showme': return showMe();
       case 'ready': return readyTap();
       case 'relook': return relook();
       case 'speak': { const st = curStep(); const h = R.phase === 'help' && R.msg ? R.msg.html.replace(/<[^>]+>/g, '') : (R.cur.kind === 'fact' ? st.say : st.say); return EM.speech.say(h); }

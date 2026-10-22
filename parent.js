@@ -7,6 +7,7 @@
   const sec = ms => ms ? `${(ms / 1000).toFixed(1)}s` : '–';
   const S = () => EM.S;
   let pinOk = false;
+  P.lock = () => { pinOk = false; };
 
   // ---------- end-of-session card for the grown-up ----------
   P.grownupCard = function (R) {
@@ -65,6 +66,7 @@
   // ---------- main view ----------
   P.render = function ($app, ctx) {
     const S_ = S();
+    if (S_.card && !S_.card.seen && dayStr(S_.card.date) === dayStr(Date.now())) { S_.card.seen = true; EM.save(); }
     const week = weekSessions(7), t = tot(week), answered = t.fast + t.slow + t.wrong + t.idk;
     const prev = weekSessions(14, 7), tp = tot(prev);
     const fa = t.fact, fAns = fa.fast + fa.slow + fa.wrong + fa.idk, fp = tp.fact, fAnsPrev = fp.fast + fp.slow + fp.wrong + fp.idk;
@@ -95,6 +97,7 @@
 
     $app.innerHTML = `<main class="wrap parent">
       <div class="row"><h1>Grown-ups</h1><button class="btn secondary small" data-act="home">Done</button></div>
+      ${S_.card && dayStr(S_.card.date) === dayStr(Date.now()) ? `<section class="todaycard"><h2>Today's card ${S_.card.seen ? '✓' : '📬'}</h2>${S_.card.html}</section>` : ''}
 
       <section><h2>This week (week ${wk} of the catch-up)</h2>
         <div class="kpis">
@@ -109,7 +112,7 @@
           ${t.est.round.n ? `<div class="kpi"><b>${pct(t.est.round.ok, t.est.round.n)}% · ${pct(t.est.combine.ok, t.est.combine.n)}%</b><span>estimating: rounding steps right · adding steps right</span></div>` : ''}
         </div>
         <p style="margin-top:12px;color:var(--muted)">The signal you want: <b>fast-and-right rising</b>, <b>slow-right and "I counted" falling</b>, rushed guesses near zero. Percentages are facts only; big-number work is tracked on the skill ladder below.</p>
-        ${backupDue ? '<p style="color:var(--danger)">No backup in the last week. Open Settings and save one (it takes 10 seconds).</p>' : ''}
+        ${backupDue ? '<p class="warn-banner">No backup in the last week. Open Settings and save one (it takes 10 seconds).</p>' : ''}
         <div class="cal">${cal}</div><p style="font-size:13px;color:var(--muted);margin-top:6px">Last 28 days. Green = practiced.</p>
       </section>
 
@@ -232,7 +235,7 @@
           const saved = await exportBackup();
           if (!saved && !confirm('No backup was saved. Erase anyway?')) return;
           const word = prompt('Type RESET to erase all progress on this device.');
-          if (word === 'RESET') { try { await EM.idbPut('state:before-reset', JSON.stringify(S())); } catch (e) {} EM.resetState(); pinOk = false; EM.go('home'); }
+          if (word === 'RESET') { try { await EM.idbPut('state:before-reset', JSON.stringify(S())); } catch (e) {} EM.resetState(); EM.theme.apply(); pinOk = false; EM.go('home'); }
           return;
         }
       }
@@ -255,7 +258,7 @@
     const S_ = S();
     if (e.target.id === 'importFile' && e.target.files[0]) {
       e.target.files[0].text().then(t => {
-        try { const s = JSON.parse(t); if (!s.facts || !s.settings) throw 0; const n = (s.sessions || []).length; if (!confirm(`Replace everything on this device with this backup (${n} sessions, ${Object.keys(s.facts).length} facts)?`)) return; EM.idbPut('state:before-restore', JSON.stringify(S())).catch(() => {}); EM.replaceState(s); alert('Backup restored.'); EM.render(); }
+        try { const s = JSON.parse(t); if (!s.facts || !s.settings) throw 0; const n = (s.sessions || []).length; if (!confirm(`Replace everything on this device with this backup (${n} sessions, ${Object.keys(s.facts).length} facts)?`)) return; EM.idbPut('state:before-restore', JSON.stringify(S())).catch(() => {}); EM.replaceState(s); EM.theme.apply(); alert('Backup restored.'); EM.render(); }
         catch (err) { alert("That file doesn't look like an Ellie Math backup."); }
       });
       return;

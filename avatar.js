@@ -12,7 +12,7 @@
   const DEFAULT = { skin: 1, hair: 'long', hairColor: 1, glasses: 'none', shirt: 6, extra: 'bow' };
   const OPTIONS = { SKIN, HAIR_COLORS, SHIRTS, STYLES, GLASSES, EXTRAS };
 
-  const get = () => Object.assign({}, DEFAULT, (EM.S && EM.S.avatar) || {});
+  const get = () => Object.assign({}, DEFAULT, (EM.S && (EM.S.avatarDraft || EM.S.avatar)) || {});
 
   // Hair: [behind the head, in front of the head]
   function hair(style, c) {
@@ -79,7 +79,7 @@
   function set(key, val) {
     const av = get();
     av[key] = ['skin', 'hairColor', 'shirt'].includes(key) ? Number(val) : val;
-    EM.S.avatar = av; EM.save();
+    EM.S.avatarDraft = av; EM.save();
   }
 
   EM.avatar = { draw, builder, set, get, OPTIONS };

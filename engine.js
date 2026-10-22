@@ -113,7 +113,7 @@
   function gradeFact(key, outcome, ms, now = Date.now()) {
     const r = factRec(key, true);
     const today = dayStr(now);
-    const wasBelow = r.box < FLUENT_BOX;
+    const wasBelow = r.box < FLUENT_BOX, wasEverHers = (r.peak || 0) >= FLUENT_BOX, hadTrouble = r.wrong + r.idk > 0;
     r.seen++; r.last = now;
     if (outcome === 'fast' || outcome === 'slow') {
       r.right++;
@@ -136,15 +136,19 @@
       if (outcome === 'idk') r.idk++; else r.wrong++;
     }
     r.peak = Math.max(r.peak || 0, r.box);
-    const becameYours = wasBelow && r.box >= FLUENT_BOX;
+    // First time hers: a celebration (big if she once missed it). Back again after slipping: a rescue.
+    const becameYours = wasBelow && r.box >= FLUENT_BOX && !wasEverHers, rescued = wasBelow && r.box >= FLUENT_BOX && wasEverHers;
     if (becameYours && !S.yours.includes(key)) S.yours.push(key);
     save();
-    return { becameYours };
+    return { becameYours, rescued, hadTrouble };
   }
   const avgTime = r => r && r.times && r.times.length ? r.times.reduce((a, b) => a + b, 0) / r.times.length : 0;
   const isYours = key => { const r = S.facts[key]; return !!r && r.box >= FLUENT_BOX; };
   const countYours = () => Object.keys(S.facts).filter(isYours).length;
-  Object.assign(EM, { factRec, gradeFact, avgTime, isYours, countYours });
+  // Her collection only grows: a fact that was ever hers stays in it (it may look thirsty until rescued).
+  const isCollected = key => { const r = S.facts[key]; return !!r && ((r.peak || 0) >= FLUENT_BOX || r.box >= FLUENT_BOX); };
+  const countCollected = () => Object.keys(S.facts).filter(isCollected).length;
+  Object.assign(EM, { factRec, gradeFact, avgTime, isYours, countYours, isCollected, countCollected });
 
   // ---------- procedure mastery (window of recent unscaffolded items) ----------
   function skillRec(id) {
@@ -164,6 +168,7 @@
     const def = EM.SK[id];
     let leveledUp = false;
     if (levelFluent(id, level) && def && level === sk.level && level < def.levels.length - 1) { sk.level = level + 1; leveledUp = true; }
+    if (def && sk.level === def.levels.length - 1 && levelFluent(id, sk.level)) { sk.lastReview = dayStr(now); sk.lastReviewAt = now; }
     save();
     return { leveledUp };
   }

@@ -19,14 +19,15 @@
     }
     return homeOf;
   }
-  function stateOf(key) { const r = EM.S.facts[key]; if (!r) return 0; if (r.box >= 4) return 3; if (r.box >= EM.FLUENT_BOX) return 2; return 1; }
+  // 0 not tried, 1 learning, 2 hers, 3 rock solid, 4 was hers and slipped (thirsty, still collected)
+  function stateOf(key) { const r = EM.S.facts[key]; if (!r) return 0; if (r.box >= 4) return 3; if (r.box >= EM.FLUENT_BOX) return 2; if ((r.peak || 0) >= EM.FLUENT_BOX) return 4; return 1; }
 
   // ---------- zone layout: three rows in perspective ----------
   // Big skills go in front where there's room; small ones at the back.
   const ZONES = [
     { id: 'doubles', x: 95, y: 228, w: 240, h: 108, s: 0.62 }, { id: 'm10', x: 380, y: 228, w: 240, h: 108, s: 0.62 }, { id: 'near', x: 665, y: 228, w: 240, h: 108, s: 0.62 },
     { id: 'look', x: 55, y: 366, w: 275, h: 148, s: 0.78 }, { id: 'teens', x: 362, y: 366, w: 275, h: 148, s: 0.78 }, { id: 'bridge', x: 670, y: 366, w: 275, h: 148, s: 0.78 },
-    { id: 'plus12', x: 22, y: 548, w: 230, h: 196, s: 0.9 }, { id: 'to10', x: 266, y: 548, w: 230, h: 196, s: 0.9 }, { id: 'sub10', x: 510, y: 548, w: 230, h: 196, s: 0.9 }, { id: 'subteen', x: 754, y: 548, w: 230, h: 196, s: 0.9 },
+    { id: 'plus12', x: 44, y: 548, w: 214, h: 180, s: 0.88 }, { id: 'to10', x: 276, y: 548, w: 214, h: 180, s: 0.88 }, { id: 'sub10', x: 508, y: 548, w: 214, h: 180, s: 0.88 }, { id: 'subteen', x: 740, y: 548, w: 214, h: 180, s: 0.88 },
   ];
   // Classroom: sticker charts on a whiteboard, flat (no perspective).
   const CLASS_ZONES = [
@@ -40,11 +41,11 @@
   // Deterministic jitter so the world looks hand-planted but never reshuffles.
   const jit = (i, k) => { const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
   function slots(z, n) {
-    const ratio = z.w / z.h, cols = Math.max(1, Math.ceil(Math.sqrt(n * ratio))), rows = Math.ceil(n / cols);
-    const cw = z.w / cols, rh = z.h / rows, out = [];
+    const band = 24 * z.s, zh = z.h - band, ratio = z.w / zh, cols = Math.max(1, Math.ceil(Math.sqrt(n * ratio))), rows = Math.ceil(n / cols);
+    const cw = z.w / cols, rh = zh / rows, out = [];
     for (let i = 0; i < n; i++) {
       const c = i % cols, r = Math.floor(i / cols);
-      out.push({ x: z.x + cw * (c + 0.5) + (jit(i, 1) - 0.5) * cw * 0.35, y: z.y + rh * (r + 0.85) + (jit(i, 2) - 0.5) * rh * 0.2, row: r });
+      out.push({ x: z.x + cw * (c + 0.5) + (jit(i, 1) - 0.5) * cw * 0.35, y: z.y + band + rh * (r + 0.85) + (jit(i, 2) - 0.5) * rh * 0.2, row: r });
     }
     return out;
   }
@@ -56,7 +57,7 @@
       draw(state, zi, i) { return EM.theme.sticker(zi, state).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, ''); },
       zone(z, zi, label) {
         const sk = EM.SK[z.id];
-        return `<rect x="${z.x - 12}" y="${z.y - 34}" width="${z.w + 24}" height="${z.h + 46}" rx="10" fill="${['#fff4f4', '#f2f8ff', '#fffbea', '#f3fbef', '#f8f2ff'][zi % 5]}" stroke="${ZONE_COLORS[zi]}" stroke-opacity=".45" stroke-width="2" stroke-dasharray="7 5"/>
+        return `<rect x="${z.x - 12}" y="${z.y - 34}" width="${z.w + 24}" height="${z.h + 46}" rx="10" fill="#fff" stroke="#d7dde3" stroke-width="1.5"/><rect x="${z.x - 12}" y="${z.y - 34}" width="6" height="${z.h + 46}" rx="3" fill="${ZONE_COLORS[zi]}" opacity=".7"/>
           <text x="${z.x - 2}" y="${z.y - 12}" font-size="17" font-weight="600" fill="#3f4a56" class="zname">${label} ${EM.esc(sk.name)}</text>`;
       },
     },
@@ -73,7 +74,7 @@
       },
       zone(z, zi, label) {
         const soil = `<rect x="${z.x - 8}" y="${z.y + 6}" width="${z.w + 16}" height="${z.h + 8}" rx="${18 * z.s}" fill="#9a6a45" opacity=".35"/><rect x="${z.x - 8}" y="${z.y + 6}" width="${z.w + 16}" height="${z.h + 8}" rx="${18 * z.s}" fill="none" stroke="#b9895e" stroke-width="${5 * z.s}" opacity=".7"/>`;
-        return soil + sign(z, label, '#d7a86e', '#7b4f33');
+        return soil + sign(z, label, '#fff6e6', '#5c3a24');
       },
     },
     ocean: {
@@ -87,9 +88,9 @@
       },
       zone(z, zi, label) {
         const c = ZONE_COLORS[zi], base = z.y + z.h + 10;
-        let coral = `<ellipse cx="${z.x + z.w / 2}" cy="${base}" rx="${z.w / 2 + 6}" ry="${14 * z.s}" fill="#c8a978" opacity=".55"/>`;
+        let coral = `<ellipse cx="${z.x + z.w / 2}" cy="${base}" rx="${z.w / 2 + 6}" ry="${16 * z.s}" fill="#e7c98d" opacity=".92" stroke="#c9a66b" stroke-width="2"/>`;
         for (let k = 0; k < 5; k++) { const x = z.x + z.w * (0.1 + k * 0.2), hgt = (30 + jit(zi, k) * 26) * z.s; coral += `<path d="M${x} ${base} q${-8 * z.s} ${-hgt * 0.5} 0 ${-hgt} M${x} ${base - hgt * 0.5} q${10 * z.s} ${-6 * z.s} ${12 * z.s} ${-hgt * 0.35}" stroke="${c}" stroke-width="${7 * z.s}" stroke-linecap="round" fill="none" opacity=".55"/>`; }
-        return coral + sign(z, label, '#fff4dc', '#3b6b8a');
+        return coral + sign(z, label, '#fffaf0', '#24506b');
       },
     },
     space: {
@@ -102,13 +103,16 @@
         return state === 3 ? `<circle cx="20" cy="20" r="19" fill="${c}" opacity=".25"/>${s}` : s;
       },
       zone(z, zi, label) {
-        return `<ellipse cx="${z.x + z.w / 2}" cy="${z.y + z.h / 2}" rx="${z.w / 2 + 10}" ry="${z.h / 2 + 10}" fill="${ZONE_COLORS[zi]}" opacity=".07"/>` + sign(z, label, 'rgba(255,255,255,.14)', '#e8e6ff');
+        return `<ellipse cx="${z.x + z.w / 2}" cy="${z.y + z.h / 2}" rx="${z.w / 2 + 10}" ry="${z.h / 2 + 10}" fill="${ZONE_COLORS[zi]}" opacity=".07"/>` + sign(z, label, 'rgba(255,255,255,.92)', '#2a2660');
       },
     },
   };
+  const SHORT = { look: 'Quick Look', m10: 'Partners of 10', plus12: '+1 +2', doubles: 'Doubles', teens: '10 and More', to10: 'Facts to 10', near: 'Near Doubles', bridge: 'Make 10', sub10: 'Minus to 10', subteen: 'Teen Minus' };
+  // Opaque, named signs so she can tell the zones apart (drawn after the items so nothing covers them).
   function sign(z, label, bg, fg) {
-    const sx = z.x - 4, sy = z.y - 6, w = 56 * z.s + 8, h = 30 * z.s + 6;
-    return `<g class="zsign"><rect x="${sx}" y="${sy}" width="${w}" height="${h}" rx="${8 * z.s}" fill="${bg}"/><text x="${sx + w / 2}" y="${sy + h * 0.72}" text-anchor="middle" font-size="${20 * z.s}" fill="${fg}">${label}</text></g>`;
+    const name = SHORT[z.id] || '', fs = 17 * Math.max(0.8, z.s), w = (name.length * 0.56 + 2.2) * fs + 12, h = fs * 1.6;
+    const sx = z.x - 6, sy = z.y - 10;
+    return `<g class="zsign"><rect x="${sx}" y="${sy}" width="${w.toFixed(0)}" height="${h.toFixed(0)}" rx="${(h / 2.4).toFixed(0)}" fill="${bg}" stroke="rgba(0,0,0,.12)"/><text x="${sx + 8}" y="${(sy + h * 0.7).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="600" fill="${fg}">${label} ${name}</text></g>`;
   }
 
   // ---------- backgrounds ----------
@@ -155,7 +159,7 @@
   // ---------- milestones: things that move into the world ----------
   const MILESTONES = {
     // [facts needed, emoji, name, x, y (baseline), size]; kept out of the top-left where Dot and the bubble sit
-    garden: [[5, '🦋', 'a butterfly', 300, 196, 38], [10, '🐝', 'a bumblebee', 640, 168, 32], [20, '🐇', 'a bunny', 470, 214, 44], [35, '🌳', 'a big tree', 948, 206, 120], [50, '🦆', 'a duck', 724, 212, 46], [75, '🌈', 'a rainbow', 760, 122, 130], [100, '🎈', 'a hot-air balloon', 636, 84, 60], [150, '🦄', 'a unicorn', 176, 208, 56], [200, '🏰', 'a castle', 842, 196, 70], [300, '🦚', 'a peacock', 380, 204, 52]],
+    garden: [[5, '🦋', 'a butterfly', 300, 196, 38], [10, '🐝', 'a bumblebee', 560, 206, 30], [20, '🐇', 'a bunny', 470, 214, 44], [35, '🌳', 'a big tree', 948, 206, 120], [50, '🦆', 'a duck', 724, 212, 46], [75, '🌈', 'a rainbow', 740, 132, 112], [100, '🎈', 'a hot-air balloon', 640, 96, 54], [150, '🦄', 'a unicorn', 176, 208, 56], [200, '🏰', 'a castle', 842, 196, 70], [300, '🦚', 'a peacock', 380, 204, 52]],
     ocean: [[5, '🐚', 'a seashell', 470, 742, 34], [10, '🦀', 'a crab', 160, 738, 40], [20, '🐢', 'a sea turtle', 770, 176, 58], [35, '🐙', 'an octopus', 640, 196, 54], [50, '🐡', 'a pufferfish', 300, 202, 46], [75, '🐬', 'a dolphin', 650, 92, 64], [100, '🦭', 'a seal', 920, 712, 60], [150, '🐳', 'a whale', 900, 100, 90], [200, '🧜‍♀️', 'a mermaid', 450, 206, 56], [300, '💎', 'a treasure chest', 620, 746, 40]],
     classroom: [[5, '🍎', 'a shiny apple', 150, 700, 40], [10, '🖍️', 'a box of crayons', 240, 700, 36], [20, '📚', 'a stack of books', 600, 724, 50], [35, '🪴', 'a classroom plant', 40, 690, 72], [50, '🐹', 'a class hamster', 470, 734, 46], [75, '🌍', 'a globe', 380, 120, 60], [100, '🏆', 'a trophy', 330, 700, 46], [150, '🎨', 'an art easel', 960, 740, 66], [200, '🔭', 'a telescope', 470, 126, 56], [300, '🎓', 'a graduation cap', 860, 732, 50]],
     space: [[5, '🌙', 'the moon', 905, 88, 70], [10, '☄️', 'a comet', 620, 76, 50], [20, '🪐', 'a ringed planet', 770, 180, 66], [35, '🛰️', 'a satellite', 300, 198, 46], [50, '🚀', 'a rocket', 930, 704, 70], [75, '👽', 'a friendly alien', 75, 708, 56], [100, '🛸', 'a flying saucer', 560, 198, 54], [150, '🌍', 'planet Earth', 965, 196, 52], [200, '🌌', 'a galaxy', 770, 76, 54], [300, '🌟', 'a superstar', 430, 194, 50]],
@@ -169,10 +173,11 @@
   function render(opts = {}) {
     const t = EM.theme.current(), I = ITEMS[t.id], zf = zoneFacts(), fresh = new Set(opts.fresh || []);
     let zones = '', items = '', lines = '';
-    let yours = 0, sprouts = 0;
+    let yours = 0, sprouts = 0, signs = '', hits = '';
+    const emptyShown = zonesFor(t.id).map(() => 0);
     zonesFor(t.id).forEach((z, zi) => {
       const sk = EM.SK[z.id], keys = zf[z.id];
-      zones += I.zone(z, zi, sk.icon);
+      const zb = I.zone(z, zi, sk.icon); const cut = zb.indexOf('<g class="zsign">'); zones += cut >= 0 ? zb.slice(0, cut) : zb; if (cut >= 0) signs += zb.slice(cut);
       const sl = slots(z, keys.length);
       // draw back-to-front so nearer items overlap farther ones
       const order = keys.map((k, i) => i).sort((a, b) => sl[a].y - sl[b].y);
@@ -183,19 +188,21 @@
         const w = I.size[0] * z.s, h = I.size[1] * z.s;
         const cls = `wi s${st}${fresh.has(k) ? ' fresh' : ''}`;
         const delay = fresh.has(k) ? (0.5 + [...fresh].indexOf(k) * 0.35).toFixed(2) : 0;
-        items += `<g class="${cls}" style="animation-delay:${delay}s"><svg x="${(p.x - w / 2).toFixed(1)}" y="${(p.y - h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" viewBox="${I.view}" overflow="visible">${I.draw(st, zi, i)}</svg></g>`;
+        const drawState = st === 4 ? 2 : st;
+        if (st === 0 && ++emptyShown[zi] > 4) continue; // show only the next few empty spots, so day one looks like a place
+        items += `<g class="${cls}" style="animation-delay:${delay}s"><svg x="${(p.x - w / 2).toFixed(1)}" y="${(p.y - h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" viewBox="${I.view}" overflow="visible">${I.draw(drawState, zi, i)}</svg></g>`;
       }
       if (t.id === 'space') {
         // constellation lines between lit stars, in reading order
-        const lit = keys.map((k, i) => ({ st: stateOf(k), p: sl[i] })).filter(o => o.st >= 2);
+        const lit = keys.map((k, i) => ({ st: stateOf(k), p: sl[i] })).filter(o => o.st >= 2 && o.st !== 4);
         for (let j = 1; j < lit.length; j++) lines += `<line x1="${lit[j - 1].p.x}" y1="${lit[j - 1].p.y - 14 * z.s}" x2="${lit[j].p.x}" y2="${lit[j].p.y - 14 * z.s}" stroke="${ZONE_COLORS[zi]}" stroke-width="1.6" opacity=".55"/>`;
       }
-      zones += `<rect class="zhit" data-zone="${z.id}" x="${z.x - 10}" y="${z.y - 10}" width="${z.w + 20}" height="${z.h + 24}" fill="transparent"/>`;
+      hits += `<rect class="zhit" data-zone="${z.id}" x="${z.x - 10}" y="${z.y - 10}" width="${z.w + 20}" height="${z.h + 24}" fill="transparent"/>`;
     });
-    const total = EM.countYours();
+    const total = EM.countCollected();
     const deco = milestones().filter(m => total >= m[0]).map(m => `<text class="deco${opts.freshDeco && opts.freshDeco.includes(m[0]) ? ' fresh' : ''}" x="${m[3]}" y="${m[4]}" font-size="${m[5]}" text-anchor="middle">${m[1]}</text>`).join('');
     const svg = `<svg class="world-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${EM.S.name ? esc(EM.S.name) + "'s" : 'Your'} ${t.place}: ${yours} ${yours === 1 ? t.one : t.many}, ${sprouts} growing">
-      ${BACKS[t.id]()}${deco}${zones}${lines}${items}</svg>`;
+      ${BACKS[t.id]()}${deco}${zones}${lines}${items}${signs}${hits}</svg>`;
     return { svg, yours, sprouts };
   }
   const esc = s => EM.esc(s);
@@ -203,12 +210,12 @@
   // Close-up of one zone: every fact with its label, as a trophy case.
   function zoneView(id) {
     const t = EM.theme.current(), I = ITEMS[t.id], zi = zonesFor(t.id).findIndex(z => z.id === id), sk = EM.SK[id], keys = zoneFacts()[id];
-    const counts = [0, 0, 0, 0]; keys.forEach(k => counts[stateOf(k)]++);
+    const counts = [0, 0, 0, 0, 0]; keys.forEach(k => counts[stateOf(k)]++);
     const word = { garden: ['bed', 'blooming'], ocean: ['reef', 'swimming'], space: ['constellation', 'shining'], classroom: ['sticker chart', 'earned'] }[t.id];
-    const chips = keys.map((k, i) => { const st = stateOf(k); return `<div class="zchip s${st}"><svg viewBox="${I.view}" width="${I.size[0] * (t.id === 'classroom' ? 1.6 : 1.1)}" height="${I.size[1] * (t.id === 'classroom' ? 1.6 : 1.1)}">${I.draw(st, zi, i)}</svg><span>${st ? esc(EM.labelFact(EM.FACTS[k]).replace('Quick Look: ', '👀 ')) : '?'}</span></div>`; }).join('');
-    const legend = { classroom: ['dotted circle: not tried yet', 'pencil outline: learning', 'sticker: yours', 'gold sticker: rock solid'], garden: ['soil: not tried yet', 'sprout: learning', 'flower: yours', 'sparkle: rock solid'], ocean: ['pebble: not tried yet', 'egg: learning', 'fish: yours', 'glow: rock solid'], space: ['faint dot: not tried yet', 'dim star: learning', 'bright star: yours', 'glow: rock solid'] }[t.id];
+    const chips = keys.map((k, i) => { const st = stateOf(k); return `<div class="zchip s${st}"><svg class="${st === 4 ? 'thirsty' : ''}" viewBox="${I.view}" width="${I.size[0] * (t.id === 'classroom' ? 1.6 : 1.1)}" height="${I.size[1] * (t.id === 'classroom' ? 1.6 : 1.1)}">${I.draw(st === 4 ? 2 : st, zi, i)}</svg><span>${st ? esc(EM.labelFact(EM.FACTS[k]).replace('Quick Look: ', '👀 ')) : '?'}</span></div>`; }).join('');
+    const legend = { classroom: ['dotted circle: not tried yet', 'pencil outline: learning', 'sticker: yours', 'gold sticker: rock solid', 'faded: needs a quick practice'], garden: ['soil: not tried yet', 'sprout: learning', 'flower: yours', 'sparkle: rock solid', 'thirsty: needs a quick practice'], ocean: ['pebble: not tried yet', 'egg: learning', 'fish: yours', 'glow: rock solid', 'hiding: needs a quick practice'], space: ['faint dot: not tried yet', 'dim star: learning', 'bright star: yours', 'glow: rock solid', 'flickering: needs a quick practice'] }[t.id];
     return `<div class="zhead">${sk.icon} <b>${esc(sk.name)}</b> ${word[0]}</div>
-      <p class="zsub"><b>${counts[2] + counts[3]}</b> of ${keys.length} ${word[1]}${counts[1] ? ` · ${counts[1]} growing` : ''}</p>
+      <p class="zsub"><b>${counts[2] + counts[3] + counts[4]}</b> of ${keys.length} ${word[1]}${counts[1] ? ` · ${counts[1]} growing` : ''}${counts[4] ? ` · ${counts[4]} need a quick practice` : ''}</p>
       <div class="zgrid">${chips}</div>
       <p class="zlegend">${legend.join(' · ')}</p>`;
   }

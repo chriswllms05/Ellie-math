@@ -32,8 +32,18 @@
   // ---------- helpers ----------
   const STATUS = [['s0', 'Not tried'], ['s1', 'Learning'], ['s2', 'Getting there'], ['s3', 'Hers'], ['s4', 'Solid']];
   function statusOf(k) { const r = S().facts[k]; if (!r) return 0; return r.box === 0 ? 1 : r.box === 1 ? 2 : r.box <= 3 ? 3 : 4; }
-  function weekSessions(n = 7) { const cut = Date.now() - n * DAY; return S().sessions.filter(s => s.date > cut); }
-  function tot(sess) { return sess.reduce((a, s) => ({ fast: a.fast + s.fast, slow: a.slow + s.slow, wrong: a.wrong + s.wrong, idk: a.idk + s.idk, rushed: a.rushed + s.rushed, minutes: a.minutes + (s.minutes || 0), learned: a.learned + (s.learned || []).length }), { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, minutes: 0, learned: 0 }); }
+  function weekSessions(n = 7, from = 0) { const now = Date.now(), lo = now - n * DAY, hi = now - from * DAY; return S().sessions.filter(s => s.date > lo && s.date <= hi && s.kind !== 'placement'); }
+  function tot(sess) {
+    const z = () => ({ fast: 0, slow: 0, wrong: 0, idk: 0 });
+    return sess.reduce((a, s) => {
+      const bk = s.byKind || {}, f = bk.fact || z(), h = s.how || {}, e = s.est || {};
+      for (const k of ['fast', 'slow', 'wrong', 'idk']) { a[k] += s[k] || 0; a.fact[k] += f[k] || 0; }
+      a.rushed += s.rushed || 0; a.minutes += s.minutes || 0; a.learned += (s.learned || []).length;
+      for (const k of ['knew', 'trick', 'counted']) a.how[k] += h[k] || 0;
+      for (const k of ['round', 'combine', 'sam']) { a.est[k].ok += (e[k] || {}).ok || 0; a.est[k].n += (e[k] || {}).n || 0; }
+      return a;
+    }, { ...z(), fact: z(), rushed: 0, minutes: 0, learned: 0, how: { knew: 0, trick: 0, counted: 0 }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } } });
+  }
   const pctFluent = ids => { const facts = EM.uniq(ids.flatMap(id => EM.SK[id].facts)); return facts.filter(EM.isYours).length / facts.length; };
 
   // Catch-up targets (weeks since first use).
@@ -45,7 +55,7 @@
       { name: 'Facts to 20 incl. subtraction', by: 10, val: pctFluent(['teens', 'near', 'bridge', 'sub10', 'subteen']), fmt: v => `${Math.round(v * 100)}%`, done: v => v >= 0.8 },
       { name: 'Rounding to 10 / 100 / 1,000', by: 4, val: ['r10', 'r100', 'r1000'].filter(id => procDone(id, 0)).length, fmt: v => `${v}/3 solid`, done: v => v >= 3 },
       { name: 'Place value to 10,000', by: 3, val: ['pv_build', 'pv_count', 'compare', 'neighbors'].filter(id => procDone(id, 1)).length, fmt: v => `${v}/4`, done: v => v >= 4 },
-      { name: '"I counted" under 25% of answers', by: 4, val: (() => { const h = S().how, n = h.knew + h.trick + h.counted; return n ? h.counted / n : null; })(), fmt: v => v === null ? 'no data yet' : `${Math.round(v * 100)}%`, done: v => v !== null && v < 0.25 },
+      { name: '"I counted" under 25% when asked (last 2 weeks)', by: 4, val: (() => { const h = tot(weekSessions(14)).how, n = h.knew + h.trick + h.counted; return n ? h.counted / n : null; })(), fmt: v => v === null ? 'no data yet' : `${Math.round(v * 100)}%`, done: v => v !== null && v < 0.25 },
     ];
     return { wk, rows: rows.map(r => ({ ...r, ok: r.done(r.val), late: !r.done(r.val) && wk > r.by })) };
   }
@@ -54,10 +64,12 @@
   P.render = function ($app, ctx) {
     const S_ = S();
     const week = weekSessions(7), t = tot(week), answered = t.fast + t.slow + t.wrong + t.idk;
-    const prev = S_.sessions.filter(s => s.date > Date.now() - 14 * DAY && s.date <= Date.now() - 7 * DAY), tp = tot(prev), ansPrev = tp.fast + tp.slow + tp.wrong + tp.idk;
+    const prev = weekSessions(14, 7), tp = tot(prev);
+    const fa = t.fact, fAns = fa.fast + fa.slow + fa.wrong + fa.idk, fp = tp.fact, fAnsPrev = fp.fast + fp.slow + fp.wrong + fp.idk;
     const tried = Object.keys(S_.facts).length, yours = EM.countYours();
     const { wk, rows } = targets();
-    const h = S_.how, hn = h.knew + h.trick + h.counted;
+    const h = t.how, hn = h.knew + h.trick + h.counted, hp = tp.how, hnp = hp.knew + hp.trick + hp.counted;
+    const backupDue = !S_.backupAt || Date.now() - S_.backupAt > 7 * DAY;
     const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
     const arrow = (now, before) => before === null || before === undefined ? '' : now > before ? ' ↑' : now < before ? ' ↓' : ' →';
 
@@ -86,13 +98,15 @@
         <div class="kpis">
           <div class="kpi"><b>${week.length}</b><span>sessions · ${Math.round(t.minutes)} min</span></div>
           <div class="kpi ${yours ? 'ok' : ''}"><b>${yours}</b><span>facts hers for keeps, of ${tried} tried</span></div>
-          <div class="kpi ok"><b>${pct(t.fast, answered)}%${arrow(pct(t.fast, answered), ansPrev ? pct(tp.fast, ansPrev) : null)}</b><span>fast and right (known)</span></div>
-          <div class="kpi"><b>${pct(t.slow, answered)}%${arrow(pct(t.slow, answered), ansPrev ? pct(tp.slow, ansPrev) : null)}</b><span>right but slow (still counting)</span></div>
+          <div class="kpi ok"><b>${pct(fa.fast, fAns)}%${arrow(pct(fa.fast, fAns), fAnsPrev ? pct(fp.fast, fAnsPrev) : null)}</b><span>facts fast and right (known)</span></div>
+          <div class="kpi"><b>${pct(fa.slow, fAns)}%${arrow(pct(fa.slow, fAns), fAnsPrev ? pct(fp.slow, fAnsPrev) : null)}</b><span>facts right but slow (still counting)</span></div>
           <div class="kpi ${t.rushed ? 'warn' : 'ok'}"><b>${t.rushed}</b><span>rushed guesses</span></div>
           <div class="kpi"><b>${t.idk}</b><span>"I don't know" · ${t.learned} learned after help</span></div>
-          <div class="kpi ${hn && h.counted / hn > 0.5 ? 'warn' : ''}"><b>${hn ? Math.round(h.counted / hn * 100) + '%' : '–'}</b><span>"I counted" when asked how she knew (${hn} asked)</span></div>
+          <div class="kpi ${hn && h.counted / hn > 0.5 ? 'warn' : ''}"><b>${hn ? Math.round(h.counted / hn * 100) + '%' : '–'}${hnp ? arrow(Math.round(h.counted / hn * 100), Math.round(hp.counted / hnp * 100)) : ''}</b><span>"I counted" when asked how she knew (${hn} asked this week)</span></div>
+          ${t.est.round.n ? `<div class="kpi"><b>${pct(t.est.round.ok, t.est.round.n)}% · ${pct(t.est.combine.ok, t.est.combine.n)}%</b><span>estimating: rounding steps right · adding steps right</span></div>` : ''}
         </div>
-        <p style="margin-top:12px;color:var(--muted)">The signal you want: <b>fast-and-right rising</b>, <b>slow-right and "I counted" falling</b>, rushed guesses near zero.</p>
+        <p style="margin-top:12px;color:var(--muted)">The signal you want: <b>fast-and-right rising</b>, <b>slow-right and "I counted" falling</b>, rushed guesses near zero. Percentages are facts only; big-number work is tracked on the skill ladder below.</p>
+        ${backupDue ? '<p style="color:var(--danger)">No backup in the last week. Open Settings and save one (it takes 10 seconds).</p>' : ''}
         <div class="cal">${cal}</div><p style="font-size:13px;color:var(--muted);margin-top:6px">Last 28 days. Green = practiced.</p>
       </section>
 
@@ -157,8 +171,8 @@
       <label class="set">Read prompts aloud <input type="checkbox" data-set="tts" ${st.tts ? 'checked' : ''}></label>
       <label class="set">School work: estimating by rounding <input type="checkbox" data-bridge="est" ${st.bridge.est !== false ? 'checked' : ''}></label>
       <label class="set">School work: column add/subtract with regrouping <input type="checkbox" data-bridge="regroup" ${st.bridge.regroup !== false ? 'checked' : ''}></label>
-      <label class="set">Change PIN <input type="password" inputmode="numeric" maxlength="4" data-set="pin" placeholder="new 4 digits"></label>
-      <p style="margin-top:12px"><button class="btn secondary small" data-act="export">Download backup</button>
+      <label class="set">Grown-up PIN <button class="btn secondary small" data-act="changePin">Change PIN</button></label>
+      <p style="margin-top:12px"><button class="btn secondary small" data-act="export">Save a backup</button>
         <button class="btn secondary small" data-act="import">Restore backup</button>
         <button class="btn secondary small danger" data-act="reset">Reset all progress</button>
         <input type="file" id="importFile" accept="application/json" hidden></p>
@@ -175,11 +189,22 @@
   }
 
   // ---------- events ----------
-  function exportBackup() {
-    const url = URL.createObjectURL(new Blob([JSON.stringify(S(), null, 1)], { type: 'application/json' }));
-    const link = Object.assign(document.createElement('a'), { href: url, download: `ellie-math-${dayStr(Date.now())}.json` });
-    document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-    S().backupAt = Date.now(); EM.save();
+  // Share sheet on iPad (Files, AirDrop, Mail), download elsewhere. Only a confirmed save counts as a backup.
+  async function exportBackup() {
+    const name = `ellie-math-${dayStr(Date.now())}.json`, json = JSON.stringify(S(), null, 1);
+    let ok = false;
+    try {
+      const file = new File([json], name, { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); ok = true; }
+    } catch (e) { if (e && e.name === 'AbortError') return false; }
+    if (!ok) {
+      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      const link = Object.assign(document.createElement('a'), { href: url, download: name });
+      document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      ok = confirm(`Did the file "${name}" save? (Check Downloads or the Files app.)`);
+    }
+    if (ok) { S().backupAt = Date.now(); EM.save(); EM.render(); }
+    return ok;
   }
   document.addEventListener('click', async e => {
     const a = e.target.closest('[data-act]');
@@ -194,10 +219,17 @@
         }
         case 'export': return exportBackup();
         case 'import': return document.getElementById('importFile').click();
+        case 'changePin': {
+          const a = prompt('New 4-digit PIN'); if (!/^\d{4}$/.test(a || '')) { if (a !== null) alert('Four digits, please.'); return; }
+          const b = prompt('Type it again'); if (a !== b) { alert("Those didn't match. PIN not changed."); return; }
+          S().settings.pin = a; S().settings.pinHint = prompt('A hint for yourself (optional)', S().settings.pinHint || '') || ''; EM.save();
+          alert(`PIN changed. Hint: ${S().settings.pinHint || 'none'}`); return;
+        }
         case 'reset': {
-          exportBackup();
-          const word = prompt('A backup was just downloaded. Type RESET to erase all progress on this device.');
-          if (word === 'RESET') { EM.resetState(); pinOk = false; EM.go('home'); }
+          const saved = await exportBackup();
+          if (!saved && !confirm('No backup was saved. Erase anyway?')) return;
+          const word = prompt('Type RESET to erase all progress on this device.');
+          if (word === 'RESET') { try { await EM.idbPut('state:before-reset', JSON.stringify(S())); } catch (e) {} EM.resetState(); pinOk = false; EM.go('home'); }
           return;
         }
       }
@@ -220,7 +252,7 @@
     const S_ = S();
     if (e.target.id === 'importFile' && e.target.files[0]) {
       e.target.files[0].text().then(t => {
-        try { const s = JSON.parse(t); if (!s.facts || !s.settings) throw 0; EM.replaceState(s); alert('Backup restored.'); EM.render(); }
+        try { const s = JSON.parse(t); if (!s.facts || !s.settings) throw 0; const n = (s.sessions || []).length; if (!confirm(`Replace everything on this device with this backup (${n} sessions, ${Object.keys(s.facts).length} facts)?`)) return; EM.idbPut('state:before-restore', JSON.stringify(S())).catch(() => {}); EM.replaceState(s); alert('Backup restored.'); EM.render(); }
         catch (err) { alert("That file doesn't look like an Ellie Math backup."); }
       });
       return;
@@ -231,7 +263,6 @@
     if (b) { S_.settings.bridge[b] = e.target.checked; EM.save(); return; }
     const key = e.target.dataset.set; if (!key) return;
     if (key === 'name') S_.name = e.target.value.trim() || 'Ellie';
-    else if (key === 'pin') { if (/^\d{4}$/.test(e.target.value)) S_.settings.pin = e.target.value; else return; }
     else if (e.target.type === 'checkbox') S_.settings[key] = e.target.checked;
     else S_.settings[key] = Number(e.target.value);
     EM.save();

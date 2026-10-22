@@ -16,7 +16,7 @@
   EM.go = go; EM.render = render;
 
   // ---------- home ----------
-  function todayDone() { const d = dayStr(Date.now()); return S.sessions.some(s => dayStr(s.date) === d && s.kind === 'daily'); }
+  function todayDone() { const d = dayStr(Date.now()), need = S.settings.blockMin * S.settings.blocks / 2; return S.sessions.some(s => dayStr(s.date) === d && s.kind === 'daily' && (s.items >= 15 || (s.minutes || 0) >= need)); }
   function garden(n, limit = 60) {
     if (!n) return '<div class="garden-empty">Your garden is empty for now. Every fact you really know grows a flower here.</div>';
     const cols = ['#ef6a4c', '#f0b429', '#3d8bd6', '#c45cd6', '#4fb5a6', '#ff8fb1'];
@@ -34,6 +34,7 @@
           <li>🧠 Think first, then type. There's no rush.</li>
           <li>🙋 Not sure? Tap <b>I don't know</b>. That is the smart move here. Guessing teaches nothing.</li>
         </ul></div>
+        ${S.settings.pin ? '' : '<div class="card" style="border:2px dashed var(--rule)"><b>Grown-ups:</b> before she starts, press and hold the button below, set your PIN and record a few voice clips.</div>'}
         <button class="grownup" data-hold="parent"><span class="fillbar"></span>Grown-ups: press and hold</button>
       </main>`;
       return;
@@ -96,7 +97,8 @@
       if (S.settings.blocks >= 3) blocks.push({ name: 'School work', cap, build: () => { const ids = openIds('C'); return { items: ids.length ? procQueueItems(ids, 8) : procQueueItems(openIds('B'), 10), spare: [] }; } });
     }
     R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : "Today's practice", blocks, bi: -1, started: Date.now(),
-      stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {} }, missed: {}, yoursNow: [], howCount: 0, clipPlays: 0 };
+      stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {}, how: { knew: 0, trick: 0, counted: 0 },
+        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } } }, missed: {}, yoursNow: [], howCount: 0, clipPlays: 0 };
     screen = 'practice';
     nextBlock();
   }
@@ -128,6 +130,7 @@
 
   // ---------- items ----------
   // All item/step transitions go through here so a quit or a new session cancels pending timers.
+  const CONFIRM_MS = 2000;
   function later(fn, ms) { const run = R; clearTimeout(R.nextT); R.nextT = setTimeout(() => { if (run === R && !run.ended) fn(); }, ms); }
   const curStep = () => R.cur.steps[R.step];
   const digitsAllowed = () => Math.max(1, String(curStep().ans).length);
@@ -147,13 +150,15 @@
   }
   // Starts the clock for the current step, after speech if the prompt is spoken.
   function startStepClock() {
+    clearTimeout(R.speechT);
     const st = curStep();
     R.t0 = null; R.tLast = null;
     const spoken = R.cur.kind === 'proc' && st.say && EM.speech.enabled();
     if (R.waitReady) return; // look items: clock starts on "Ready"
     if (spoken) {
+      const run = R, item = R.cur, step = R.step;
       R.waitSpeech = true; setPadHidden(true);
-      const release = () => { if (R.waitSpeech) { R.waitSpeech = false; setPadHidden(false); R.t0 = performance.now(); } };
+      const release = () => { if (run === R && !run.ended && R.cur === item && R.step === step && R.waitSpeech) { R.waitSpeech = false; setPadHidden(false); R.t0 = performance.now(); } };
       EM.speech.say(st.say).then(release);
       R.speechT = setTimeout(release, EM.speech.estimateMs(st.say) + 300);
     } else {
@@ -203,8 +208,10 @@
     clearTimeout(R.flashT);
     const st = curStep(), typed = Number(R.input), ok = typed === st.ans;
     if (R.phase === 'help') return helpSubmit(ok);
-    const ms = (R.tLast || performance.now()) - (R.t0 || performance.now());
-    const fast = ms <= EM.fastMs(R.cur, R.step);
+    const now = performance.now();
+    const ms = (R.tLast || now) - (R.t0 || now);
+    const gap = now - (R.tLast || now); // time spent looking at the typed answer before ✓ (finger-checking a guess)
+    const fast = ms <= EM.fastMs(R.cur, R.step) && gap <= CONFIRM_MS;
     if (ok) {
       R.stepRes.push({ ok: true, fast, ms, firstTry: true });
       if (R.step + 1 < R.cur.steps.length) return nextStep(fast ? pick(['⚡ Yes!', '⚡ Quick!']) : '✓ Right!');
@@ -291,8 +298,14 @@
     } else if (graded && it.kind === 'proc') {
       const g = EM.gradeProc(it.skillId, it.level, { ok: outcome === 'fast' || outcome === 'slow', fast: outcome === 'fast', scaff: it.scaff, outcome }); leveledUp = g.leveledUp;
       if (it.samCaught && allFirst) R.stats.samCaught = (R.stats.samCaught || 0) + 1;
+      if (it.type === 'est') res.forEach((r, i) => {
+        const bucket = it.steps[i].sam ? 'sam' : i < 2 ? 'round' : 'combine', e = R.stats.est[bucket]; e.n++; if (r.firstTry) e.ok++;
+        // the two rounding steps also feed her rounding record
+        if (i < 2) EM.gradeProc(it.level === 2 ? 'r1000' : 'r100', it.level === 2 ? 0 : 0, { ok: r.firstTry, fast: r.firstTry && r.fast, scaff: it.scaff, outcome: r.idk ? 'idk' : r.firstTry ? (r.fast ? 'fast' : 'slow') : 'wrong' });
+      });
     }
-    if (graded) { R.stats[outcome]++; if (outcome === 'fast' || outcome === 'slow') R.stats.times.push(ms); }
+    if (graded) { R.stats[outcome]++; R.stats.byKind[it.kind][outcome]++; if (outcome === 'fast' || outcome === 'slow') R.stats.times.push(ms); }
+    if (R.kind !== 'placement') saveInflight();
     if (it.mode === 'reask' && (outcome === 'fast' || outcome === 'slow')) { const m = R.missed[it.key]; if (m && !m.learned) { m.learned = true; R.stats.learned.push({ label: it.label, idk: m.idk }); } }
     if (outcome === 'wrong' || outcome === 'idk') { if (!R.missed[it.key]) R.missed[it.key] = { label: it.label, idk: outcome === 'idk', learned: false }; if (it.mode !== 'reask' && R.kind !== 'placement') queueReask(it); if (it.mode === 'probe' && R.kind !== 'placement' && ++R.failedProbes >= 3) R.queue = R.queue.filter((e, i) => i <= R.idx || e.mode !== 'probe'); }
     if (it.mode === 'probe' && outcome === 'fast') { /* she already knew it: nothing to teach */ }
@@ -389,16 +402,27 @@
     R.ended = true;
     clearTimeout(R.nextT); clearTimeout(R.flashT); clearTimeout(R.breakT); clearTimeout(R.speechT); EM.speech.stop();
     const st = R.stats, answered = st.fast + st.slow + st.wrong + st.idk;
-    const minutes = Math.round((Date.now() - R.started) / 6000) / 10;
-    if (answered) {
-      EM.logSession({ date: Date.now(), kind: R.kind === 'skill' ? 'skill' : R.kind, title: R.title, items: st.items, fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk, rushed: st.rushed, relooks: st.relooks, minutes,
-        avg: st.times.length ? Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length) : 0, learned: st.learned.map(l => l.label), fastKeys: st.fastKeys.slice(0, 40), tricks: st.tricks, samCaught: st.samCaught || 0 });
-    }
+    delete S.inflight;
+    if (answered) EM.logSession(sessionRecord()); else EM.save();
     if (R.kind === 'placement' && (answered >= 15 || R.idx >= R.queue.length)) { seedLevels(); S.placement.done = true; S.placement.at = Date.now(); EM.save(); }
     R.newSkills = EM.newlyOpened();
     screen = answered ? 'summary' : 'home';
     render();
     if (answered && R.newSkills.length) unlockCeremony(R.newSkills, () => {});
+  }
+
+  // Keep the in-flight session in saved state so an iOS-killed app still logs the day.
+  function sessionRecord() {
+    const st = R.stats;
+    return { date: Date.now(), kind: R.kind === 'skill' ? 'skill' : R.kind, title: R.title, items: st.items, fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk, rushed: st.rushed, relooks: st.relooks,
+      minutes: Math.round((Date.now() - R.started) / 6000) / 10, avg: st.times.length ? Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length) : 0,
+      learned: st.learned.map(l => l.label), fastKeys: st.fastKeys.slice(0, 40), tricks: st.tricks, samCaught: st.samCaught || 0, how: st.how, byKind: st.byKind, est: st.est };
+  }
+  function saveInflight() { S.inflight = sessionRecord(); EM.save(); }
+  function closeInflight() {
+    const f = S.inflight; if (!f) return;
+    delete S.inflight;
+    if (f.items > 0) { f.title += ' (interrupted)'; EM.logSession(f); } else EM.save();
   }
 
   // After placement, start each procedure at the highest level she answered fast and right today.
@@ -487,7 +511,7 @@
     if (tr) return trickTap(tr.dataset.trick);
     const a = e.target.closest('[data-act]');
     if (!a) return;
-    EM.speech.prime();
+    EM.speech.prime(); EM.clips.prime();
     switch (a.dataset.act) {
       case 'home': return go('home');
       case 'skills': return go('skills');
@@ -507,7 +531,7 @@
   });
   document.addEventListener('click', e => {
     const h = e.target.closest('[data-how]');
-    if (h) { S.how[h.dataset.how] = (S.how[h.dataset.how] || 0) + 1; EM.save(); return closeOverlay(); }
+    if (h) { const k = h.dataset.how; S.how[k] = (S.how[k] || 0) + 1; if (R && R.stats.how) R.stats.how[k]++; EM.save(); return closeOverlay(); }
     if (e.target.closest('[data-quit]')) { closeOverlay(); return finishSession(); }
     if (e.target.closest('[data-close]')) return closeOverlay();
   });
@@ -529,7 +553,7 @@
   document.addEventListener('contextmenu', e => { if (e.target.closest('[data-hold]')) e.preventDefault(); });
 
   // ---------- boot ----------
-  EM.recoverIfNeeded().then(r => { if (r) render(); });
+  EM.recoverIfNeeded().then(r => { closeInflight(); if (r) render(); });
   EM.persist();
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
   render();

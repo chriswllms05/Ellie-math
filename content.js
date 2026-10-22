@@ -59,6 +59,7 @@
     }
     return h + '</div>';
   }
+  function discsTrio(ns) { const four = Math.max(...ns) >= 1000; return `<div class="pvpair">${ns.map(n => `<div><div class="pvtitle">${fmt(n)}</div>${discs(n, { four, counts: true })}</div>`).join('')}</div>`; }
   function discsPair(a, b) { return `<div class="pvpair"><div><div class="pvtitle">${fmt(a)}</div>${discs(a, { four: Math.max(a, b) >= 1000, counts: true })}</div><div><div class="pvtitle">${fmt(b)}</div>${discs(b, { four: Math.max(a, b) >= 1000, counts: true })}</div></div>`; }
   // Vertical algorithm display. rows: [a, b], op, filled: array of result digits from the right (strings), carries: {colIdx: n}
   function column(a, b, op, filled, carries, regroupNote) {
@@ -209,18 +210,26 @@
       }, label: `Count on by ${fmt(by)} from ${fmt(start)}` };
   }
   function genCompare(level) {
+    // Three numbers, two typed answers (biggest, then smallest): copying at random is a 1-in-6 shot, not a coin flip.
     const d = level === 0 ? 3 : 4;
-    let a = withZero(d), b;
-    if (Math.random() < 0.5) { const s = String(a).split(''); shuffle(s); b = Number(s.join('')); if (b === a || String(b).length < d) b = withZero(d); }
-    else { b = a + pick([-1, 1]) * pick([1, 10, 100, 1000].slice(0, d - 1)) * rint(1, 3); if (b < 10 ** (d - 1) || b > 10 ** d - 1) b = withZero(d); }
-    if (a === b) b = a + 1;
-    const ans = Math.max(a, b), [x, y] = shuffle([a, b]);
-    const vis = discsPair(x, y);
-    // first place where they differ
-    const sx = String(x).padStart(d, '0'), sy = String(y).padStart(d, '0'); let i = 0; while (i < d && sx[i] === sy[i]) i++;
-    const place = ['thousands', 'hundreds', 'tens', 'ones'].slice(4 - d)[i];
-    return { type: 'pv', steps: [{ ans, html: `<div class="ask">Which is bigger? Type it.</div><div class="eq cmp">${fmt(x)} <span class="or">or</span> ${fmt(y)}</div><div class="eq">${slotN}</div>`, say: `Which is bigger? ${fmt(x)}, or ${fmt(y)}? Type the bigger one.`, vis: '' }],
-      help: (k, stage) => stage === 1 ? { vis, html: `Start with the biggest place. Look at the <b>${place}</b>: ${sx[i]} or ${sy[i]}?`, say: `Start with the biggest place. Look at the ${place}. ${sx[i]} or ${sy[i]}?` } : { vis, html: `${Math.max(Number(sx[i]), Number(sy[i]))} ${place} is more. <b>${fmt(ans)}</b> is bigger. Type <b>${fmt(ans)}</b>.`, say: `${fmt(ans)} is bigger. Type ${fmt(ans)}.` }, label: `Compare ${fmt(x)} and ${fmt(y)}` };
+    const near = a => { if (Math.random() < 0.5) { const sd = String(a).split(''); shuffle(sd); const b = Number(sd.join('')); if (b !== a && String(b).length === d) return b; } const b = a + pick([-1, 1]) * pick([1, 10, 100, 1000].slice(0, d - 1)) * rint(1, 3); return b >= 10 ** (d - 1) && b <= 10 ** d - 1 && b !== a ? b : null; };
+    const a = withZero(d); let b = near(a), c = near(a), tries = 0;
+    while ((b === null || c === null || b === c || b === a || c === a) && tries++ < 20) { if (b === null || b === a) b = near(a); if (c === null || c === a || c === b) c = near(a) || withZero(d); }
+    if (b === null || b === a) b = a + 1; if (c === null || c === a || c === b) c = a - 1;
+    const nums = shuffle([a, b, c]), big = Math.max(a, b, c), small = Math.min(a, b, c);
+    const vis = discsTrio(nums);
+    const place = (x, y) => { const sx = String(x).padStart(d, '0'), sy = String(y).padStart(d, '0'); let i = 0; while (i < d && sx[i] === sy[i]) i++; return ['thousands', 'hundreds', 'tens', 'ones'].slice(4 - d)[Math.min(i, d - 1)]; };
+    const line = `<div class="eq cmp">${nums.map(fmt).join(' <span class="or">or</span> ')}</div>`;
+    return { type: 'pv', steps: [
+        { ans: big, html: `<div class="ask">Which is the biggest? Type it.</div>${line}<div class="eq">${slotN}</div>`, say: `Which is the biggest? ${nums.map(fmt).join(', or ')}? Type the biggest one.`, vis: '' },
+        { ans: small, html: `<div class="ask">And which is the smallest?</div>${line}<div class="eq">${slotN}</div>`, say: `And which is the smallest?`, vis: '' },
+      ],
+      help: (k, stage) => {
+        const target = k === 0 ? big : small, word = k === 0 ? 'biggest' : 'smallest';
+        const others = nums.filter(n => n !== target), p = place(target, others[0]);
+        return stage === 1 ? { vis, html: `Start with the biggest place. Compare the <b>${p}</b>. Which has the ${k === 0 ? 'most' : 'fewest'}?`, say: `Start with the biggest place. Compare the ${p}. Which has the ${k === 0 ? 'most' : 'fewest'}?` }
+          : { vis, html: `<b>${fmt(target)}</b> is the ${word}. Type <b>${fmt(target)}</b>.`, say: `${fmt(target)} is the ${word}. Type ${fmt(target)}.` };
+      }, label: `Compare ${nums.map(fmt).join(', ')}` };
   }
   function genNeighbors(level) {
     const to = level === 0 ? 10 : level === 1 ? 100 : pick([10, 100, 1000]);
@@ -343,7 +352,8 @@
   }
 
   // ---------- Track C: column addition / subtraction with regrouping ----------
-  function genRegroup(level) {
+  function genRegroup(level, tier) {
+    const hint = tier === 0; // regrouping decision shown for her only while the skill is new
     const opAdd = level % 2 === 0, d = level < 2 ? 3 : 4, lo = 10 ** (d - 1), hi = 10 ** d - 1;
     let a, b, tries = 0;
     do {
@@ -363,8 +373,8 @@
       if (opAdd) {
         const s = x + y + carry, isLast = i === cols - 1, ansCol = isLast ? s : s % 10, note = carry ? ` and the ${carry} we carried` : '';
         const snapshot = { filled: filled.slice(), carries: { ...carries } };
-        steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${x} + ${y}${carry ? ` + ${carry}` : ''} = ?${!isLast && s >= 10 ? ' <small>Write the ones digit. The ten gets carried.</small>' : ''}</div><div class="eq">${slotN}</div>`,
-          say: `${cap(names[i])}. ${x} plus ${y}${note}. ${!isLast && s >= 10 ? 'Type just the ones digit. The ten carries over.' : ''}`,
+        steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${x} + ${y}${carry ? ` + ${carry}` : ''} = ?${hint && !isLast && s >= 10 ? ' <small>Write the ones digit. The ten gets carried.</small>' : ''}</div><div class="eq">${slotN}</div>`,
+          say: `${cap(names[i])}. ${x} plus ${y}${note}. ${hint && !isLast && s >= 10 ? 'Type just the ones digit. The ten carries over.' : ''}`,
           vis: () => column(a, b, op, snapshot.filled, snapshot.carries), full: s, carryOut: !isLast && s >= 10 ? 1 : 0, x, y, cin: carry });
         filled.push(ansCol); if (!isLast && s >= 10) carries[i + 1] = 1; carry = !isLast && s >= 10 ? 1 : 0;
       } else {
@@ -377,8 +387,8 @@
         const wasNote = borrow ? ` <small>(${x} before; 1 ${unit} went to the ${names[i - 1]})</small>` : '';
         if (needB) note = x2 < 0 ? `Regroup: 1 ${nextUnit} becomes 10 ${names[i]}. One already went to the ${names[i - 1]}, so 9 ${names[i]}. Now 9 take away ${y}.` : `Regroup: 1 ${nextUnit} becomes 10 ${names[i]}. Now ${x2 + 10} take away ${y}.`;
         const ansCol = needB ? x2 + 10 - y : x2 - y;
-        steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${Math.max(0, x2)}${wasNote} − ${y}${needB ? ` <small>Not enough. ${note}</small>` : ''}</div><div class="eq">${slotN}</div>`,
-          say: `${cap(names[i])}. ${Math.max(0, x2)} take away ${y}. ${needB ? note : ''}`, vis: () => column(a, b, op, snapshot.filled, snapshot.carries), x: x2, y, needB, shown });
+        steps.push({ ans: ansCol, col: i, html: `<div class="ask">${cap(names[i])}: ${Math.max(0, x2)}${hint ? wasNote : ''} − ${y}${hint && needB ? ` <small>Not enough. ${note}</small>` : ''}</div><div class="eq">${slotN}</div>`,
+          say: `${cap(names[i])}. ${Math.max(0, x2)} take away ${y}. ${hint && needB ? note : ''}`, vis: () => column(a, b, op, snapshot.filled, snapshot.carries), x: x2, y, needB, shown });
         filled.push(ansCol); if (needB) { carries[i] = x2 + 10; borrow = 1; } else borrow = 0;
       }
     }
@@ -397,7 +407,8 @@
         }
         const start = st.needB ? st.x + 10 : st.x, cells = fill(start, 'a'); for (let k = 0; k < st.y; k++) cells[start - 1 - k] = 'x';
         const vis = frames(cells);
-        if (stage === 1) return { vis, html: `${start} take away ${st.y}. ${st.y} and what make ${start}?`, say: `${start} take away ${st.y}. ${st.y} and what make ${start}?` };
+        const reg = st.needB ? `Not enough ${names[st.col]} to take ${st.y} away, so regroup: 1 ${names[st.col + 1].slice(0, -1)} becomes 10 ${names[st.col]}. Now ${start} take away ${st.y}. ` : '';
+        if (stage === 1) return { vis, html: `${reg}${start} take away ${st.y}. ${st.y} and what make ${start}?`, say: `${reg}${start} take away ${st.y}. ${st.y} and what make ${start}?` };
         return { vis, html: `${st.y} and ${st.ans} make ${start}. Write <b>${st.ans}</b>. Type <b>${st.ans}</b>.`, say: `${st.y} and ${st.ans} make ${start}. Type ${st.ans}.` };
       }, label: `${fmt(a)} ${op} ${fmt(b)} in columns` };
   }
@@ -417,7 +428,7 @@
     else if (skillId === 'compare') g = genCompare(level);
     else if (skillId === 'neighbors') g = genNeighbors(level);
     else if (skillId === 'est') g = genEst(level, level >= 1 && (estAlt++ % 2 === 1));
-    else if (skillId === 'regroup') g = genRegroup(level);
+    else if (skillId === 'regroup') g = genRegroup(level, tier);
     else g = genRound(skillId, level);
     // The teaching scaffold (dot already placed on the line) is shown only at tier 0; answers given with it never count toward fluency.
     const scaff = tier === 0 && ['neighbors', 'r10', 'r100', 'r1000', 'est'].includes(skillId);

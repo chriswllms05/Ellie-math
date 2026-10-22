@@ -38,16 +38,17 @@
       u.onend = () => finish(true);
       u.onerror = () => finish(false);
       current = u;
-      // Safari sometimes never fires onend: release after ~0.45 s per word + 0.6 s.
-      fallbackT = setTimeout(() => finish(false), 600 + words.split(/\s+/).length * 450);
+      // Safari sometimes never fires onend: release after an estimate of the spoken length (re-armed when speech actually starts).
+      fallbackT = setTimeout(() => finish(false), estimateMs(words) + 1500);
+      u.onstart = () => { clearTimeout(fallbackT); fallbackT = setTimeout(() => finish(false), estimateMs(words) + 800); };
       try { synth.speak(u); } catch (e) { finish(false); }
       // A later say() supersedes this one.
       const guard = setInterval(() => { if (mySeq !== seq) { clearInterval(guard); finish(false); } if (done) clearInterval(guard); }, 200);
     });
   }
   function stop() { clearTimeout(fallbackT); try { if (synth) synth.cancel(); } catch (e) {} current = null; }
-  // Rough duration estimate, for timers that must not depend on onend.
-  const estimateMs = text => 600 + String(text || '').split(/\s+/).length * 450;
+  // Rough duration estimate, for timers that must not depend on onend. Digits are spoken as words, so they cost more than letters.
+  function estimateMs(text) { const s = String(text || ''); const digits = (s.match(/\d/g) || []).length; const letters = s.replace(/[\d\s,.?!]/g, '').length; return Math.max(1500, 900 + letters * 75 + digits * 600); }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && synth) { try { synth.cancel(); synth.resume && synth.resume(); } catch (e) {} } });
   EM.speech = { prime, say, stop, enabled, estimateMs, get voice() { return voice; } };
 
@@ -85,7 +86,13 @@
     return out;
   };
   clips.remove = k => EM.idbDel(k);
-  let audioEl = null;
+  let audioEl = null, audioBlessed = false;
+  const SILENT = 'data:audio/wav;base64,UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA';
+  // Start the shared <audio> inside a tap so iOS lets clips play later from timers and promises.
+  clips.prime = function () {
+    if (audioBlessed) return;
+    try { audioEl = audioEl || new Audio(); audioEl.src = SILENT; audioBlessed = true; const p = audioEl.play(); if (p && p.catch) p.then(() => audioEl.pause()).catch(() => { audioBlessed = false; }); } catch (e) { audioBlessed = false; }
+  };
   clips.play = async function (key) {
     try {
       const have = key ? [key] : await clips.list();

@@ -355,6 +355,13 @@
   }
   function unlockCeremony(skills, next) {
     if (!skills.length) return next();
+    if (skills.length > 2) {
+      // Many at once (after placement): one ceremony, not a parade.
+      EM.sfx.unlock(); confetti();
+      overlay(`<div class="celebrate">🔓</div><h2>${skills.length} skills unlocked!</h2><p>${skills.map(s => `${s.icon} <b>${esc(s.name)}</b>`).join('<br>')}</p><button class="big-btn" data-close="1">Awesome</button>`, next);
+      EM.speech.say(`${skills.length} skills unlocked!`).then(() => EM.clips.play());
+      return;
+    }
     const sk = skills[0];
     EM.sfx.unlock(); confetti();
     overlay(`<div class="celebrate">${sk.icon}</div><h2>New skill unlocked!</h2><p><b>${esc(sk.name)}</b><br>${esc(sk.desc)}</p><button class="big-btn" data-close="1">Awesome</button>`, () => unlockCeremony(skills.slice(1), next));

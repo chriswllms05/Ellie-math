@@ -2,7 +2,7 @@
 
 ## Where things are
 
-**Ellie Math v1 is built, reviewed and working** in `ellie-math/` on this session's branch (`claude/math-facts-learning-app-vkrniw`). It's a standalone folder; nothing in the Alero site pages links to it or changed. Everything from SPEC-v1 marked v1 is in.
+**Ellie Math v1 is built, reviewed and working.** It lives in its own repository, https://github.com/chriswllms05/ellie-math. Everything from SPEC-v1 marked v1 is in.
 
 ### Verification so far
 - Browser play-tests (`tests/playtest.js`): five personas (knower, guesser, counter, IDK-spammer, mixed), a six-day simulated run, content sanity across every fact and ~2,000 generated items, and regression checks for every bug the review found.
@@ -41,15 +41,14 @@ Parent side:
 
 ## Needs you
 
-1. **Push to GitHub failed (403)** every time: Claude doesn't have access to `chriswllms05/alero-site`. Everything is committed locally (9 commits). Fix at https://claude.ai/connect-github (reconnect, and install the Claude GitHub App on the repo). Then say "push". Longer term this belongs in its own repo; a two-minute move once access works.
-2. **Hosting**: needs an https origin for speech, offline and home-screen install. GitHub Pages from its own repo is simplest. Until then, from your Mac: `python3 -m http.server 8000` inside `ellie-math/`, then `http://<mac-ip>:8000/` on the iPad.
-3. **Test on her iPad before day 1**: speech voice and timing, mute switch, microphone permission for voice clips, Add to Home Screen, backup via share sheet. I can't run real Safari here.
-4. **One worksheet photo**: 4-digit numbers to the nearest 10/100, or to the nearest 1,000? Both are in; it decides what School-work leads with.
-5. **Her theme** (garden / ocean / space / animals…) for the visual pass. Not started until she picks.
+1. **Turn on GitHub Pages** (one time): repo Settings → Pages → Source: *Deploy from a branch*, Branch: `main`, folder `/ (root)` → Save. A minute later the app is at https://chriswllms05.github.io/ellie-math/. Open that in Safari on the iPad and Add to Home Screen.
+2. **Test on her iPad before day 1**: speech voice and timing, mute switch, microphone permission for voice clips, Add to Home Screen, backup via share sheet. I can't run real Safari here.
+3. **One worksheet photo**: 4-digit numbers to the nearest 10/100, or to the nearest 1,000? Both are in; it decides what School-work leads with.
+4. **Her theme** (garden / ocean / space / animals…) for the visual pass. Not started until she picks.
 
 ## How to look at it
 
-Open `ellie-math/index.html` in a browser on the Mac for a tour (sound and install need a server; everything else works). Read `FIRST-WEEK.md` before her first session; it now matters that **you set the PIN and record clips before she touches it**, because the PIN can be claimed by whoever sets it first.
+Open https://chriswllms05.github.io/ellie-math/ once Pages is on (or `index.html` locally) for a tour (sound and install need a server; everything else works). Read `FIRST-WEEK.md` before her first session; it now matters that **you set the PIN and record clips before she touches it**, because the PIN can be claimed by whoever sets it first.
 
 ## Decisions made without you (easy to change)
 

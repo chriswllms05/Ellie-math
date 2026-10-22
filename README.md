@@ -7,7 +7,7 @@ A number-sense and math-facts practice app for one 3rd grader, built to reward k
 Serve the folder over https (or http on a local network) and open `index.html`. Opening the file directly (`file://`) works for a quick look but speech, the service worker and home-screen install need a real origin.
 
 - Quick local server: `python3 -m http.server 8000` in this folder, then `http://<your-mac-ip>:8000/` on the iPad.
-- Hosting: any static host (GitHub Pages, Netlify, Cloudflare Pages). Keep all files together.
+- Hosting: GitHub Pages from this repo (Settings → Pages → branch `main`, folder `/`), served at https://chriswllms05.github.io/ellie-math/. Any static host works; keep all files together.
 - On the iPad: open in Safari → Share → **Add to Home Screen**. Launch from the icon; it runs full screen and offline.
 
 ## What's in it

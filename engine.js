@@ -224,6 +224,7 @@
     const sk = EM.SK[id]; if (!sk) return false;
     if (skillRec(id).manual) return true;
     if (sk.track === 'C' && S.settings.bridge[id] === false) return false;
+    if (S.unlockedSeen && S.unlockedSeen[id]) return true; // once she has it, a new prerequisite never takes it away
     return (sk.requires || []).every(reqMet);
   }
   function skillSummary(id) {
@@ -246,7 +247,8 @@
     const st = item.steps[step || 0];
     const digits = String(st.ans).length;
     let ms = base + 600 * Math.max(0, digits - 1);
-    ms += ({ look: 1500, sub: 1000, rnd: 2000, pv: 2000, est: 2000, regroup: 1500 })[item.type] || 0;
+    ms += ({ look: 1500, sub: 1000, rnd: 2000, pv: 2000, est: 2000, regroup: 1500, line: 3000 })[item.type] || 0;
+    if (st.line) ms -= 600 * Math.max(0, digits - 1); // dragging, not typing digits
     if (item.type === 'rnd' && st.ans >= 1000) ms += 1000;
     if (st.extraMs) ms += st.extraMs;
     return ms;

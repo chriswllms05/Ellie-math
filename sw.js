@@ -1,6 +1,6 @@
 /* Ellie Math service worker: cached copy first if the network is slow, never caches a bad response, updates on the next launch. */
-const VERSION = 'ellie-math-v6';
-const JS = ['engine', 'content', 'audio', 'theme', 'world', 'avatar', 'teach', 'parent', 'app'].map(n => `./${n}.js?v=6`);
+const VERSION = 'ellie-math-v7';
+const JS = ['engine', 'content', 'audio', 'manip', 'theme', 'world', 'avatar', 'teach', 'parent', 'app'].map(n => `./${n}.js?v=7`);
 const FILES = ['./', './index.html', ...JS, './fonts/fredoka-latin-500-normal.woff2', './fonts/fredoka-latin-600-normal.woff2', './fonts/fredoka-latin-700-normal.woff2', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

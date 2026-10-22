@@ -37,6 +37,10 @@
       if (!wrong) return { ans, line: `${b} and ${ans} make ${a}… so ${ans}?`, wrongDot: false };
       return { ans: ans + 1, line: `${b} and ${ans + 1} make ${a}… so ${ans + 1}?`, wrongDot: true };
     }
+    if (f.type === 'bond') {
+      if (!wrong) return { ans, line: `${f.p} and ${ans} make ${f.w}?`, wrongDot: false };
+      return { ans: ans + 1, line: `${f.p} and ${ans + 1} make ${f.w}?`, wrongDot: true };
+    }
     if (f.type === 'm10') {
       if (!wrong) return { ans, line: `${f.a} and ${ans} make 10, I think?`, wrongDot: false };
       return { ans: ans + 1, line: `${f.a} and ${ans + 1} make 10, I think?`, wrongDot: true };

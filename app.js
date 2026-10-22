@@ -253,14 +253,16 @@
     R.t0 = performance.now();
   }
 
+  // Number-line steps: the marker is the answer (no typing).
+  EM.manip.onLine = v => { if (!R || screen !== 'practice' || R.lock || R.waitSpeech || !curStep().line) return false; R.input = String(v); R.tLast = performance.now(); if (R.t0 === null) R.t0 = R.tLast; };
   function typeDigit(d) {
-    if (!R || R.lock || R.waitReady || R.waitTrick || R.waitSpeech) return;
+    if (!R || R.lock || R.waitReady || R.waitTrick || R.waitSpeech || curStep().line) return;
     if (R.input.length >= digitsAllowed()) return;
     R.input = R.input === '0' ? d : R.input + d;
     R.tLast = performance.now();
     updateSlot();
   }
-  function backspace() { if (!R || R.lock) return; R.input = R.input.slice(0, -1); R.tLast = R.input ? performance.now() : null; updateSlot(); }
+  function backspace() { if (!R || R.lock || curStep().line) return; R.input = R.input.slice(0, -1); R.tLast = R.input ? performance.now() : null; updateSlot(); }
   function updateSlot() { const s = document.querySelector('.slot'); if (s) s.innerHTML = R.input ? fmt(Number(R.input)) : '&nbsp;'; }
   function showMsg(kind, html) { R.msg = { kind, html }; const m = document.querySelector('.msg'); if (m) { m.className = `msg ${kind}`; m.innerHTML = html; } }
   // Dot reacts to what just happened; only the face changes, the question stays still.
@@ -270,7 +272,7 @@
   function submit() {
     if (!R || R.lock || !R.input || R.waitReady || R.waitTrick || R.waitSpeech) return;
     clearTimeout(R.flashT);
-    const st = curStep(), typed = Number(R.input), ok = typed === st.ans;
+    const st = curStep(), typed = Number(R.input), ok = st.tol !== undefined ? Math.abs(typed - st.ans) <= st.tol : typed === st.ans;
     if (R.phase === 'help') return helpSubmit(ok);
     const now = performance.now();
     const ms = (R.tLast || now) - (R.t0 || now);
@@ -495,7 +497,7 @@
     if (!list.length) return;
     const [at, emoji, name] = list[0], t = T();
     EM.sfx.yours(); confetti();
-    overlay(`<div class="celebrate-row">${S.avatar ? EM.avatar.draw(undefined, 70, 'cheer') : ''}${D('wow', 80)}<span class="milestone-big">${emoji}</span></div><h2>Surprise!</h2><p>You really know <b>${at}</b> facts, so ${name} moved into your ${t.place}!</p><button class="big-btn" data-close="1">Hello, ${name.replace(/^(a|an|the) /, '')}!</button>`, () => milestoneCeremony(list.slice(1)));
+    overlay(`<div class="celebrate-row">${S.avatar ? EM.avatar.draw(undefined, 70, 'cheer') : ''}${D('wow', 80)}<span class="milestone-big">${emoji}</span></div><h2>Surprise!</h2><p>You really know <b>${at}</b> facts, so ${name} moved into your ${t.place}! <br><small>You can drag it anywhere you like.</small></p><button class="big-btn" data-close="1">Hello, ${name.replace(/^(a|an|the) /, '')}!</button>`, () => milestoneCeremony(list.slice(1)));
     { const tok = overlayTok; EM.speech.say(`Surprise! ${name} moved into your ${t.place}!`).then(() => playClip(tok)); }
   }
   function zoneSheet(id) {
@@ -587,8 +589,8 @@
         ${stageHTML()}
         <div class="msg ${R.msg ? R.msg.kind : ''}" aria-live="polite">${R.msg ? R.msg.html : ''}</div>
       </div>
-      <div class="pad${hidden ? ' hidden' : ''}">${range(1, 9).map(d => `<button data-d="${d}">${d}</button>`).join('')}
-        <button data-act="back" aria-label="Delete">⌫</button><button data-d="0">0</button><button class="ok" data-act="ok" aria-label="Check">✓</button></div>
+      ${curStep().line ? `<div class="pad linepad${hidden ? ' hidden' : ''}"><button class="ok" data-act="ok">Check ✓</button></div>` : `<div class="pad${hidden ? ' hidden' : ''}">${range(1, 9).map(d => `<button data-d="${d}">${d}</button>`).join('')}
+        <button data-act="back" aria-label="Delete">⌫</button><button data-d="0">0</button><button class="ok" data-act="ok" aria-label="Check">✓</button></div>`}
       ${help && R.helpStage === 1 ? '<button class="idk showme hidden" data-act="showme">🙋 Show me</button>' : `<button class="idk${hidden || help ? ' hidden' : ''}" data-act="idk">🙋 I don't know</button>`}
     </main>`;
   }

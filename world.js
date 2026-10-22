@@ -9,13 +9,15 @@
 
   // ---------- which zone each fact lives in (its first foundation skill) ----------
   let homeOf = null;
+  const HOST = { bonds: 'm10' }; // number bonds share the Partners zone (they're partners of every number)
   function zoneFacts() {
     if (homeOf) return homeOf;
     homeOf = {};
     const seen = new Set();
     for (const id of EM.TRACKS.A.skills) {
-      homeOf[id] = EM.SK[id].facts.filter(k => !seen.has(k));
-      homeOf[id].forEach(k => seen.add(k));
+      const z = HOST[id] || id, keys = EM.SK[id].facts.filter(k => !seen.has(k));
+      homeOf[z] = (homeOf[z] || []).concat(keys);
+      keys.forEach(k => seen.add(k));
     }
     return homeOf;
   }
@@ -25,14 +27,14 @@
   // ---------- zone layout: three rows in perspective ----------
   // Big skills go in front where there's room; small ones at the back.
   const ZONES = [
-    { id: 'doubles', x: 95, y: 228, w: 240, h: 108, s: 0.62 }, { id: 'm10', x: 380, y: 228, w: 240, h: 108, s: 0.62 }, { id: 'near', x: 665, y: 228, w: 240, h: 108, s: 0.62 },
-    { id: 'look', x: 55, y: 366, w: 275, h: 148, s: 0.78 }, { id: 'teens', x: 362, y: 366, w: 275, h: 148, s: 0.78 }, { id: 'bridge', x: 670, y: 366, w: 275, h: 148, s: 0.78 },
+    { id: 'doubles', x: 95, y: 228, w: 240, h: 108, s: 0.62 }, { id: 'look', x: 380, y: 228, w: 240, h: 108, s: 0.62 }, { id: 'near', x: 665, y: 228, w: 240, h: 108, s: 0.62 },
+    { id: 'm10', x: 55, y: 366, w: 275, h: 148, s: 0.78 }, { id: 'teens', x: 362, y: 366, w: 275, h: 148, s: 0.78 }, { id: 'bridge', x: 670, y: 366, w: 275, h: 148, s: 0.78 },
     { id: 'plus12', x: 44, y: 548, w: 214, h: 180, s: 0.88 }, { id: 'to10', x: 276, y: 548, w: 214, h: 180, s: 0.88 }, { id: 'sub10', x: 508, y: 548, w: 214, h: 180, s: 0.88 }, { id: 'subteen', x: 740, y: 548, w: 214, h: 180, s: 0.88 },
   ];
   // Classroom: sticker charts on a whiteboard, flat (no perspective).
   const CLASS_ZONES = [
-    { id: 'doubles', x: 62, y: 214, w: 196, h: 92, s: 0.92 }, { id: 'm10', x: 282, y: 214, w: 196, h: 92, s: 0.92 }, { id: 'near', x: 502, y: 214, w: 196, h: 92, s: 0.92 }, { id: 'teens', x: 722, y: 214, w: 216, h: 92, s: 0.92 },
-    { id: 'look', x: 62, y: 354, w: 270, h: 122, s: 0.86 }, { id: 'bridge', x: 356, y: 354, w: 282, h: 122, s: 0.86 }, { id: 'to10', x: 662, y: 354, w: 276, h: 122, s: 0.86 },
+    { id: 'doubles', x: 62, y: 214, w: 196, h: 92, s: 0.92 }, { id: 'look', x: 282, y: 214, w: 196, h: 92, s: 0.92 }, { id: 'near', x: 502, y: 214, w: 196, h: 92, s: 0.92 }, { id: 'teens', x: 722, y: 214, w: 216, h: 92, s: 0.92 },
+    { id: 'm10', x: 62, y: 354, w: 270, h: 122, s: 0.86 }, { id: 'bridge', x: 356, y: 354, w: 282, h: 122, s: 0.86 }, { id: 'to10', x: 662, y: 354, w: 276, h: 122, s: 0.86 },
     { id: 'plus12', x: 62, y: 524, w: 270, h: 128, s: 0.78 }, { id: 'sub10', x: 356, y: 524, w: 282, h: 128, s: 0.78 }, { id: 'subteen', x: 662, y: 524, w: 276, h: 128, s: 0.78 },
   ];
   const zonesFor = id => id === 'classroom' ? CLASS_ZONES : ZONES;
@@ -107,7 +109,7 @@
       },
     },
   };
-  const SHORT = { look: 'Quick Look', m10: 'Partners of 10', plus12: '+1 +2', doubles: 'Doubles', teens: '10 and More', to10: 'Facts to 10', near: 'Near Doubles', bridge: 'Make 10', sub10: 'Minus to 10', subteen: 'Teen Minus' };
+  const SHORT = { look: 'Quick Look', m10: 'Partners & Bonds', plus12: '+1 +2', doubles: 'Doubles', teens: '10 and More', to10: 'Facts to 10', near: 'Near Doubles', bridge: 'Make 10', sub10: 'Minus to 10', subteen: 'Teen Minus' };
   // Opaque, named signs so she can tell the zones apart (drawn after the items so nothing covers them).
   function sign(z, label, bg, fg) {
     const name = SHORT[z.id] || '', fs = 17 * Math.max(0.8, z.s), w = (name.length * 0.56 + 2.2) * fs + 12, h = fs * 1.6;
@@ -200,9 +202,10 @@
       hits += `<rect class="zhit" data-zone="${z.id}" x="${z.x - 10}" y="${z.y - 10}" width="${z.w + 20}" height="${z.h + 24}" fill="transparent"/>`;
     });
     const total = EM.countCollected();
-    const deco = milestones().filter(m => total >= m[0]).map(m => `<text class="deco${opts.freshDeco && opts.freshDeco.includes(m[0]) ? ' fresh' : ''}" x="${m[3]}" y="${m[4]}" font-size="${m[5]}" text-anchor="middle">${m[1]}</text>`).join('');
+    const pos = EM.S.decoPos || {};
+    const deco = milestones().filter(m => total >= m[0]).map(m => { const [x, y] = pos[m[0]] || [m[3], m[4]]; return `<text class="deco${opts.freshDeco && opts.freshDeco.includes(m[0]) ? ' fresh' : ''}" data-deco="${m[0]}" x="${x}" y="${y}" font-size="${m[5]}" text-anchor="middle">${m[1]}</text>`; }).join('');
     const svg = `<svg class="world-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${EM.S.name ? esc(EM.S.name) + "'s" : 'Your'} ${t.place}: ${yours} ${yours === 1 ? t.one : t.many}, ${sprouts} growing">
-      ${BACKS[t.id]()}${deco}${zones}${lines}${items}${signs}${hits}</svg>`;
+      ${BACKS[t.id]()}${zones}${lines}${items}${signs}${hits}${deco}</svg>`;
     return { svg, yours, sprouts };
   }
   const esc = s => EM.esc(s);
@@ -220,5 +223,11 @@
       <p class="zlegend">${legend.join(' · ')}</p>`;
   }
 
-  EM.world = { render, zoneView, nextMilestone, crossed, stateOf, zoneFacts, MILESTONES };
+  // A surprise can go anywhere in her world except on top of a zone (her facts stay visible) or off the edge.
+  function canPlace(x, y) {
+    if (x < 30 || x > W - 30 || y < 40 || y > H - 10) return false;
+    return !zonesFor(EM.theme.current().id).some(z => x > z.x - 20 && x < z.x + z.w + 20 && y > z.y - 30 && y < z.y + z.h + 40);
+  }
+
+  EM.world = { render, zoneView, nextMilestone, crossed, stateOf, zoneFacts, MILESTONES, canPlace };
 })();

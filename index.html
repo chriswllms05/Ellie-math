@@ -157,20 +157,6 @@ body { background:var(--bg); }
 .parent .warn-banner { background:var(--warn-bg); border-left:5px solid var(--danger); padding:10px 14px; border-radius:10px; color:var(--text); }
 @media (prefers-color-scheme: dark) { [data-theme=classroom] .zchip, [data-theme=ocean] .zchip { background:var(--tint); color:var(--text); } }
 /* iPad: use the screen */
-@media (min-width:700px) {
-  .practice { max-width:780px; padding-inline:32px; }
-  .eq { font-size:92px; } .eq.small { font-size:56px; } .eq.cmp { font-size:62px; } .eq.seq { font-size:44px; }
-  .ask { font-size:30px; max-width:680px; } .ask small { font-size:18px; }
-  .msg { font-size:21px; max-width:640px; } .msg.good { font-size:28px; }
-  .pad { gap:12px; } .pad button { height:78px; font-size:36px; border-radius:20px; }
-  .idk { padding:16px; font-size:20px; }
-  .frames { --c:54px; } .bond { width:190px; height:114px; }
-  .nl { max-width:680px; }
-  .colalg { font-size:54px; }
-  .blockname { font-size:15px; }
-  .kpis { grid-template-columns:repeat(4, 1fr); }
-}
-
 .three li { margin:0 0 10px; } .pcard { border:2px solid var(--rule); border-radius:16px; padding:14px; text-align:center; } .pq { font-size:48px; font-weight:700; }
 
 /* theme picker */
@@ -253,9 +239,9 @@ body { background:var(--bg); }
 .strip b { color:var(--text); }
 
 /* pictures */
-.frames { --c:42px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-@media (max-width:400px) { .frames { --c:32px; } }
-.tf { display:grid; grid-template-columns:repeat(5, var(--c)); grid-template-rows:repeat(2, var(--c)); gap:2px; background:var(--text); border:3px solid var(--text); border-radius:6px; }
+.frames { --cell:42px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+@media (max-width:400px) { html .frames, html .manip { --cell:32px; } }
+.tf { display:grid; grid-template-columns:repeat(5, var(--cell)); grid-template-rows:repeat(2, var(--cell)); gap:2px; background:var(--text); border:3px solid var(--text); border-radius:6px; }
 .cell { display:grid; place-items:center; background:var(--surface); }
 .cell.hl { outline:3px dashed var(--b); outline-offset:-7px; }
 .dot { width:72%; height:72%; border-radius:50%; background:var(--a); position:relative; }
@@ -275,6 +261,40 @@ body { background:var(--bg); }
 .nl text { fill:var(--text); font:600 22px "Fredoka", ui-rounded, system-ui, sans-serif; }
 .nl .muted { fill:var(--muted); font-size:16px; font-weight:600; }
 .nl line, .nl path { stroke:var(--text); }
+/* things she can drag (manip.js) */
+.manip { --cell:42px; display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; }
+.manip .mframes { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; padding:6px; border-radius:12px; }
+.mdrag { cursor:grab; touch-action:none; }
+.dot.mdrag { box-shadow:0 3px 0 rgba(0,0,0,.25); }
+.mdrag.lifted { opacity:.25; }
+.mghost { position:fixed; z-index:50; pointer-events:none; transform:scale(1.25); box-shadow:0 8px 18px rgba(0,0,0,.3); }
+.mtray { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; min-height:calc(var(--cell) * .8); padding:8px 12px; border:2px dashed var(--rule); border-radius:14px; }
+.mtray .dot { position:relative; width:calc(var(--cell) * .72); height:calc(var(--cell) * .72); }
+.mtray:empty { display:none; }
+.mcap { font-weight:700; color:var(--muted); font-size:18px; text-align:center; }
+.msplit { display:flex; gap:14px; align-items:center; flex-wrap:wrap; justify-content:center; }
+.mbox { min-width:120px; min-height:96px; border:3px dashed var(--b); border-radius:16px; padding:6px; display:flex; flex-direction:column; align-items:center; }
+.mbox .mlab { font-weight:800; color:var(--b); font-size:20px; }
+.mbin { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; max-width:150px; }
+.mbin .dot { position:relative; width:calc(var(--cell) * .6); height:calc(var(--cell) * .6); }
+.mreg .col.mdrop { border-style:dashed; border-color:var(--b); }
+.mreg .dcs { width:auto; max-width:190px; min-width:76px; }
+.mreg .col:first-child .dcs { width:76px; }
+.disc.ghost { background:transparent; border:2px dashed var(--rule); }
+.disc.fresh { animation:popin .35s cubic-bezier(.3,1.6,.6,1) both; }
+.disc.mdrag { width:44px; height:44px; font-size:13px; box-shadow:0 3px 0 rgba(0,0,0,.25); }
+.nlput { width:100%; max-width:640px; display:block; touch-action:none; cursor:pointer; }
+.nlput line, .nlput path { stroke:var(--text); }
+.nlput text { fill:var(--text); font:600 20px "Fredoka", ui-rounded, system-ui, sans-serif; }
+.nlput text.small { font-size:13px; } .nlput text.muted { fill:var(--muted); font-size:15px; }
+.m-line { touch-action:none; }
+.linepad { grid-template-columns:1fr; }
+.linepad .ok { font-size:28px; }
+.bondq { display:flex; justify-content:center; } .bondq .bond { width:200px; height:120px; }
+.world .deco { cursor:grab; touch-action:none; }
+.world .deco.dragging { animation:none; opacity:.85; }
+.world .deco.wiggle { animation:wiggle .6s ease-in-out, bob 3.4s .6s ease-in-out infinite alternate; }
+@keyframes wiggle { 25% { transform:rotate(-12deg) scale(1.15) } 50% { transform:rotate(10deg) scale(1.15) } 75% { transform:rotate(-6deg) } }
 .pvc { display:flex; gap:6px; }
 .pvc .col { min-width:80px; border:2px solid var(--rule); border-radius:10px; background:var(--surface); padding:4px; }
 .pvc .lab { font-weight:800; color:var(--muted); font-size:14px; text-align:center; }
@@ -351,18 +371,33 @@ input[type=checkbox] { width:22px; height:22px; }
 .clips button { margin:4px 6px 4px 0; }
 .pinpad { max-width:260px; margin:0 auto; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+/* iPad sizing last, so it wins over the base rules above */
+@media (min-width:700px) {
+  .practice { max-width:780px; padding-inline:32px; }
+  .eq { font-size:92px; } .eq.small { font-size:56px; } .eq.cmp { font-size:62px; } .eq.seq { font-size:44px; }
+  .ask { font-size:30px; max-width:680px; } .ask small { font-size:18px; }
+  .msg { font-size:21px; max-width:640px; } .msg.good { font-size:28px; }
+  .pad { gap:12px; } .pad button { height:78px; font-size:36px; border-radius:20px; }
+  .idk { padding:16px; font-size:20px; }
+  html .frames, html .manip { --cell:54px; } .bond { width:190px; height:114px; }
+  .nl { max-width:680px; }
+  .colalg { font-size:54px; }
+  .blockname { font-size:15px; }
+  .kpis { grid-template-columns:repeat(4, 1fr); }
+}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<script src="engine.js?v=6"></script>
-<script src="content.js?v=6"></script>
-<script src="audio.js?v=6"></script>
-<script src="theme.js?v=6"></script>
-<script src="world.js?v=6"></script>
-<script src="avatar.js?v=6"></script>
-<script src="teach.js?v=6"></script>
-<script src="parent.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="engine.js?v=7"></script>
+<script src="content.js?v=7"></script>
+<script src="audio.js?v=7"></script>
+<script src="manip.js?v=7"></script>
+<script src="theme.js?v=7"></script>
+<script src="world.js?v=7"></script>
+<script src="avatar.js?v=7"></script>
+<script src="teach.js?v=7"></script>
+<script src="parent.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

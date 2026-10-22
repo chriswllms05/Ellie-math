@@ -45,6 +45,8 @@ async function nav(page, sel) { await clearOverlays(page); const w = await page.
 async function type(page, s) { for (const ch of String(s)) await page.keyboard.press(ch); }
 async function answer(page, value, { delayMs = 0 } = {}) {
   if (delayMs) await page.evaluate(d => { window.__perf += d; }, delayMs);
+  // Number-line steps take a marker position instead of typed digits.
+  if (await page.evaluate(() => { const R = EM._run(); return !!(R && R.cur && R.cur.steps[R.step].line); })) { await page.evaluate(v => EM.manip.setLine(v), Number(value)); await page.keyboard.press('Enter'); return; }
   await type(page, value);
   await page.keyboard.press('Enter');
 }
@@ -189,6 +191,39 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
     return out;
   });
   check(more.length === 0, `review regressions (${more.length} problems)`); more.slice(0, 12).forEach(b => log('   ', b));
+
+  // Phase 2: number bonds, number line, drag widgets, her world's surprises.
+  const p2 = await page3.evaluate(() => {
+    const out = [];
+    if (EM.SK.bonds.facts.length !== 24) out.push(`bonds has ${EM.SK.bonds.facts.length} facts, want 24`);
+    if (!EM.SK.bridge.requires.includes('bonds')) out.push('Make 10 not gated on bonds');
+    if (!EM.world.zoneFacts().m10.includes('bond:7:3')) out.push('bonds not in the Partners zone');
+    for (let i = 0; i < 60; i++) { const it = EM.procItem('place', i % 3, i % 2), st = it.steps[0]; const { lo, hi } = st.line; if (st.ans <= lo || st.ans >= hi || st.tol !== (hi - lo) * 0.05) out.push(`place item off: ${it.label}`); }
+    const snap = JSON.stringify(EM.S); EM.S.facts = {}; EM.S.unlockedSeen = {};
+    if (EM.isOpen('bridge')) out.push('bridge open with no facts');
+    EM.S.unlockedSeen.bridge = true; if (!EM.isOpen('bridge')) out.push('opened skill got re-locked');
+    EM.replaceState(JSON.parse(snap));
+    if (EM.world.canPlace(400, 300)) out.push('surprise can cover a zone'); if (!EM.world.canPlace(500, 120)) out.push('surprise cannot go in the sky');
+    const t = document.createElement('div'); t.id = 'p2'; t.style.cssText = 'position:fixed;left:0;top:0;width:700px;background:#fff;z-index:99';
+    t.innerHTML = `<div id="w1">${EM.manip.make10(8, 5)}</div><div id="w2">${EM.manip.regroup(3, 0)}</div><div id="w3">${EM.manip.line(0, 100, null)}</div>`;
+    document.body.appendChild(t);
+    return out;
+  });
+  const box = async sel => (await page3.$(sel)).boundingBox();
+  const dragTo = async (from, to) => { const a = await box(from), b = await box(to); await page3.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page3.mouse.down(); await page3.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 6 }); await page3.mouse.up(); };
+  await page3.click('#w1 .mtray .mdrag'); // tap
+  if (await page3.$eval('#w1 .manip', e => e.dataset.moved) !== '1') p2.push('tap did not move a counter');
+  await dragTo('#w1 .mtray .mdrag', '#w1 .mframes');
+  if (await page3.$eval('#w1 .manip', e => e.dataset.moved) !== '2') p2.push('drag into the frame did not count');
+  { const a = await box('#w1 .mtray .mdrag'); await page3.mouse.move(a.x + 10, a.y + 10); await page3.mouse.down(); await page3.mouse.move(690, a.y + 200, { steps: 6 }); await page3.mouse.up(); }
+  if (await page3.$eval('#w1 .manip', e => e.dataset.moved) !== '2') p2.push('drop outside the frame counted');
+  await dragTo('#w2 .mdrag', '#w2 .mdrop');
+  if (await page3.$$eval('#w2 .mdrop .disc', d => d.length) !== 13) p2.push('ten-disc did not break into 10 ones');
+  await page3.evaluate(() => { window.__onLine = EM.manip.onLine; EM.manip.onLine = null; });
+  { const b = await box('#w3 svg'); await page3.mouse.click(b.x + b.width * (300 / 600), b.y + b.height / 2); }
+  { const v = await page3.$eval('#w3 .manip', e => e.dataset.val); if (v !== '50') p2.push(`line tap at the middle gave ${v}`); }
+  await page3.evaluate(() => { EM.manip.onLine = window.__onLine; document.getElementById('p2').remove(); });
+  check(p2.length === 0, `phase 2 widgets and skills (${p2.length} problems)`); p2.forEach(b => log('   ', b));
   await ctx3.close();
   }
 

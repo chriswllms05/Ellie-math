@@ -83,9 +83,11 @@
   // Bar models (Singapore style). rows: [{ name, segs: [{ v, t, q }] }]; brace: { row, from, to, t } in value units above a row.
   function bars(rows, brace) {
     const max = Math.max(...rows.map(r => r.segs.reduce((s, g) => s + g.v, 0)), brace ? brace.to : 0), X0 = rows.some(r => r.name) ? 96 : 30, Wd = 560 - X0, k = Wd / max;
-    const top = brace ? 44 : 10, rh = 46, gap = 18, H = top + rows.length * (rh + gap) + 4;
+    const below = brace && brace.row === rows.length - 1 && rows.length > 1; // a total for the last bar goes under it
+    const top = brace && !below ? 44 : 10, rh = 46, gap = 18, H = top + rows.length * (rh + gap) + 4 + (below ? 40 : 0);
     let s = `<svg class="bars" viewBox="0 0 600 ${H}" role="img" aria-label="Bar model">`;
-    if (brace) { const y = top - 12, x1 = X0 + brace.from * k, x2 = X0 + brace.to * k; s += `<path d="M${x1} ${y + 8} v-8 H${x2} v8" fill="none" stroke-width="3"/><text x="${(x1 + x2) / 2}" y="${y - 8}" text-anchor="middle" class="${brace.q ? 'q' : ''}">${brace.t}</text>`; }
+    if (brace && !below) { const y = top - 12, x1 = X0 + brace.from * k, x2 = X0 + brace.to * k; s += `<path d="M${x1} ${y + 8} v-8 H${x2} v8" fill="none" stroke-width="3"/><text x="${(x1 + x2) / 2}" y="${y - 8}" text-anchor="middle" class="${brace.q ? 'q' : ''}">${brace.t}</text>`; }
+    if (below) { const y = top + rows.length * (rh + gap) - gap + 10, x1 = X0 + brace.from * k, x2 = X0 + brace.to * k; s += `<path d="M${x1} ${y - 8} v8 H${x2} v-8" fill="none" stroke-width="3"/><text x="${(x1 + x2) / 2}" y="${y + 28}" text-anchor="middle" class="${brace.q ? 'q' : ''}">${brace.t}</text>`; }
     rows.forEach((r, ri) => {
       const y = top + ri * (rh + gap); let x = X0;
       if (r.name) s += `<text x="${X0 - 10}" y="${y + rh / 2 + 7}" text-anchor="end" class="nm">${r.name}</text>`;
@@ -149,8 +151,8 @@
 
   // ---------- fact items ----------
   const sayFact = f => ({ add: `${f.a} plus ${f.b}`, sub: `${f.a} minus ${f.b}`, m10: `${f.a} plus what makes 10?`, look: 'How many dots?', bond: `${f.p} and what make ${f.w}?`, mul: `${f.a} times ${f.b}` })[f.type];
-  const labelFact = f => ({ add: `${f.a} + ${f.b}`, sub: `${f.a} − ${f.b}`, m10: `${f.a} + ? = 10`, look: `Quick Look: ${f.n} dots`, bond: `Bond ${f.w}: ${f.p} and ?`, mul: `${f.a} × ${f.b}` })[f.type];
-  const sentence = f => ({ add: `${f.a} + ${f.b} = ${f.ans}`, sub: `${f.a} − ${f.b} = ${f.ans}`, m10: `${f.a} + ${f.ans} = 10`, look: `${f.n} dots`, bond: `${f.p} and ${f.ans} make ${f.w}`, mul: `${f.a} × ${f.b} = ${f.ans}` })[f.type];
+  const labelFact = f => ({ add: `${f.a} + ${f.b}`, sub: `${f.a} − ${f.b}`, m10: `${f.a} + ? = 10`, look: `Quick Look: ${f.n} dot${f.n === 1 ? '' : 's'}`, bond: `Bond ${f.w}: ${f.p} and ?`, mul: `${f.a} × ${f.b}` })[f.type];
+  const sentence = f => ({ add: `${f.a} + ${f.b} = ${f.ans}`, sub: `${f.a} − ${f.b} = ${f.ans}`, m10: `${f.a} + ${f.ans} = 10`, look: `${f.n} dot${f.n === 1 ? '' : 's'}`, bond: `${f.p} and ${f.ans} make ${f.w}`, mul: `${f.a} × ${f.b} = ${f.ans}` })[f.type];
   const sentenceSay = f => ({ add: `${f.a} plus ${f.b} is ${f.ans}`, sub: `${f.a} minus ${f.b} is ${f.ans}`, m10: `${f.a} and ${f.ans} make 10`, look: `${f.n} dots`, bond: `${f.p} and ${f.ans} make ${f.w}`, mul: `${f.a} times ${f.b} is ${f.ans}` })[f.type];
   EM.labelFact = labelFact; EM.sentence = sentence; EM.sentenceSay = sentenceSay;
 
@@ -553,7 +555,7 @@
       if (kind === 'separate') { whole = false; if (b > a) [a, b] = [b, a]; if (a === b) a++; ans = a - b; text = `${A} had ${fmt(a)} ${th}. ${A} gave ${fmt(b)} to ${B}. How many ${th} does ${A} have left?`; model = bars([{ segs: [{ v: b, t: fmt(b), ghost: true }, { v: ans, t: '?', q: true }] }], { from: 0, to: a, t: fmt(a) }); grabs = [a + b]; }
       if (kind === 'part') { whole = false; const w = a + b; ans = a; text = `There are ${fmt(w)} ${th}. ${fmt(b)} are red and the rest are blue. How many are blue?`; model = bars([{ segs: [{ v: b, t: fmt(b) }, { v: a, t: '?', q: true }] }], { from: 0, to: w, t: fmt(w) }); grabs = [w + b]; }
       if (kind === 'more') { compare = true; ans = a + b; text = `${A} has ${fmt(a)} ${th}. ${B} has ${fmt(b)} more than ${A}. How many ${th} does ${B} have?`; model = bars([{ name: A, segs: [{ v: a, t: fmt(a) }] }, { name: B, segs: [{ v: a, t: fmt(a) }, { v: b, t: fmt(b) }] }], { row: 1, from: 0, to: a + b, t: '?', q: true }); grabs = [a - b]; }
-      if (kind === 'diff') { compare = true; whole = false; if (b > a) [a, b] = [b, a]; if (a === b) a++; ans = a - b; text = `${A} has ${fmt(a)} ${th}. ${B} has ${fmt(b)}. How many more ${th} does ${A} have than ${B}?`; model = bars([{ name: A, segs: [{ v: b, t: fmt(b) }, { v: ans, t: '?', q: true }] }, { name: B, segs: [{ v: b, t: fmt(b) }] }]); grabs = [a + b]; }
+      if (kind === 'diff') { compare = true; whole = false; if (b > a) [a, b] = [b, a]; if (a === b) a++; ans = a - b; text = `${A} has ${fmt(a)} ${th}. ${B} has ${fmt(b)}. How many more ${th} does ${A} have than ${B}?`; model = bars([{ name: A, segs: [{ v: b, t: fmt(b) }, { v: ans, t: '?', q: true }] }, { name: B, segs: [{ v: b, t: fmt(b) }] }], { row: 0, from: 0, to: a, t: fmt(a) }); grabs = [a + b]; }
       grabs.push(a, b);
       steps.push(q(text, ans));
     } else { // two steps
@@ -565,7 +567,7 @@
     // While the skill is new: decide first. Is the question mark the whole (add) or a part (subtract)?
     if (tier <= 1) {
       const firstText = steps[0].html.replace(/<div class="eq">.*<\/div>/, '');
-      const choices = compare ? ['The greater amount: add ➕', 'The difference or the smaller amount: subtract ➖'] : ['The whole: add ➕', 'A part: subtract ➖'];
+      const choices = compare ? ['Greater amount: add ➕', 'Difference or smaller: subtract ➖'] : ['The whole: add ➕', 'A part: subtract ➖'];
       const ask = compare ? 'This is a comparison model. Is the question mark the greater amount, the smaller amount, or the difference?' : 'This is a part-whole model. Is the question mark the whole or a part?';
       steps.unshift({ ans: whole ? 1 : 2, choices, html: `${firstText}<div class="ask"><small>${ask}</small></div>`, say: `${steps[0].say} ${ask}`, vis: model, choice: true });
     }

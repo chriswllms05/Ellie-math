@@ -388,6 +388,9 @@ input[type=checkbox] { width:22px; height:22px; }
 .clips button { margin:4px 6px 4px 0; }
 .pinpad { max-width:260px; margin:0 auto; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+/* widgets that must win over the general rules above */
+.practice .pad.choicepad button { height:auto; min-height:78px; font-size:21px; line-height:1.25; padding:12px 10px; }
+.pvc.mreg .col.mdrop .dcs { width:auto; max-width:210px; min-width:76px; }
 /* iPad sizing last, so it wins over the base rules above */
 @media (min-width:700px) {
   .practice { max-width:780px; padding-inline:32px; }
@@ -406,15 +409,15 @@ input[type=checkbox] { width:22px; height:22px; }
 </head>
 <body>
 <div id="app"></div>
-<script src="engine.js?v=8"></script>
-<script src="content.js?v=8"></script>
-<script src="audio.js?v=8"></script>
-<script src="manip.js?v=8"></script>
-<script src="theme.js?v=8"></script>
-<script src="world.js?v=8"></script>
-<script src="avatar.js?v=8"></script>
-<script src="teach.js?v=8"></script>
-<script src="parent.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="engine.js?v=9"></script>
+<script src="content.js?v=9"></script>
+<script src="audio.js?v=9"></script>
+<script src="manip.js?v=9"></script>
+<script src="theme.js?v=9"></script>
+<script src="world.js?v=9"></script>
+<script src="avatar.js?v=9"></script>
+<script src="teach.js?v=9"></script>
+<script src="parent.js?v=9"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

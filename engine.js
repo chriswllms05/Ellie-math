@@ -72,6 +72,15 @@
   function adopt(obj) { for (const k of Object.keys(S)) delete S[k]; Object.assign(S, obj); save(); return S; }
   function replaceState(obj) { return adopt(migrate(obj)); }
   function resetState() { const d = clone(DEFAULT); d.created = Date.now(); return adopt(d); }
+  // A clean start for her: every bit of practice, her world, avatar and name go; the grown-up setup stays
+  // (PIN, settings, chosen voice, recorded clips and when they were recorded, last backup date).
+  function freshStart() {
+    const old = S, d = clone(DEFAULT);
+    d.created = Date.now();
+    d.settings = Object.assign(clone(DEFAULT.settings), clone(old.settings));
+    for (const k of ['clipCount', 'clipDates', 'clipPlays', 'backupAt']) if (old[k] !== undefined) d[k] = clone(old[k]);
+    return adopt(d);
+  }
 
   // ---------- IndexedDB (state mirror + voice clips) ----------
   let dbP = null;
@@ -101,7 +110,7 @@
     return false;
   }
   async function persist() { try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch (e) {} }
-  Object.assign(EM, { load, save, replaceState, resetState, idbPut, idbGet, idbDel, recoverIfNeeded, persist, DEFAULT });
+  Object.assign(EM, { load, save, replaceState, resetState, freshStart, idbPut, idbGet, idbDel, recoverIfNeeded, persist, DEFAULT });
 
   // ---------- fact mastery (Leitner, promote only on/after due day) ----------
   function factRec(key, create) {

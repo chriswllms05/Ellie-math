@@ -259,8 +259,10 @@
       <label class="set">Grown-up PIN <button class="btn secondary small" data-act="changePin">Change PIN</button></label>
       <p style="margin-top:12px"><button class="btn secondary small" data-act="export">Save a backup</button>
         <button class="btn secondary small" data-act="import">Restore backup</button>
-        <button class="btn secondary small danger" data-act="reset">Reset all progress</button>
+        <button class="btn secondary small" data-act="fresh">Start fresh for her</button>
+        <button class="btn secondary small danger" data-act="reset">Erase everything</button>
         <input type="file" id="importFile" accept="application/json" hidden></p>
+      <p style="color:var(--muted);font-size:14px"><b>Start fresh for her</b> clears all practice, her world, avatar and name, and keeps your PIN, settings, voice and clips. <b>Erase everything</b> also removes your PIN and settings.</p>
       <p style="color:var(--muted)">Progress lives on this device. ${S_.backupAt ? `Last backup ${new Date(S_.backupAt).toLocaleDateString()}.` : 'No backup yet. Make one once a week.'}</p>`;
   }
 
@@ -319,10 +321,16 @@
           S().settings.pin = a; S().settings.pinHint = prompt('A hint for yourself (optional)', S().settings.pinHint || '') || ''; EM.save();
           alert(`PIN changed. Hint: ${S().settings.pinHint || 'none'}`); return;
         }
+        case 'fresh': {
+          if (!confirm('Start fresh for her?\n\nThis clears all practice, her world, avatar and name, so she begins at the very first screen.\n\nYour PIN, settings, voice and recorded clips stay. A copy of the current progress is kept on this device.')) return;
+          const word = prompt('Type FRESH to clear all practice on this device.');
+          if (word && word.trim().toUpperCase() === 'FRESH') { try { await EM.idbPut('state:before-fresh', JSON.stringify(S())); } catch (e) {} EM.freshStart(); EM.save(); EM.theme.apply(); pinOk = false; EM.go('home'); }
+          return;
+        }
         case 'reset': {
           const saved = await exportBackup();
           if (!saved && !confirm('No backup was saved. Erase anyway?')) return;
-          const word = prompt('Type RESET to erase all progress on this device.');
+          const word = prompt('Type RESET to erase everything on this device, including your PIN, settings and voice choice.');
           if (word === 'RESET') { try { await EM.idbPut('state:before-reset', JSON.stringify(S())); } catch (e) {} EM.resetState(); EM.theme.apply(); pinOk = false; EM.go('home'); }
           return;
         }

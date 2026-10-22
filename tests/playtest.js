@@ -188,6 +188,12 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
     EM.replaceState(JSON.parse(snap));
     for (let lv = 0; lv < 2; lv++) for (let t = 0; t < 2; t++) for (let i = 0; i < 30; i++) { const it = EM.procItem('trade', lv, t), m = it.label.match(/^(\d+) \w+ as/); if (m) { const n = +m[1]; if (it.steps[0].ans * 10 + it.steps[1].ans !== n) out.push(`trade ${it.label}`); } else { const o = +it.label.match(/and (\d+)/)[1]; if (it.steps[0].ans !== 10 + o) out.push(`trade ${it.label}`); } }
     if (!EM.SK.subteen.requires.includes('tenminus') || EM.SK.tenminus.facts.length !== 9) out.push('ten take away skill');
+    { const snap = JSON.stringify(EM.S); EM.S.settings.pin = '4321'; EM.S.settings.voiceURI = 'premium.Ava'; EM.S.settings.minutes = 20; EM.S.theme = 'ocean'; EM.S.name = 'Kid'; EM.S.avatar = { skin: 2 }; EM.S.clipDates = { 'clip:1': 5 }; EM.factRec('add:8+5', true).box = 3; EM.S.placement.done = true;
+      const before = EM.S; EM.freshStart(); const s = EM.S;
+      if (s !== before) out.push('fresh start rebinds state');
+      if (s.settings.pin !== '4321' || s.settings.voiceURI !== 'premium.Ava' || s.settings.minutes !== 20 || !s.clipDates || s.clipDates['clip:1'] !== 5) out.push('fresh start lost the grown-up setup');
+      if (Object.keys(s.facts).length || s.theme || s.name || s.avatar || s.placement.done) out.push('fresh start kept her progress');
+      EM.replaceState(JSON.parse(snap)); }
     return out; });
   check(p5Bad.length === 0, `component routing, trade tens, ten take away (${p5Bad.length} bad)`); p5Bad.slice(0, 6).forEach(b => log('   ', b));
   check(p4Bad.length === 0, `phase 4 answers consistent (${p4Bad.length} bad)`); p4Bad.slice(0, 6).forEach(b => log('   ', b)); regBad.slice(0, 5).forEach(b => log('   ', b));

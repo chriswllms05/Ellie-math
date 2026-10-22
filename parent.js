@@ -26,7 +26,6 @@
         ${st.rushed ? `<li>🐢 Rushed guesses: ${st.rushed}. Ask her to think first.</li>` : ''}
         ${st.taught && st.taught.n ? `<li>🧑‍🏫 Taught Dot ${st.taught.ok} of ${st.taught.n} facts${st.taught.dotWrong ? `, caught ${st.taught.caught} of ${st.taught.dotWrong} of Dot's mistakes` : ''}. A miss here sends that fact back to practice.</li>` : ''}
         ${st.slow ? `<li>✓ Right but slow (still working it out): ${st.slow}. Normal; that's what practice is for.</li>` : ''}
-      </ul>
       ${st.slips ? `<li>🖐️ Counting slips (answers off by one): ${st.slips}. That's the sign she's still counting those.</li>` : ''}
       </ul>
       <div class="ask-her"><b>Do this now (60 seconds):</b> ${P.script(R)}</div>

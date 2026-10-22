@@ -76,8 +76,8 @@
     return { wk, rows: rows.map(r => ({ ...r, ok: r.done(r.val), late: !r.done(r.val) && wk > r.by })) };
   }
 
-  const GAMES = { add: 'Egg-carton make 10: 8 pennies in, how many to fill it? Then add the rest.', double: 'Dice doubles: roll one die, say its double without counting.', sub: 'Think-addition cards: show 13 − 5, she says "5 and what make 13?"', look: 'Flash fingers: show a number on your hands for 1 second, she says it.', m10: 'Partners of 10 clap: you say 7, she says 3.', bond: 'Hide-and-seek: put 7 pennies down, hide some under a cup. She says how many are hiding.' };
-  function gameFor(k) { const f = EM.FACTS[k]; if (!f) return ''; if (f.type === 'sub') return GAMES.sub; if (f.type === 'look') return GAMES.look; if (f.type === 'm10') return GAMES.m10; if (f.type === 'bond') return GAMES.bond; if (f.type === 'add' && f.a === f.b) return GAMES.double; return GAMES.add; }
+  const GAMES = { add: 'Egg-carton make 10: 8 pennies in, how many to fill it? Then add the rest.', double: 'Dice doubles: roll one die, say its double without counting.', sub: 'Think-addition cards: show 13 − 5, she says "5 and what make 13?"', look: 'Flash fingers: show a number on your hands for 1 second, she says it.', m10: 'Partners of 10 clap: you say 7, she says 3.', bond: 'Hide-and-seek: put 7 pennies down, hide some under a cup. She says how many are hiding.', mul: 'Stair skip-count: say the 5s (or 2s, 10s) on each step going up, then ask "3 steps of 5?"' };
+  function gameFor(k) { const f = EM.FACTS[k]; if (!f) return ''; if (f.type === 'sub') return GAMES.sub; if (f.type === 'look') return GAMES.look; if (f.type === 'm10') return GAMES.m10; if (f.type === 'bond') return GAMES.bond; if (f.type === 'mul') return GAMES.mul; if (f.type === 'add' && f.a === f.b) return GAMES.double; return GAMES.add; }
   // Pace forecast, stuck facts with a matching game, and how school work is going.
   function threeThings(S_, wk) {
     const ids = ['m10', 'plus12', 'doubles', 'teens', 'to10', 'near', 'bridge', 'sub10', 'subteen'], keys = EM.uniq(ids.flatMap(id => EM.SK[id].facts));

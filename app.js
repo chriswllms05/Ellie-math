@@ -117,6 +117,7 @@
       <h2>Adding and taking away</h2>${EM.TRACKS.A.skills.map(id => card(EM.SK[id])).join('')}
       <h2 style="margin-top:24px">Big numbers and rounding</h2>${EM.TRACKS.B.skills.map(id => card(EM.SK[id])).join('')}
       <h2 style="margin-top:24px">School work</h2>${EM.TRACKS.C.skills.map(id => card(EM.SK[id])).join('')}
+      <h2 style="margin-top:24px">Getting ready for times tables</h2>${EM.TRACKS.D.skills.map(id => card(EM.SK[id])).join('')}
     </main>`;
   }
 
@@ -135,11 +136,13 @@
   function planDaily() {
     const k = (S.settings.minutes || 15) / 15, behind = factsBehind();
     const bigDone = openIds('B').every(id => EM.skillSummary(id).done);
-    const factBlock = (name, cap, len) => ({ name, cap: cap * k, build: () => factQueueItems(openIds('A'), len, { extraKeys: EM.familyKeys() }) });
+    const factBlock = (name, cap, len, ids) => ({ name, cap: cap * k, build: () => factQueueItems(ids || openIds('A'), len, ids ? {} : { extraKeys: EM.familyKeys() }) });
     const blocks = [factBlock('Foundations', behind ? 4.5 : 4, 30)];
     blocks.push({ name: 'Big numbers', cap: (bigDone ? 1.5 : behind ? 2.5 : 3) * k, build: () => ({ items: procQueueItems(openIds('B'), bigDone ? 4 : 10), spare: [] }) });
     if (behind) blocks.push(factBlock('Quick facts', 3, 16));
-    blocks.push({ name: 'School work', cap: (behind ? 3 : 5) * k, build: () => { const ids = openIds('C'); return { items: ids.length ? procQueueItems(ids, 8) : procQueueItems(openIds('B'), 8), spare: [] }; } });
+    // School work: mostly her current chapter; a couple of getting-ready-for-times items once those open.
+    blocks.push({ name: 'School work', cap: (behind ? 3 : 5) * k, build: () => { const ids = openIds('C'), ready = openIds('D').filter(id => EM.SK[id].kind === 'proc'); const main = ids.length ? procQueueItems(ids, ready.length ? 6 : 8) : procQueueItems(openIds('B'), ready.length ? 6 : 8); return { items: EM.shuffle([...main, ...(ready.length ? procQueueItems(ready, 2) : [])]), spare: [] }; } });
+    if (EM.isOpen('times')) blocks.push(factBlock('Times facts', behind ? 1.5 : 2.5, 12, ['times']));
     const teachItems = EM.teach.items(3);
     if (teachItems.length) blocks.push({ name: 'Teach Dot', cap: 2 * k, build: () => ({ items: teachItems, spare: [] }) });
     return blocks;

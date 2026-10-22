@@ -247,7 +247,7 @@
     const st = item.steps[step || 0];
     const digits = String(st.ans).length;
     let ms = base + 600 * Math.max(0, digits - 1);
-    ms += ({ look: 1500, sub: 1000, rnd: 2000, pv: 2000, est: 2000, regroup: 1500, line: 3000 })[item.type] || 0;
+    ms += ({ look: 1500, sub: 1000, rnd: 2000, pv: 2000, est: 2000, regroup: 1500, line: 3000, mental: 2000, skip: 1000, array: 1500, word: 9000 })[item.type] || 0;
     if (st.line) ms -= 600 * Math.max(0, digits - 1); // dragging, not typing digits
     if (item.type === 'rnd' && st.ans >= 1000) ms += 1000;
     if (st.extraMs) ms += st.extraMs;
@@ -264,6 +264,7 @@
     if (f.type === 'look') return f.n;
     if (f.type === 'm10') return 10 - Math.abs(5 - f.a);
     if (f.type === 'bond') return f.w * 10 + f.p;
+    if (f.type === 'mul') return ({ 10: 0, 2: 20, 5: 40 })[f.b] + f.a;
     if (f.type === 'add') { const big = Math.max(f.a, f.b), small = Math.min(f.a, f.b); return f.a + f.b > 10 && big < 10 ? 100 + (10 - big) * 10 + small : f.a + f.b; }
     if (f.type === 'sub') return f.a > 10 ? 100 + (10 - Math.min(f.b, 9)) * 10 + f.a : f.a;
     return 50;

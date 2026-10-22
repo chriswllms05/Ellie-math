@@ -261,6 +261,21 @@ body { background:var(--bg); }
 .nl text { fill:var(--text); font:600 22px "Fredoka", ui-rounded, system-ui, sans-serif; }
 .nl .muted { fill:var(--muted); font-size:16px; font-weight:600; }
 .nl line, .nl path { stroke:var(--text); }
+/* arrays, skip counting, bar models */
+.arr { display:flex; flex-direction:column; gap:6px; align-items:center; }
+.arow { display:flex; gap:5px; padding:4px 8px; border:2px solid var(--rule); border-radius:12px; background:var(--surface); }
+.arow .dot { position:relative; width:26px; height:26px; }
+.arr.flash { animation:fadeaway .5s 3s forwards; }
+@keyframes fadeaway { to { opacity:0; visibility:hidden } }
+.practice.helping .arr.flash { animation:none; }
+.seq { font-size:40px; font-weight:700; letter-spacing:.5px; text-align:center; }
+.seq .slot.wide { min-width:3.2ch; }
+.bars { width:100%; max-width:600px; display:block; }
+.bars rect { fill:var(--surface); stroke:var(--text); stroke-width:3; } .bars rect.q { stroke:var(--accent); stroke-dasharray:7 5; } .bars rect.ghost { fill:var(--rule); }
+.bars text { fill:var(--text); font:600 22px "Fredoka", ui-rounded, system-ui, sans-serif; } .bars text.q { fill:var(--accent); font-weight:800; } .bars text.nm { font-size:18px; fill:var(--muted); }
+.bars path { stroke:var(--text); }
+.hops .muted { fill:var(--muted); font-size:15px; }
+
 /* things she can drag (manip.js) */
 .manip { --cell:42px; display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; }
 .manip .mframes { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; padding:6px; border-radius:12px; }

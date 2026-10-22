@@ -85,7 +85,7 @@ body { background:var(--bg); }
 .world.inset { width:100%; margin:6px 0 14px; border-radius:24px; }
 .world-svg { display:block; width:100%; height:auto; }
 .perch { position:absolute; left:3%; top:3%; right:3%; display:flex; align-items:flex-start; gap:8px; pointer-events:none; }
-.perch .bubble { margin:6px 0 0; pointer-events:auto; max-width:min(52%, 440px); font-size:clamp(14px, 2.4vw, 18px); box-shadow:0 3px 0 rgba(0,0,0,.08); }
+.perch .bubble { margin:6px 0 0; pointer-events:auto; max-width:min(44%, 400px); font-size:clamp(14px, 2.4vw, 18px); box-shadow:0 3px 0 rgba(0,0,0,.08); }
 .perch .bubble::before { top:16px; left:-9px; transform:rotate(-45deg); }
 .world .zhit { cursor:pointer; }
 .world .zname { font-family:"Fredoka", system-ui, sans-serif; }
@@ -121,6 +121,30 @@ body { background:var(--bg); }
 [data-theme=space] .zchip { background:#1d1c45; color:#fff; } [data-theme=ocean] .zchip { background:#d9f2fd; }
 .zlegend { color:var(--muted); font-size:13px; margin:12px 0 0; }
 .milestone-big { font-size:96px; line-height:1; animation:arrive 1s cubic-bezier(.3,1.7,.6,1) both; }
+
+/* avatar builder */
+.avstage { display:flex; align-items:center; gap:18px; background:var(--tint); border-radius:24px; padding:14px 18px; margin:6px 0 14px; }
+.avpreview { background:rgba(255,255,255,.85); border-radius:20px; padding:6px 10px 0; }
+.avname { flex:1; display:flex; flex-direction:column; gap:6px; font-weight:700; background:rgba(255,255,255,.9); border-radius:16px; padding:10px 12px; color:#3a3540; }
+.avname input { font:600 22px "Fredoka", system-ui, sans-serif; padding:8px 10px; border-radius:12px; border:2px solid var(--rule); max-width:100%; background:#fff; color:#2b2a33; }
+.avrow { margin:10px 0; } .avlab { font-weight:700; margin-bottom:6px; }
+.avopts { display:flex; flex-wrap:wrap; gap:8px; }
+.avsw { width:44px; height:44px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 0 2px var(--rule); }
+.avsw.on { box-shadow:0 0 0 3px var(--accent); transform:scale(1.08); }
+.avchip { display:flex; flex-direction:column; align-items:center; background:var(--surface); border:2px solid var(--rule); border-radius:14px; padding:4px 6px 4px; font-size:13px; font-weight:600; text-transform:capitalize; min-width:62px; }
+.avchip.on { border-color:var(--accent); background:var(--tint); }
+.perch .avatar { flex:none; margin-top:-4px; }
+.avatar .wavehand { animation:wave 1.4s ease-in-out infinite; transform-box:fill-box; transform-origin:50% 100%; }
+@keyframes wave { 0%, 60%, 100% { transform:rotate(0) } 70% { transform:rotate(-18deg) } 85% { transform:rotate(14deg) } }
+/* Teach Dot */
+.teach-scene { display:flex; align-items:flex-end; justify-content:center; gap:16px; background:var(--tint); border-radius:22px; padding:12px 16px 6px; width:100%; max-width:540px; }
+[data-theme=classroom] .teach-scene { background:#fdfefe; border:8px solid #b7c0ca; }
+[data-theme=space] .teach-scene { background:#1d1c45; } [data-theme=space] .dot-says { color:#2b2a33; }
+.teach-dot { display:flex; align-items:flex-end; gap:8px; }
+.dot-says { position:relative; background:#fff; border:2px solid var(--rule); border-radius:16px; padding:10px 14px; font-size:20px; text-align:left; max-width:280px; margin-bottom:30px; }
+.teach-eq { margin-top:8px; }
+.notebook { display:block; width:100%; text-align:left; background:var(--surface); border:2px dashed var(--rule); border-radius:16px; padding:12px 14px; margin:12px 0; font-size:17px; }
+.nbgrid { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:8px 0; } .nbgrid span { background:var(--tint); border-radius:10px; padding:4px 10px; font-weight:600; }
 
 /* theme picker */
 .themes { display:grid; gap:12px; }
@@ -308,6 +332,8 @@ input[type=checkbox] { width:22px; height:22px; }
 <script src="audio.js"></script>
 <script src="theme.js"></script>
 <script src="world.js"></script>
+<script src="avatar.js"></script>
+<script src="teach.js"></script>
 <script src="parent.js"></script>
 <script src="app.js"></script>
 </body>

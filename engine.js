@@ -25,7 +25,9 @@
   // ---------- saved state ----------
   const DEFAULT = {
     v: 2,
-    name: 'Ellie',
+    name: '',         // set on this device in the avatar builder; never in the repo
+    avatar: null,     // her avatar, built by her; device only
+    taught: {},       // Dot's notebook: facts she taught Dot
     theme: '',        // garden | ocean | space, picked by her on first launch
     created: 0,
     settings: { fastSec: 3, blockMin: 5, blocks: 3, tts: true, pin: '', pinHint: '', bridge: { est: true, regroup: true }, roundFocus: 'auto', clockOnDigit: true },

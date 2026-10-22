@@ -41,7 +41,7 @@ async function waitSettled(page) {
 }
 const document_overlay = el => !!el;
 async function clearOverlays(page) { for (let i = 0; i < 40; i++) { const o = await page.$('#overlay [data-close], #overlay [data-how]'); if (!o) return; await o.click(); await page.waitForTimeout(60); } }
-async function nav(page, sel) { await clearOverlays(page); const w = await page.$('[data-tc]'); if (w) { await w.click(); await page.waitForTimeout(80); } await page.click(sel); await page.waitForTimeout(80); }
+async function nav(page, sel) { await clearOverlays(page); const w = await page.$('[data-tc]'); if (w) { await w.click(); await page.waitForTimeout(80); } const a = await page.$('[data-av-done]'); if (a) { await a.click(); await page.waitForTimeout(80); } await page.click(sel); await page.waitForTimeout(80); }
 async function type(page, s) { for (const ch of String(s)) await page.keyboard.press(ch); }
 async function answer(page, value, { delayMs = 0 } = {}) {
   if (delayMs) await page.evaluate(d => { window.__perf += d; }, delayMs);

@@ -4,6 +4,7 @@
   const EM = window.EM;
   const { range, shuffle, pick, fmt, esc, dayStr, DAY } = EM;
   const S = EM.load();
+  const NAME = () => S.name || 'friend';
   const T = () => EM.theme.current(), D = (mood, size, opts) => EM.theme.dot(mood, size, opts);
   EM.theme.apply();
   const $app = document.getElementById('app');
@@ -12,7 +13,7 @@
   // ---------- navigation ----------
   function go(s) { screen = s; render(); window.scrollTo(0, 0); }
   function render() {
-    const views = { world: renderWorld, home: renderHome, skills: renderSkills, practice: renderPractice, summary: renderSummary, parent: () => EM.parent.render($app, { go, startSession }), break: renderBreak };
+    const views = { avatar: () => { $app.innerHTML = EM.avatar.builder(!S.avatar); }, world: renderWorld, home: renderHome, skills: renderSkills, practice: renderPractice, summary: renderSummary, parent: () => EM.parent.render($app, { go, startSession }), break: renderBreak };
     (views[screen] || renderHome)();
   }
   EM.go = go; EM.render = render;
@@ -24,7 +25,8 @@
   // Her world, full width, with Dot and a speech bubble perched in the sky.
   function worldHTML(bubble, opts = {}) {
     const w = EM.world.render(opts);
-    return `<div class="world${opts.inset ? ' inset' : ''}">${w.svg}${bubble ? `<div class="perch">${D(opts.mood || 'calm', 60)}<div class="bubble">${bubble}</div></div>` : ''}</div>`;
+    const me = S.avatar ? EM.avatar.draw(undefined, 50, opts.mood === 'cheer' ? 'cheer' : 'wave') : '';
+    return `<div class="world${opts.inset ? ' inset' : ''}">${w.svg}${bubble ? `<div class="perch">${me}${D(opts.mood || 'calm', 60)}<div class="bubble">${bubble}</div></div>` : ''}</div>`;
   }
   function worldCounts() { const w = EM.world.render(); return { yours: w.yours, sprouts: w.sprouts }; }
   function surpriseHTML(known) {
@@ -38,15 +40,16 @@
     const first = !S.theme;
     $app.innerHTML = `<main class="wrap">
       ${first ? '' : '<button class="back" data-act="home">‹ Back</button>'}
-      <div class="home-top">${D('wow', 72)}<h1>${first ? `Hi, ${esc(S.name || 'Ellie')}!` : 'Pick your world'}</h1></div>
+      <div class="home-top">${D('wow', 72)}<h1>${first ? `Hi, ${esc(NAME())}!` : 'Pick your world'}</h1></div>
       <div class="bubble">${first ? "I'm Dot. Before we start, pick your world. Every fact you really learn adds something to it." : 'You can change your world any time. Everything you earned comes with you.'}</div>
       ${EM.theme.picker(S.theme)}
     </main>`;
     EM.speech.say(first ? "Hi! I'm Dot. Pick your world." : 'Pick your world.');
   }
   function renderHome() {
-    const known = EM.countYours(), name = esc(S.name || 'Ellie'), t = T();
+    const known = EM.countYours(), name = esc(NAME()), t = T();
     if (!S.theme) return renderWorld();
+    if (!S.avatar) { screen = 'avatar'; return render(); }
     if (!S.placement.done) {
       $app.innerHTML = `<main class="wrap home">
         ${worldHTML(t.id === 'classroom' ? `Welcome to class, ${name}! I'm your teacher, Dot. Today I just want to see what you already know, so I know what to teach.` : `Hi, ${name}! This is your ${t.place}. It's empty for now. Today let's find out what you already know and plant the first ${GROW[t.id][1]}.`, { mood: 'wow' })}
@@ -77,7 +80,8 @@
         <li>🙋 Not sure? Tap <b>I don't know</b>. That's how you learn. No guessing!</li>
         <li>⚡ Know a fact fast on two different days and it's <b>yours</b>. ${({ garden: 'A flower grows.', ocean: 'A fish swims into your reef.', space: 'A star lights up.', classroom: 'You earn a sticker.' })[t.id]}</li>
       </ul></div>
-      <p style="text-align:center;margin:0"><button class="worldbtn" data-act="world">🎨 Change my world</button></p>
+      ${EM.teach.notebook().length ? `<button class="notebook" data-act="notebook">📓 Dot's notebook: <b>${EM.teach.notebook().length}</b> fact${EM.teach.notebook().length > 1 ? 's' : ''} you taught Dot</button>` : ''}
+      <p style="text-align:center;margin:0"><button class="worldbtn" data-act="world">🎨 Change my world</button> &nbsp; <button class="worldbtn" data-act="avatar">🙂 Change me</button></p>
       <button class="grownup" data-hold="parent"><span class="fillbar"></span>Grown-ups: press and hold</button>
     </main>`;
   }
@@ -120,11 +124,12 @@
       const cap = S.settings.blockMin;
       blocks = [{ name: 'Foundations', cap, build: () => factQueueItems(openIds('A'), 40) }];
       if (S.settings.blocks >= 2) blocks.push({ name: 'Big numbers', cap, build: () => ({ items: procQueueItems(openIds('B'), 12), spare: [] }) });
-      if (S.settings.blocks >= 3) blocks.push({ name: 'School work', cap, build: () => { const ids = openIds('C'); return { items: ids.length ? procQueueItems(ids, 8) : procQueueItems(openIds('B'), 10), spare: [] }; } });
+      blocks.push({ name: 'Teach Dot', cap: 4, build: () => ({ items: EM.teach.items(3), spare: [] }) });
+      if (S.settings.blocks >= 3) blocks.splice(blocks.length - 1, 0, { name: 'School work', cap, build: () => { const ids = openIds('C'); return { items: ids.length ? procQueueItems(ids, 8) : procQueueItems(openIds('B'), 10), spare: [] }; } });
     }
     R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : "Today's practice", blocks, bi: -1, started: Date.now(),
       stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {}, how: { knew: 0, trick: 0, counted: 0 },
-        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlays: 0, knownBefore: EM.countYours() };
+        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlays: 0, knownBefore: EM.countYours() };
     screen = 'practice';
     nextBlock();
   }
@@ -179,7 +184,7 @@
     clearTimeout(R.speechT);
     const st = curStep();
     R.t0 = null; R.tLast = null;
-    const spoken = R.cur.kind === 'proc' && st.say && EM.speech.enabled();
+    const spoken = (R.cur.kind === 'proc' || R.cur.kind === 'teach') && st.say && EM.speech.enabled();
     if (R.waitReady) return; // look items: clock starts on "Ready"
     if (spoken) {
       const run = R, item = R.cur, step = R.step;
@@ -249,7 +254,8 @@
     if (rushed) R.stats.rushed++;
     R.stepRes.push({ ok: false, fast: false, ms, firstTry: false, typed });
     if (R.kind === 'placement') return placementMiss();
-    enterHelp(rushed ? 'Whoa, that was super fast! Slow down and think.' : pick(['Not quite.', 'Not yet.', 'Hmm, not that one.']), typed);
+    const copiedDot = R.cur.kind === 'teach' && R.cur.dotWrong && typed === R.cur.dotAns;
+    enterHelp(copiedDot ? "That's what Dot said. Let's check Dot's work together." : rushed ? 'Whoa, that was super fast! Slow down and think.' : pick(['Not quite.', 'Not yet.', 'Hmm, not that one.']), typed);
   }
   function idk() {
     if (!R || R.lock || R.phase !== 'ask' || R.waitReady || R.waitTrick || R.waitSpeech) return;
@@ -312,6 +318,7 @@
   // ---------- completing an item: grading, praise, celebrations ----------
   function completeItem() {
     const it = R.cur, res = R.stepRes;
+    if (it.kind === 'teach') return completeTeach(it, res);
     const allFirst = res.every(r => r.firstTry), allFast = allFirst && res.every(r => r.fast);
     const anyIdk = res.some(r => r.idk);
     // A lesson only on the Sam check counts as slow, not a miss.
@@ -361,6 +368,17 @@
     if (!R.msg || R.msg.kind !== 'soft') showMsg('soft', pick(['We\'ll see that one again soon.', 'That one is coming back.']));
     later(after, 800);
   }
+  // Teach Dot: only the final answer decides; a miss is a real retention miss and the fact goes back to learning.
+  function completeTeach(it, res) {
+    const ok = res[res.length - 1].firstTry, t = R.stats.taught;
+    EM.teach.record(it, ok);
+    t.n++; if (ok) t.ok++; if (it.dotWrong) { t.dotWrong++; if (ok) t.caught++; }
+    R.lock = true;
+    if (ok) { showMsg('good', `✓ ${it.done.html}`); EM.speech.say(it.done.say); mood('happy'); EM.sfx.right(); }
+    else { showMsg('soft', "Let's both practice that one again soon."); mood('curious'); }
+    saveInflight();
+    later(() => { R.idx++; beginItem(); }, ok ? 2200 : 1400);
+  }
   function queueReask(it) {
     const n = R.reasks[it.key] || 0; if (n >= 2) return;
     R.reasks[it.key] = n + 1;
@@ -387,7 +405,7 @@
     const n = EM.countYours();
     confetti();
     EM.sfx.yours();
-    overlay(`<div class="celebrate-row">${D('cheer', 92)}<span class="big-item">${T().item(n)}</span></div><h2>${esc(it.label)} is YOURS!</h2><p>You knew it fast today <b>and</b> another day. That's what really knowing looks like.<br>${T().newLine(n)} You now know <b>${n}</b> fact${n > 1 ? 's' : ''} for keeps.</p><button class="big-btn" data-close="1">Yes!</button>`, next);
+    overlay(`<div class="celebrate-row">${S.avatar ? EM.avatar.draw(undefined, 78, 'cheer') : ''}${D('cheer', 92)}<span class="big-item">${T().item(n)}</span></div><h2>${esc(it.label)} is YOURS!</h2><p>You knew it fast today <b>and</b> another day. That's what really knowing looks like.<br>${T().newLine(n)} You now know <b>${n}</b> fact${n > 1 ? 's' : ''} for keeps.</p><button class="big-btn" data-close="1">Yes!</button>`, next);
     EM.speech.say(`${it.label.replace('−', 'minus').replace('+', 'plus').replace('?', 'what')} is yours! You now really know ${n} facts.`).then(() => { if (R.clipPlays < 2) { R.clipPlays++; EM.clips.play(); } });
   }
   function levelUpNote(it, next) {
@@ -414,7 +432,7 @@
     if (!list.length) return;
     const [at, emoji, name] = list[0], t = T();
     EM.sfx.yours(); confetti();
-    overlay(`<div class="celebrate-row">${D('wow', 80)}<span class="milestone-big">${emoji}</span></div><h2>Surprise!</h2><p>You really know <b>${at}</b> facts, so ${name} moved into your ${t.place}!</p><button class="big-btn" data-close="1">Hello, ${name.replace(/^(a|an|the) /, '')}!</button>`, () => milestoneCeremony(list.slice(1)));
+    overlay(`<div class="celebrate-row">${S.avatar ? EM.avatar.draw(undefined, 70, 'cheer') : ''}${D('wow', 80)}<span class="milestone-big">${emoji}</span></div><h2>Surprise!</h2><p>You really know <b>${at}</b> facts, so ${name} moved into your ${t.place}!</p><button class="big-btn" data-close="1">Hello, ${name.replace(/^(a|an|the) /, '')}!</button>`, () => milestoneCeremony(list.slice(1)));
     EM.speech.say(`Surprise! ${name} moved into your ${t.place}!`).then(() => EM.clips.play());
   }
   function zoneSheet(id) {
@@ -458,7 +476,7 @@
     const st = R.stats;
     return { date: Date.now(), kind: R.kind === 'skill' ? 'skill' : R.kind, title: R.title, items: st.items, fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk, rushed: st.rushed, relooks: st.relooks,
       minutes: Math.round((Date.now() - R.started) / 6000) / 10, avg: st.times.length ? Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length) : 0,
-      learned: st.learned.map(l => l.label), fastKeys: st.fastKeys.slice(0, 40), tricks: st.tricks, samCaught: st.samCaught || 0, how: st.how, byKind: st.byKind, est: st.est };
+      learned: st.learned.map(l => l.label), fastKeys: st.fastKeys.slice(0, 40), tricks: st.tricks, samCaught: st.samCaught || 0, taught: st.taught, how: st.how, byKind: st.byKind, est: st.est };
   }
   function saveInflight() { S.inflight = sessionRecord(); EM.save(); }
   function closeInflight() {
@@ -527,10 +545,11 @@
     if (R.yoursNow.length) notes.push(`${T().big} New ${R.yoursNow.length > 1 ? T().many : T().one}: <b>${R.yoursNow.map(esc).join(', ')}</b>. Those are yours now.`);
     if (st.learned.length) notes.push(`🧠 You didn't know <b>${esc(st.learned[0].label)}</b>${st.learned.length > 1 ? ` and ${st.learned.length - 1} more` : ''} at the start. Then you learned ${st.learned.length > 1 ? 'them' : 'it'}. That's brave, and it's how your brain grows.`);
     if (st.rushed) notes.push(`🐢 ${st.rushed} answer${st.rushed > 1 ? 's were' : ' was'} super quick and wrong. Think first, then tap.`);
+    if (st.taught.n) notes.push(`🧑‍🏫 You taught Dot ${st.taught.ok} of ${st.taught.n}${st.taught.dotWrong ? ` and caught ${st.taught.caught} of Dot's ${st.taught.dotWrong} mistake${st.taught.dotWrong > 1 ? 's' : ''}` : ''}. Great teaching!`);
     if (st.samCaught) notes.push(`🕵️ Your estimate caught ${st.samCaught} of Sam's mistakes!`);
     if (!R.yoursNow.length) notes.push(`⭐ Facts you get right fast on two different days become yours. Come back tomorrow!`);
     $app.innerHTML = `<main class="wrap">
-      ${worldHTML(R.yoursKeys.length ? `Nice work, ${esc(S.name || 'Ellie')}! Look what's new in your ${T().place}!` : R.planted ? `Nice work, ${esc(S.name || 'Ellie')}! You planted ${R.planted} new ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} today.` : `Nice work, ${esc(S.name || 'Ellie')}! Your ${GROW[T().id][1]} are getting stronger.`, { mood: 'cheer', fresh: [...R.yoursKeys, ...R.plantedKeys], freshDeco: EM.world.crossed(R.knownBefore, known).map(m => m[0]) })}
+      ${worldHTML(R.yoursKeys.length ? `Nice work, ${esc(NAME())}! Look what's new in your ${T().place}!` : R.planted ? `Nice work, ${esc(NAME())}! You planted ${R.planted} new ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} today.` : `Nice work, ${esc(NAME())}! Your ${GROW[T().id][1]} are getting stronger.`, { mood: 'cheer', fresh: [...R.yoursKeys, ...R.plantedKeys], freshDeco: EM.world.crossed(R.knownBefore, known).map(m => m[0]) })}
       <p class="sub" style="text-align:center">${R.title} · ${st.items} questions</p>
       <div class="tiles">
         <div class="tile"><b>${st.fast}</b><span>⚡ Knew it fast</span></div>
@@ -548,6 +567,9 @@
   $app.addEventListener('click', e => {
     const d = e.target.closest('[data-d]');
     if (d) return typeDigit(d.dataset.d);
+    const av = e.target.closest('[data-av]');
+    if (av) { const ni = document.getElementById('avName'); if (ni) S.name = ni.value.trim(); EM.avatar.set(av.dataset.av, av.dataset.val); EM.sfx.right(); return render(); }
+    if (e.target.closest('[data-av-done]')) { const ni = document.getElementById('avName'); if (ni) S.name = ni.value.trim(); S.avatar = EM.avatar.get(); EM.save(); EM.sfx.unlock(); EM.speech.say(S.name ? `Nice to meet you, ${S.name}!` : 'Nice to meet you!'); return go('home'); }
     const zh = e.target.closest('[data-zone]');
     if (zh) return zoneSheet(zh.dataset.zone);
     const tc = e.target.closest('[data-tc]');
@@ -561,6 +583,12 @@
       case 'home': return go('home');
       case 'skills': return go('skills');
       case 'world': return go('world');
+      case 'avatar': return go('avatar');
+      case 'notebook': {
+        const keys = EM.teach.notebook();
+        overlay(`<div class="celebrate-row">${D('proud', 64)}</div><h2>Dot's notebook</h2><p>Facts ${esc(NAME())} taught me:</p><div class="nbgrid">${keys.map(k => `<span>${esc(EM.labelFact(EM.FACTS[k]))}${S.taught[k].caught ? ' ✓' : ''}</span>`).join('')}</div><p style="font-size:14px;color:var(--muted)">✓ means you caught one of my mistakes on it.</p><button class="big-btn" data-close="1">Back</button>`, null);
+        return;
+      }
       case 'placement': return startSession('placement');
       case 'today': return startSession('daily');
       case 'evening': return startSession('evening');

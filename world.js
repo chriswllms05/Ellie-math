@@ -194,7 +194,7 @@
     });
     const total = EM.countYours();
     const deco = milestones().filter(m => total >= m[0]).map(m => `<text class="deco${opts.freshDeco && opts.freshDeco.includes(m[0]) ? ' fresh' : ''}" x="${m[3]}" y="${m[4]}" font-size="${m[5]}" text-anchor="middle">${m[1]}</text>`).join('');
-    const svg = `<svg class="world-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(EM.S.name || 'Ellie')}'s ${t.place}: ${yours} ${yours === 1 ? t.one : t.many}, ${sprouts} growing">
+    const svg = `<svg class="world-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${EM.S.name ? esc(EM.S.name) + "'s" : 'Your'} ${t.place}: ${yours} ${yours === 1 ? t.one : t.many}, ${sprouts} growing">
       ${BACKS[t.id]()}${deco}${zones}${lines}${items}</svg>`;
     return { svg, yours, sprouts };
   }

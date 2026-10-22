@@ -16,13 +16,14 @@
     const ask = fastLabels.length ? `How did you know ${fastLabels[Math.floor(Math.random() * fastLabels.length)]}?` : learned.length ? `Show me how you figured out ${learned[0]}.` : 'What was the trickiest one today?';
     const yours = R.yoursNow || [];
     return `<div class="gcard"><h2>For a grown-up 👋</h2>
-      <p style="margin:0 0 6px">${esc(S_.name || 'Ellie')} did <b>${st.items}</b> questions in about <b>${Math.max(1, Math.round((Date.now() - R.started) / 60000))}</b> minutes.</p>
+      <p style="margin:0 0 6px">${esc(S_.name || 'She')} did <b>${st.items}</b> questions in about <b>${Math.max(1, Math.round((Date.now() - R.started) / 60000))}</b> minutes.</p>
       <ul>
         ${yours.length ? `<li>🌸 Now <b>hers for keeps</b>: ${yours.map(esc).join(', ')}</li>` : ''}
         ${fastLabels.length ? `<li>⚡ Knew fast: ${fastLabels.map(esc).join(', ')}${st.fastKeys.length > 6 ? ` and ${st.fastKeys.length - 6} more` : ''}</li>` : ''}
         ${learned.length ? `<li>🧠 Asked for help, then learned: ${learned.map(esc).join(', ')}</li>` : ''}
         ${st.idk ? `<li>🙋 Said "I don't know" ${st.idk} time${st.idk > 1 ? 's' : ''} instead of guessing. Worth praising out loud.</li>` : ''}
         ${st.rushed ? `<li>🐢 Rushed guesses: ${st.rushed}. Ask her to think first.</li>` : ''}
+        ${st.taught && st.taught.n ? `<li>🧑‍🏫 Taught Dot ${st.taught.ok} of ${st.taught.n} facts${st.taught.dotWrong ? `, caught ${st.taught.caught} of ${st.taught.dotWrong} of Dot's mistakes` : ''}. A miss here sends that fact back to practice.</li>` : ''}
         ${st.slow ? `<li>✓ Right but slow (still working it out): ${st.slow}. Normal; that's what practice is for.</li>` : ''}
       </ul>
       <div class="ask-her">Ask her: "${esc(ask)}"<br><span style="font-weight:600;color:var(--muted);font-size:14px">"I counted" is an honest answer. The goal is for that to change over the weeks.</span></div>
@@ -38,11 +39,12 @@
     return sess.reduce((a, s) => {
       const bk = s.byKind || {}, f = bk.fact || z(), h = s.how || {}, e = s.est || {};
       for (const k of ['fast', 'slow', 'wrong', 'idk']) { a[k] += s[k] || 0; a.fact[k] += f[k] || 0; }
+      const tg = s.taught || {}; a.teach.n += tg.n || 0; a.teach.ok += tg.ok || 0; a.teach.caught += tg.caught || 0; a.teach.dotWrong += tg.dotWrong || 0;
       a.rushed += s.rushed || 0; a.minutes += s.minutes || 0; a.learned += (s.learned || []).length;
       for (const k of ['knew', 'trick', 'counted']) a.how[k] += h[k] || 0;
       for (const k of ['round', 'combine', 'sam']) { a.est[k].ok += (e[k] || {}).ok || 0; a.est[k].n += (e[k] || {}).n || 0; }
       return a;
-    }, { ...z(), fact: z(), rushed: 0, minutes: 0, learned: 0, how: { knew: 0, trick: 0, counted: 0 }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } } });
+    }, { ...z(), fact: z(), rushed: 0, minutes: 0, learned: 0, how: { knew: 0, trick: 0, counted: 0 }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, teach: { n: 0, ok: 0, caught: 0, dotWrong: 0 } });
   }
   const pctFluent = ids => { const facts = EM.uniq(ids.flatMap(id => EM.SK[id].facts)); return facts.filter(EM.isYours).length / facts.length; };
 
@@ -103,6 +105,7 @@
           <div class="kpi ${t.rushed ? 'warn' : 'ok'}"><b>${t.rushed}</b><span>rushed guesses</span></div>
           <div class="kpi"><b>${t.idk}</b><span>"I don't know" · ${t.learned} learned after help</span></div>
           <div class="kpi ${hn && h.counted / hn > 0.5 ? 'warn' : ''}"><b>${hn ? Math.round(h.counted / hn * 100) + '%' : '–'}${hnp ? arrow(Math.round(h.counted / hn * 100), Math.round(hp.counted / hnp * 100)) : ''}</b><span>"I counted" when asked how she knew (${hn} asked this week)</span></div>
+          ${t.teach.n ? `<div class="kpi ${t.teach.ok / t.teach.n >= 0.8 ? 'ok' : 'warn'}"><b>${pct(t.teach.ok, t.teach.n)}%</b><span>Teach Dot: facts still hers on a later check (${t.teach.ok}/${t.teach.n}); caught ${t.teach.caught} of ${t.teach.dotWrong} of Dot's mistakes</span></div>` : ''}
           ${t.est.round.n ? `<div class="kpi"><b>${pct(t.est.round.ok, t.est.round.n)}% · ${pct(t.est.combine.ok, t.est.combine.n)}%</b><span>estimating: rounding steps right · adding steps right</span></div>` : ''}
         </div>
         <p style="margin-top:12px;color:var(--muted)">The signal you want: <b>fast-and-right rising</b>, <b>slow-right and "I counted" falling</b>, rushed guesses near zero. Percentages are facts only; big-number work is tracked on the skill ladder below.</p>
@@ -262,7 +265,7 @@
     const b = e.target.dataset.bridge;
     if (b) { S_.settings.bridge[b] = e.target.checked; EM.save(); return; }
     const key = e.target.dataset.set; if (!key) return;
-    if (key === 'name') S_.name = e.target.value.trim() || 'Ellie';
+    if (key === 'name') S_.name = e.target.value.trim() || '';
     else if (e.target.type === 'checkbox') S_.settings[key] = e.target.checked;
     else S_.settings[key] = Number(e.target.value);
     EM.save();

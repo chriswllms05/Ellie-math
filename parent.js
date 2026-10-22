@@ -233,6 +233,14 @@
     renderClips();
   };
 
+  // Voice: best installed voice first. Premium/Enhanced voices sound far more natural and work offline once downloaded.
+  function voiceHTML() {
+    EM.speech.pick();
+    const vs = EM.speech.voices(), cur = EM.speech.voice, tag = q => q >= 3 ? ' ★ Premium' : q >= 2 ? ' ★ Enhanced' : '';
+    if (!vs.length) return '<p style="color:var(--muted)">No voices found on this device yet.</p>';
+    return `<label class="set">Voice <select data-voice="1">${vs.map(v => `<option value="${esc(v.uri)}" ${cur && cur.voiceURI === v.uri ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})${tag(v.q)}</option>`).join('')}</select> <button class="btn secondary small" data-act="voicetest">▶ Hear it</button></label>
+      ${EM.speech.quality < 2 ? `<p class="warn-banner">For a much more natural voice (free, works offline): on the iPad open <b>Settings → Accessibility → Spoken Content → Voices → English</b>, pick a voice marked <b>Premium</b> or <b>Enhanced</b> (Ava, Zoe and Evan are good), and download it. Then close and reopen Ellie Math and choose it here.</p>` : ''}`;
+  }
   function settingsHTML(S_) {
     const st = S_.settings;
     return `
@@ -240,6 +248,7 @@
       <label class="set">An answer counts as "known" within <select data-set="fastSec">${[2, 3, 4, 5, 6].map(v => `<option value="${v}" ${st.fastSec === v ? 'selected' : ''}>${v} s (+0.6 s per extra digit)</option>`).join('')}</select></label>
       <label class="set">Daily practice length <select data-set="minutes">${[10, 15, 20].map(v => `<option value="${v}" ${(st.minutes || 15) === v ? 'selected' : ''}>${v} minutes</option>`).join('')}</select></label>
       <label class="set">Read prompts aloud <input type="checkbox" data-set="tts" ${st.tts ? 'checked' : ''}></label>
+      ${voiceHTML()}
       <label class="set">School work: estimating by rounding <input type="checkbox" data-bridge="est" ${st.bridge.est !== false ? 'checked' : ''}></label>
       <label class="set">School work: column add/subtract with regrouping <input type="checkbox" data-bridge="regroup" ${st.bridge.regroup !== false ? 'checked' : ''}></label>
       <label class="set">Grown-up PIN <button class="btn secondary small" data-act="changePin">Change PIN</button></label>
@@ -290,6 +299,7 @@
         }
         case 'export': return exportBackup();
         case 'import': return document.getElementById('importFile').click();
+        case 'voicetest': EM.speech.prime(); EM.speech.say(`Hi${S().name ? ', ' + S().name : ''}! 8 plus 5 is 13. You didn't count that one, you just knew it!`); return;
         case 'changePin': {
           const a = prompt('New 4-digit PIN'); if (!/^\d{4}$/.test(a || '')) { if (a !== null) alert('Four digits, please.'); return; }
           const b = prompt('Type it again'); if (a !== b) { alert("Those didn't match. PIN not changed."); return; }
@@ -341,6 +351,7 @@
     }
     const m = e.target.dataset.manual;
     if (m) { EM.skillRec(m).manual = e.target.checked; EM.save(); EM.render(); return; }
+    if (e.target.dataset.voice) { EM.speech.setVoice(e.target.value); EM.speech.say(`Hi${S_.name ? ', ' + S_.name : ''}! This is how I will sound.`); return; }
     const b = e.target.dataset.bridge;
     if (b) { S_.settings.bridge[b] = e.target.checked; EM.save(); return; }
     const key = e.target.dataset.set; if (!key) return;

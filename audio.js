@@ -7,13 +7,26 @@
   const synth = window.speechSynthesis;
   let voice = null, primed = false, current = null, fallbackT = 0, seq = 0;
 
+  // Siri's own voice isn't available to web apps, but the free Enhanced and Premium voices an iPad can download are.
+  // Rank what's installed: Premium > Enhanced > natural-sounding standard voices; novelty voices never.
+  const NOVELTY = /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy|eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley/i;
+  const NATURAL = /ava|zoe|allison|susan|nicky|evan|nathan|tom|serena|kate|oliver|jamie|samantha|karen|daniel|moira|aria|jenny|guy/i;
+  function quality(v) {
+    const id = `${v.name} ${v.voiceURI || ''}`;
+    if (NOVELTY.test(v.name)) return -1;
+    if (/premium|natural|neural|online/i.test(id)) return 3;
+    if (/enhanced/i.test(id)) return 2;
+    return NATURAL.test(v.name) ? 1 : 0;
+  }
+  function ranked() {
+    if (!synth) return [];
+    return synth.getVoices().filter(v => /^en(-|_)/i.test(v.lang) && quality(v) >= 0)
+      .map(v => ({ v, q: quality(v) + (/US/i.test(v.lang) ? 0.2 : 0) })).sort((a, b) => b.q - a.q).map(o => o.v);
+  }
   function pickVoice() {
-    if (!synth) return;
-    const vs = synth.getVoices();
-    if (!vs.length) return;
-    const en = vs.filter(v => /^en(-|_)?(US|GB|AU|CA)?/i.test(v.lang));
-    const pref = ['Samantha', 'Karen', 'Daniel', 'Moira', 'Google US English', 'Microsoft Aria', 'Microsoft Zira'];
-    voice = pref.map(n => en.find(v => v.name.includes(n))).find(Boolean) || en.find(v => v.default) || en[0] || vs[0];
+    const list = ranked(); if (!list.length) return;
+    const want = EM.S && EM.S.settings.voiceURI;
+    voice = (want && list.find(v => v.voiceURI === want)) || list[0];
   }
   if (synth) { pickVoice(); synth.addEventListener && synth.addEventListener('voiceschanged', pickVoice); }
 
@@ -34,7 +47,7 @@
       const finish = ok => { if (done) return; done = true; clearTimeout(fallbackT); if (current === u) current = null; res(ok); };
       const u = new SpeechSynthesisUtterance(words);
       if (voice) u.voice = voice;
-      u.rate = opts.rate || 0.92; u.pitch = 1.05;
+      u.rate = opts.rate || (quality(voice || {name: ''}) >= 2 ? 0.98 : 0.92); u.pitch = 1;
       u.onend = () => finish(true);
       u.onerror = () => finish(false);
       current = u;
@@ -50,7 +63,9 @@
   // Rough duration estimate, for timers that must not depend on onend. Digits are spoken as words, so they cost more than letters.
   function estimateMs(text) { const s = String(text || ''); const digits = (s.match(/\d/g) || []).length; const letters = s.replace(/[\d\s,.?!]/g, '').length; return Math.max(1500, 900 + letters * 75 + digits * 600); }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && synth) { try { synth.cancel(); synth.resume && synth.resume(); } catch (e) {} } });
-  EM.speech = { prime, say, stop, enabled, estimateMs, get voice() { return voice; } };
+  const voices = () => ranked().map(v => ({ uri: v.voiceURI, name: v.name.replace(/\s*\((Enhanced|Premium)\)/i, ''), lang: v.lang, q: quality(v) }));
+  function setVoice(uri) { if (EM.S) { EM.S.settings.voiceURI = uri || ''; EM.save(); } pickVoice(); }
+  EM.speech = { prime, say, stop, enabled, estimateMs, voices, setVoice, pick: pickVoice, get voice() { return voice; }, get quality() { return voice ? quality(voice) : 0; } };
 
   // ---------- parent voice clips (MediaRecorder -> IndexedDB blobs) ----------
   const CLIP_KEYS = ['clip:1', 'clip:2', 'clip:3', 'clip:4', 'clip:5'];

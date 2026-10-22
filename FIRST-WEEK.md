@@ -5,8 +5,9 @@
 1. Open the app on the iPad in Safari, Share → **Add to Home Screen**, then launch it from the icon.
 2. Press and hold **Grown-ups** on the home screen. Set a 4-digit PIN.
 3. In **Your voice**, record 4 or 5 clips. Three seconds each, your real voice, the things you actually say: "That's my girl." "You didn't count that!" "So proud of you." These play when a fact becomes hers and when a skill unlocks. They matter more than anything else in the app for a kid who runs on approval.
-4. Check the settings defaults: 3 parts × 5 minutes, read-aloud on, both school-work topics on. Leave them for week 1.
-5. Tap **Done**, then tap the speaker on any question later to make sure sound works (mute switch off, volume up).
+4. **Get a natural voice (2 minutes, free).** On the iPad: Settings → Accessibility → Spoken Content → Voices → English. Pick a voice marked **Premium** or **Enhanced** (Ava, Zoe or Evan) and download it. Then reopen Ellie Math; it uses the best installed voice automatically, and Grown-ups → Settings → Voice lets you choose and preview. (Siri's own voice isn't available to web apps; these are the next best and work offline.)
+5. Check the settings defaults: 3 parts × 5 minutes, read-aloud on, both school-work topics on. Leave them for week 1.
+6. Tap **Done**, then tap the speaker on any question later to make sure sound works (mute switch off, volume up).
 
 ## Day 1: pick a world, then placement (sit with her)
 

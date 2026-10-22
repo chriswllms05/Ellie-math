@@ -30,8 +30,8 @@
     }
     if (f.type === 'sub' && a > 10 && b > a - 10) {
       const ones = a - 10, more = b - ones;
-      if (!wrong) return { ans, line: `Take away ${ones} to get to 10, then ${more} more… ${ans}?`, wrongDot: false };
-      return { ans: ans + 1, line: `Take away ${ones} to get to 10, then ${more} more… ${ans + 1}?`, wrongDot: true };
+      if (!wrong) return { ans, line: `Subtract the ones first: take ${ones} to get to 10, then ${more} more… ${ans}?`, wrongDot: false };
+      return { ans: ans + 1, line: `Subtract the ones first: take ${ones} to get to 10, then ${more} more… ${ans + 1}?`, wrongDot: true };
     }
     if (f.type === 'sub') {
       if (!wrong) return { ans, line: `${b} and ${ans} make ${a}… so ${ans}?`, wrongDot: false };

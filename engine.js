@@ -147,9 +147,37 @@
         if (p && p.box < 1) { p.box = 1; p.due = startOfDay(now + DAY); p.peak = Math.max(p.peak || 0, 1); p.linked = key; }
       }
     }
+    // Trace repeated misses to the smaller facts this one is built from; weak ones get practised first.
+    let weakComps = [];
+    if (becameYours && S.focus) delete S.focus[key];
+    if ((outcome === 'wrong' || outcome === 'idk') && r.wrong + r.idk >= 2) {
+      const comps = components(key);
+      if (comps.length) {
+        weakComps = comps.filter(c => !(S.facts[c] && S.facts[c].box >= FLUENT_BOX));
+        weakComps.forEach(c => focusFact(c, now));
+        (S.roots || (S.roots = {}))[key] = { weak: weakComps, at: now };
+      }
+    }
     save();
-    return { becameYours, rescued, hadTrouble };
+    return { becameYours, rescued, hadTrouble, weakComps };
   }
+  // The smaller facts a strategy fact is built from (Dimensions strategies), only those that exist as facts.
+  function components(key) {
+    const f = EM.FACTS[key]; if (!f) return [];
+    const out = [];
+    if (f.type === 'add') {
+      const big = Math.max(f.a, f.b), small = Math.min(f.a, f.b);
+      if (big - small === 1 && small > 1) out.push(`add:${small}+${small}`); // near doubles: double, then 1 more
+      else if (f.ans > 10 && big < 10 && small > 2) { const need = 10 - big, rest = small - need; out.push(`m10:${big}`, `bond:${small}:${Math.min(need, rest)}`, `add:10+${rest}`); }
+    } else if (f.type === 'sub') {
+      const { a, b, ans } = f, ones = a - 10;
+      if (a > 10 && b >= 6 && b < 10) out.push(`sub:10-${b}`, `add:${10 - b}+${ones}`);
+      else if (a > 10 && b > ones && b < 10) out.push(`sub:${a}-${ones}`, `sub:10-${b - ones}`);
+      else if (a <= 10 && b > 2) out.push(`add:${b}+${ans}`);
+    }
+    return out.filter(k => EM.FACTS[k] && k !== key);
+  }
+  function focusFact(key, now = Date.now()) { if (!EM.FACTS[key]) return; (S.focus || (S.focus = {}))[key] = now + 7 * DAY; }
   const avgTime = r => r && r.times && r.times.length ? r.times.reduce((a, b) => a + b, 0) / r.times.length : 0;
   const isYours = key => { const r = S.facts[key]; return !!r && r.box >= FLUENT_BOX; };
   const countYours = () => Object.keys(S.facts).filter(isYours).length;
@@ -264,7 +292,7 @@
     if (f.type === 'look') return f.n;
     if (f.type === 'm10') return 10 - Math.abs(5 - f.a);
     if (f.type === 'bond') return f.w * 10 + f.p;
-    if (f.type === 'mul') return ({ 10: 0, 2: 20, 5: 40 })[f.b] + f.a;
+    if (f.type === 'mul') return ({ 10: 0, 2: 20, 5: 40, 3: 60, 4: 80 })[f.b] + f.a;
     if (f.type === 'add') { const big = Math.max(f.a, f.b), small = Math.min(f.a, f.b); return f.a + f.b > 10 && big < 10 ? 100 + (10 - big) * 10 + small : f.a + f.b; }
     if (f.type === 'sub') return f.a > 10 ? 100 + (10 - Math.min(f.b, 9)) * 10 + f.a : f.a;
     return 50;
@@ -283,14 +311,15 @@
   const ACTIVE = 8;
   function buildFactQueue(skillIds, len, now = Date.now(), opts = {}) {
     const order = new Map();
-    let keys = uniq([...skillIds.flatMap(id => EM.SK[id].facts), ...(opts.extraKeys || [])]);
+    const focus = S.focus || {}, isF = k => focus[k] > now;
+    let keys = uniq([...skillIds.flatMap(id => EM.SK[id].facts), ...(opts.extraKeys || []), ...(opts.dueOnly ? [] : Object.keys(focus).filter(k => isF(k) && EM.FACTS[k]))]);
     keys.forEach((k, i) => order.set(k, i));
     if (opts.dueOnly) keys = keys.filter(k => S.facts[k] && (S.facts[k].box < 1 || startOfDay(S.facts[k].due) <= now));
     const rec = k => S.facts[k];
-    const learning = keys.filter(k => rec(k) && rec(k).box < 1).sort((a, b) => (rec(a).last || 0) - (rec(b).last || 0));
+    const learning = keys.filter(k => rec(k) && rec(k).box < 1).sort((a, b) => (isF(b) - isF(a)) || (rec(a).last || 0) - (rec(b).last || 0));
     const active = learning.slice(0, ACTIVE);
     const due = keys.filter(k => rec(k) && rec(k).box >= 1 && startOfDay(rec(k).due) <= now).sort((a, b) => rec(a).due - rec(b).due);
-    const unseen = keys.filter(k => !rec(k)).sort((a, b) => difficulty(a) - difficulty(b) || order.get(a) - order.get(b));
+    const unseen = keys.filter(k => !rec(k)).sort((a, b) => (isF(b) - isF(a)) || difficulty(a) - difficulty(b) || order.get(a) - order.get(b));
     const notDue = shuffle(keys.filter(k => rec(k) && rec(k).box >= 1 && startOfDay(rec(k).due) > now));
     const probes = opts.dueOnly ? [] : unseen.slice(0, Math.min(3, Math.max(0, ACTIVE - learning.length)));
     const unknownSlots = active.length * 3 + probes.length;
@@ -321,7 +350,7 @@
     }
     return shuffle(out);
   }
-  Object.assign(EM, { buildFactQueue, pickProcSkills, difficulty, familyKeys });
+  Object.assign(EM, { buildFactQueue, pickProcSkills, difficulty, familyKeys, components, focusFact });
 
   // ---------- session log ----------
   function logSession(sess) {

@@ -139,6 +139,7 @@
     // First time hers: a celebration (big if she once missed it). Back again after slipping: a rescue.
     const becameYours = wasBelow && r.box >= FLUENT_BOX && !wasEverHers, rescued = wasBelow && r.box >= FLUENT_BOX && wasEverHers;
     if (becameYours && !S.yours.includes(key)) S.yours.push(key);
+    if (becameYours && !r.hersAt) r.hersAt = now;
     if (becameYours) {
       const f = EM.FACTS[key];
       if (f && f.type === 'add' && f.a !== f.b) {

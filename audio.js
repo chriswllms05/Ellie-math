@@ -97,7 +97,10 @@
     try {
       const have = key ? [key] : await clips.list();
       if (!have.length) return false;
-      const k = have[Math.floor(Math.random() * have.length)];
+      // Least-played clip first, so a newly recorded message comes up next.
+      const plays = (EM.S && (EM.S.clipPlays || (EM.S.clipPlays = {}))) || {};
+      const k = key || have.slice().sort((a, b) => (plays[a] || 0) - (plays[b] || 0) || Math.random() - 0.5)[0];
+      plays[k] = (plays[k] || 0) + 1; EM.save();
       const blob = await EM.idbGet(k); if (!blob) return false;
       stop();
       if (!audioEl) audioEl = new Audio();

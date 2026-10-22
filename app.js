@@ -153,8 +153,14 @@
     else blocks = planDaily();
     R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : "Today's practice", blocks, bi: -1, started: Date.now(),
       stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {}, how: { knew: 0, trick: 0, counted: 0 },
-        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlayed: false, idkCount: 0, missStreak: 0, knownBefore: EM.countCollected() };
+        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 }, slips: 0, slipKeys: [], column: { items: 0, clean: 0, factSlip: 0, regroupMiss: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlayed: false, idkCount: 0, missStreak: 0, knownBefore: EM.countCollected() };
     screen = 'practice';
+    if (kind === 'daily' && S.reply && !S.reply.played) {
+      S.reply.played = true; EM.save(); screen = 'home';
+      overlay(`<div class="celebrate-row">${D('wow', 80)}<span class="milestone-big">📬</span></div><h2>A message from your grown-up!</h2><button class="big-btn" data-close="1">Let's go!</button>`, () => { screen = 'practice'; nextBlock(); });
+      EM.clips.play('clip:reply');
+      return;
+    }
     nextBlock();
   }
   function nextBlock() {
@@ -371,11 +377,15 @@
       if (!S.facts[it.key]) { R.planted++; R.plantedKeys.push(it.key); }
       const g = EM.gradeFact(it.key, outcome, ms);
       becameYours = g.becameYours && g.hadTrouble; quietYours = g.becameYours && !g.hadTrouble; rescued = g.rescued;
+      // An answer off by one is the signature of a counting slip.
+      const t0 = res[0] && res[0].typed;
+      if (typeof t0 === 'number' && Math.abs(t0 - it.f.ans) === 1) { R.stats.slips++; if (!R.stats.slipKeys.includes(it.key)) R.stats.slipKeys.push(it.key); const fr = S.facts[it.key]; fr.slips = (fr.slips || 0) + 1; EM.save(); }
       if (quietYours) { R.yoursNow.push(it.label); R.yoursKeys.push(it.key); }
       if (outcome === 'fast') R.stats.fastKeys.push(it.key);
     } else if (graded && it.kind === 'proc') {
       const g = EM.gradeProc(it.skillId, it.level, { ok: outcome === 'fast' || outcome === 'slow', fast: outcome === 'fast', scaff: it.scaff, outcome }); leveledUp = g.leveledUp;
       if (it.samCaught && allFirst) R.stats.samCaught = (R.stats.samCaught || 0) + 1;
+      if (it.type === 'regroup') { const c = R.stats.column; c.items++; if (allFirst) c.clean++; res.forEach((r, i) => { if (!r.firstTry) { if (it.steps[i].kind) c.regroupMiss++; else c.factSlip++; } }); }
       if (it.type === 'est') res.forEach((r, i) => {
         const bucket = it.steps[i].sam ? 'sam' : i < 2 ? 'round' : 'combine', e = R.stats.est[bucket]; e.n++; if (r.firstTry) e.ok++;
         // the two rounding steps also feed her rounding record
@@ -532,7 +542,7 @@
     const st = R.stats;
     return { date: Date.now(), kind: R.kind === 'skill' ? 'skill' : R.kind, title: R.title, items: st.items, fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk, rushed: st.rushed, relooks: st.relooks,
       minutes: Math.round((Date.now() - R.started) / 6000) / 10, avg: st.times.length ? Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length) : 0,
-      learned: st.learned.map(l => l.label), fastKeys: st.fastKeys.slice(0, 40), tricks: st.tricks, samCaught: st.samCaught || 0, taught: st.taught, how: st.how, byKind: st.byKind, est: st.est };
+      learned: st.learned.map(l => l.label), fastKeys: st.fastKeys.slice(0, 40), tricks: st.tricks, samCaught: st.samCaught || 0, taught: st.taught, slips: st.slips, column: st.column, how: st.how, byKind: st.byKind, est: st.est };
   }
   function saveInflight() { S.inflight = sessionRecord(); EM.save(); }
   function closeInflight() {

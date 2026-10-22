@@ -1,11 +1,17 @@
 /* Ellie Math service worker: cached copy first if the network is slow, never caches a bad response, updates on the next launch. */
-const VERSION = 'ellie-math-v13';
-const JS = ['engine', 'content', 'audio', 'manip', 'theme', 'world', 'avatar', 'teach', 'parent', 'app'].map(n => `./${n}.js?v=13`);
+const VERSION = 'ellie-math-v14';
+const JS = ['engine', 'content', 'voice', 'audio', 'manip', 'theme', 'world', 'avatar', 'teach', 'parent', 'app'].map(n => `./${n}.js?v=14`);
 const FILES = ['./', './index.html', ...JS, './fonts/fredoka-latin-500-normal.woff2', './fonts/fredoka-latin-600-normal.woff2', './fonts/fredoka-latin-700-normal.woff2', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './icon-maskable-512.png', ...['garden', 'ocean', 'space', 'classroom'].map(w => `./icon-${w}-180.png`)];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
-self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+// Dot's recorded voice (~30 MB) lives in its own cache so an app update doesn't download it again; audio.js prunes old packs.
+const VOICE_CACHE = 'ellie-voice';
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION && k !== VOICE_CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) return;
+  if (/\/voice\/pack-\d+\.bin\?v=/.test(e.request.url)) {
+    e.respondWith(caches.open(VOICE_CACHE).then(c => c.match(e.request).then(hit => hit || fetch(e.request).then(r => { if (r && r.ok) c.put(e.request, r.clone()); return r; }))));
+    return;
+  }
   e.respondWith((async () => {
     const cached = await caches.match(e.request);
     const net = fetch(e.request).then(r => {

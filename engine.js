@@ -47,6 +47,8 @@
     const out = { ...clone(DEFAULT), ...s };
     out.settings = { ...clone(DEFAULT.settings), ...(s.settings || {}) };
     out.settings.bridge = { ...clone(DEFAULT.settings.bridge), ...((s.settings || {}).bridge || {}) };
+    // Dot's recorded voice arrived after some iPads had picked a device voice: switch everyone to it once.
+    if (!out.settings.dotVoice) { out.settings.dotVoice = 1; out.settings.voiceURI = 'dot'; }
     out.v = 2;
     return out;
   }

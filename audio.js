@@ -1,4 +1,4 @@
-/* Ellie Math — speech (Web Speech API) and parent voice clips.
+/* Ellie Math — speech (Dot's recorded voice, else the Web Speech API) and parent voice clips.
    iPad Safari rules: speech must be primed inside a user gesture, voices load async, onend sometimes never fires,
    and a backgrounded PWA comes back with a stuck queue. Everything here guards for that. */
 'use strict';
@@ -36,18 +36,75 @@
   }
   if (synth) { pickVoice(); synth.addEventListener && synth.addEventListener('voiceschanged', pickVoice); }
 
+  // ---------- Dot's recorded voice (voice/index.json + packs, made by tools/voice/build.js) ----------
+  // Packs are whole mp3 clips back to back; they download once in the background and the service worker keeps them offline.
+  // A line plays recorded only when every part of it is recorded; otherwise the whole line uses the iPad voice.
+  const dot = { index: null, packs: [], ctx: null, decoded: new Map(), playing: [], timer: 0, end: null };
+  const AC = window.AudioContext || window.webkitAudioContext;
+  async function loadDot() {
+    if (!AC || !EM.voice) return;
+    try {
+      dot.index = await (await fetch('./voice/index.json')).json();
+      for (let i = 0; i < dot.index.packs.length; i++) {
+        const r = await fetch(`./voice/${dot.index.packs[i]}?v=${dot.index.version}`);
+        if (r.ok) dot.packs[i] = await r.arrayBuffer();
+      }
+      // Drop packs from earlier recordings (the service worker keeps them in their own cache).
+      if (window.caches && dot.packs.every(Boolean)) caches.open('ellie-voice').then(c => c.keys().then(ks => ks.forEach(r => { if (!r.url.includes(`v=${dot.index.version}`)) c.delete(r); }))).catch(() => {});
+    } catch (e) { diag.lastError = 'voice pack: ' + (e && e.message); }
+  }
+  loadDot();
+  const useDot = () => !!(EM.S && (EM.S.settings.voiceURI || 'dot') === 'dot' && dot.index && AC);
+  const hasClip = k => { const c = dot.index.clips[k]; return !!(c && dot.packs[c[0]]); };
+  const names = () => [EM.S && EM.S.name, 'friend', 'Teacher'];
+  function clip(k) {
+    if (dot.decoded.has(k)) return Promise.resolve(dot.decoded.get(k));
+    const [p, off, len] = dot.index.clips[k];
+    return new Promise((ok, bad) => dot.ctx.decodeAudioData(dot.packs[p].slice(off, off + len), ok, bad)).then(b => {
+      if (dot.decoded.size > 300) dot.decoded.delete(dot.decoded.keys().next().value);
+      dot.decoded.set(k, b); return b;
+    });
+  }
+  function sayDot(plan, mySeq) {
+    return Promise.all(plan.map(p => clip(p.k))).then(bufs => new Promise(res => {
+      if (mySeq !== seq) return res(false);
+      const ctx = dot.ctx;
+      let t = ctx.currentTime + 0.05;
+      bufs.forEach((b, i) => {
+        const src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination); src.start(t);
+        dot.playing.push(src);
+        t += b.duration + (i < bufs.length - 1 ? plan[i].gap / 1000 : 0);
+      });
+      diag.lastVoice = 'Dot (recorded)'; diag.started = true;
+      dot.end = res; // stop() ends it early
+      dot.timer = setTimeout(() => { dot.playing = []; dot.end = null; res(mySeq === seq); }, (t - ctx.currentTime) * 1000 + 50);
+    }), e => { diag.lastError = 'voice decode: ' + (e && e.message); return null; });
+  }
+
   // Call inside the first tap so iOS lets us speak later.
   function prime() {
+    if (AC && !dot.ctx) { try { dot.ctx = new AC(); } catch (e) {} }
+    if (dot.ctx && dot.ctx.state !== 'running') { try { const b = dot.ctx.createBuffer(1, 1, 22050), s = dot.ctx.createBufferSource(); s.buffer = b; s.connect(dot.ctx.destination); s.start(0); dot.ctx.resume(); } catch (e) {} }
     if (primed || !synth) return;
     try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; synth.speak(u); primed = true; } catch (e) {}
   }
-  const enabled = () => !!synth && EM.S && EM.S.settings.tts !== false;
+  const enabled = () => !!(synth || useDot()) && EM.S && EM.S.settings.tts !== false;
   // Speak text; resolves when done (or when the fallback timer fires). Cancels anything in progress.
   function say(text, opts = {}) {
     const words = String(text || '').trim();
     const mySeq = ++seq;
+    if (window.__sayLog) window.__sayLog.push(words); // tests/voice tooling: collects every line Dot says
     stop();
     if (!words || !enabled()) return Promise.resolve(false);
+    if (useDot() && dot.ctx) {
+      const plan = EM.voice.plan(words, hasClip, names());
+      if (plan) return sayDot(plan, mySeq).then(r => r === null ? sayTTS(words, opts, mySeq) : r);
+      diag.missing = words;
+    }
+    return sayTTS(words, opts, mySeq);
+  }
+  function sayTTS(words, opts, mySeq) {
+    if (!synth || mySeq !== seq) return Promise.resolve(false);
     return new Promise(res => {
       let done = false;
       const finish = ok => { if (done) return; done = true; clearTimeout(fallbackT); if (current === u) current = null; res(ok); };
@@ -57,7 +114,7 @@
       diag.lastVoice = voice ? voice.name : '(iPad default)'; diag.started = false;
       // A downloaded voice can fail silently in Safari (reported on iOS 26). If it errors or never starts,
       // stop using it and say the same words with the next-best voice (finally the iPad's default).
-      const retry = why => { if (done || !tried) return false; badVoices.add(tried.voiceURI); diag.lastError = why; diag.fellBack = true; clearTimeout(startT); done = true; clearTimeout(fallbackT); try { synth.cancel(); } catch (e) {} pickVoice(); say(words, opts).then(res); return true; }; // next-best voice, then the iPad default
+      const retry = why => { if (done || !tried) return false; badVoices.add(tried.voiceURI); diag.lastError = why; diag.fellBack = true; clearTimeout(startT); done = true; clearTimeout(fallbackT); try { synth.cancel(); } catch (e) {} pickVoice(); sayTTS(words, opts, mySeq).then(res); return true; }; // next-best voice, then the iPad default
       const startT = setTimeout(() => { if (!diag.started) retry('did not start'); }, 2500);
       u.rate = opts.rate || (quality(voice || {name: ''}) >= 2 ? 0.98 : 0.92); u.pitch = 1;
       u.onend = () => { clearTimeout(startT); finish(true); };
@@ -71,13 +128,22 @@
       const guard = setInterval(() => { if (mySeq !== seq) { clearInterval(guard); finish(false); } if (done) clearInterval(guard); }, 200);
     });
   }
-  function stop() { clearTimeout(fallbackT); try { if (synth) synth.cancel(); } catch (e) {} current = null; }
+  function stop() {
+    clearTimeout(fallbackT); try { if (synth) synth.cancel(); } catch (e) {} current = null;
+    clearTimeout(dot.timer); dot.playing.forEach(s => { try { s.stop(); } catch (e) {} }); dot.playing = [];
+    if (dot.end) { const end = dot.end; dot.end = null; end(false); }
+  }
   // Rough duration estimate, for timers that must not depend on onend. Digits are spoken as words, so they cost more than letters.
   function estimateMs(text) { const s = String(text || ''); const digits = (s.match(/\d/g) || []).length; const letters = s.replace(/[\d\s,.?!]/g, '').length; return Math.max(1500, 900 + letters * 75 + digits * 600); }
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && synth) { try { synth.cancel(); synth.resume && synth.resume(); } catch (e) {} } });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    if (synth) { try { synth.cancel(); synth.resume && synth.resume(); } catch (e) {} }
+    if (dot.ctx && dot.ctx.state !== 'running') { try { dot.ctx.resume(); } catch (e) {} }
+  });
   const voices = () => ranked().map(v => ({ uri: v.voiceURI, name: v.name.replace(/\s*\((Enhanced|Premium)\)/i, ''), lang: v.lang, q: quality(v) }));
   function setVoice(uri) { if (EM.S) { EM.S.settings.voiceURI = uri || ''; EM.save(); } pickVoice(); }
-  EM.speech = { prime, say, stop, enabled, estimateMs, voices, setVoice, pick: pickVoice, diag, supported: () => !!synth, get voice() { return voice; }, get quality() { return voice ? quality(voice) : 0; } };
+  const dotState = () => !AC ? 'not supported' : !dot.index ? 'not loaded yet' : `${dot.packs.filter(Boolean).length} of ${dot.index.packs.length} packs ready`;
+  EM.speech = { prime, say, stop, enabled, estimateMs, voices, setVoice, pick: pickVoice, diag, dotState, usingDot: () => useDot(), supported: () => !!synth || !!AC, get voice() { return voice; }, get quality() { return useDot() ? 5 : voice ? quality(voice) : 0; } };
 
   // ---------- parent voice clips (MediaRecorder -> IndexedDB blobs) ----------
   const CLIP_KEYS = ['clip:1', 'clip:2', 'clip:3', 'clip:4', 'clip:5'];

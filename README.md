@@ -38,7 +38,9 @@ Serve the folder over https (or http on a local network) and open `index.html`. 
 | `content.js` | skills, item generators, pictures, help text and spoken strings |
 | `app.js` | screens and the session controller |
 | `parent.js` | grown-up card, digest, settings, voice clips, backup |
-| `audio.js` | speech, voice-clip recording/playback, small sounds |
+| `voice.js` | how a spoken line maps onto Dot's recorded clips (shared with `tools/voice`) |
+| `audio.js` | speech (Dot's recorded voice, else the iPad voice), voice-clip recording/playback, small sounds |
+| `voice/` | Dot's recorded voice: `index.json` and mp3 packs, built by `tools/voice/build.js` |
 | `theme.js` | the four worlds, Dot, and the collection pictures (all inline SVG) |
 | `world.js` | her world: zones, fact spots, milestones, the close-up view |
 | `manip.js` | drag-or-tap widgets: counters, ten-discs, the number-line marker, world surprises |

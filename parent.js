@@ -237,14 +237,15 @@
     renderClips();
   };
 
-  // Voice: best installed voice first. Premium/Enhanced voices sound far more natural and work offline once downloaded.
+  // Voice: Dot's recorded voice first, then the best installed voices. Premium/Enhanced voices sound far more natural and work offline once downloaded.
   function voiceHTML() {
     EM.speech.pick();
     const vs = EM.speech.voices(), cur = EM.speech.voice, tag = q => q >= 4 ? ' ★ Siri' : q >= 3 ? ' ★ Premium' : q >= 2 ? ' ★ Enhanced' : '';
-    if (!vs.length) return '<p style="color:var(--muted)">No voices found on this device yet.</p>';
-    return `<label class="set">Voice <select data-voice="1">${vs.map(v => `<option value="${esc(v.uri)}" ${cur && cur.voiceURI === v.uri ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})${tag(v.q)}</option>`).join('')}</select> <button class="btn secondary small" data-act="voicetest">▶ Hear it</button></label>
+    const dotOn = (S().settings.voiceURI || 'dot') === 'dot';
+    return `<label class="set">Voice <select data-voice="1"><option value="dot" ${dotOn ? 'selected' : ''}>Dot (recorded) ★</option>${vs.map(v => `<option value="${esc(v.uri)}" ${!dotOn && cur && cur.voiceURI === v.uri ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})${tag(v.q)}</option>`).join('')}</select> <button class="btn secondary small" data-act="voicetest">▶ Hear it</button></label>
+      ${dotOn ? `<p style="color:var(--muted);font-size:14px">Dot's voice downloads once and then works offline: ${esc(EM.speech.dotState())}. Until it's ready, the iPad voice fills in.</p>` : ''}
       <label class="set">Sound check <button class="btn secondary small" data-act="soundcheck">🔊 Run a sound check</button></label><div id="soundcheck"></div>
-      ${EM.speech.quality < 2 ? `<p class="warn-banner">For a much more natural voice (free, works offline): on the iPad open <b>Settings → Accessibility → Spoken Content → Voices → English</b>, pick a voice marked <b>Premium</b> or <b>Enhanced</b> (Ava, Zoe and Evan are good), and download it. Then close and reopen Ellie Math and choose it here.</p>` : ''}`;
+      ${!dotOn && EM.speech.quality < 2 ? `<p class="warn-banner">For a much more natural voice (free, works offline): on the iPad open <b>Settings → Accessibility → Spoken Content → Voices → English</b>, pick a voice marked <b>Premium</b> or <b>Enhanced</b> (Ava, Zoe and Evan are good), and download it. Then close and reopen Ellie Math and choose it here.</p>` : ''}`;
   }
   function settingsHTML(S_) {
     const st = S_.settings;
@@ -308,7 +309,7 @@
         case 'import': return document.getElementById('importFile').click();
         case 'soundcheck': {
           const out = document.getElementById('soundcheck'); EM.speech.prime(); EM.sfx.right();
-          const show = (extra = '') => { const d = EM.speech.diag, vs = EM.speech.voices(); out.innerHTML = `<p class="warn-banner" style="font-size:14px;line-height:1.5">Chime: sound engine ${esc(EM.sfx.state())}${navigator.audioSession ? ', plays on silent' : ', may be muted when the iPad is on silent'}.<br>Voice: ${EM.speech.supported() ? `${d.started ? 'spoke' : 'did not speak'} using ${esc(d.lastVoice || '?')}${d.fellBack ? ` (a voice failed with “${esc(d.lastError)}”, so it switched)` : d.lastError ? ` (error: ${esc(d.lastError)})` : ''}` : 'speech is not available in this browser'}.<br>Voices Safari offers (${vs.length}): ${esc(vs.slice(0, 8).map(v => v.name).join(', ') || 'none')}${extra}</p>`; };
+          const show = (extra = '') => { const d = EM.speech.diag, vs = EM.speech.voices(); out.innerHTML = `<p class="warn-banner" style="font-size:14px;line-height:1.5">Chime: sound engine ${esc(EM.sfx.state())}${navigator.audioSession ? ', plays on silent' : ', may be muted when the iPad is on silent'}.<br>Voice: ${EM.speech.supported() ? `${d.started ? 'spoke' : 'did not speak'} using ${esc(d.lastVoice || '?')}${d.fellBack ? ` (a voice failed with “${esc(d.lastError)}”, so it switched)` : d.lastError ? ` (error: ${esc(d.lastError)})` : ''}` : 'speech is not available in this browser'}.<br>Dot's recorded voice: ${esc(EM.speech.dotState())}${d.missing ? `; last line not recorded: “${esc(d.missing)}”` : ''}.<br>Voices Safari offers (${vs.length}): ${esc(vs.slice(0, 8).map(v => v.name).join(', ') || 'none')}${extra}</p>`; };
           out.innerHTML = '<p>Listening…</p>';
           EM.speech.say('This is Dot. If you can hear me, the sound is working.').then(() => show());
           setTimeout(() => show(' (still checking)'), 3500);

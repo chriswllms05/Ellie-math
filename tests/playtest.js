@@ -12,7 +12,10 @@ const log = (...a) => console.log(...a);
 let failures = 0;
 const check = (cond, msg) => { if (!cond) { failures++; log('  FAIL:', msg); } else log('  ok:', msg); };
 
+// VOICE_LOG=file: also record every line Dot says (for tools/voice).
+const said = new Set();
 async function setup(page, opts = {}) {
+  if (process.env.VOICE_LOG) { await page.exposeBinding('__said', (src, t) => said.add(t)); await page.addInitScript(() => { window.__sayLog = { push: t => window.__said(t) }; }); }
   await page.addInitScript((o) => {
     // fake clock so "days" pass, and silence speech so the clock starts immediately
     const base = o.now;
@@ -25,6 +28,7 @@ async function setup(page, opts = {}) {
     window.__perf = 0; const realNow = performance.now.bind(performance); performance.now = () => realNow() + window.__perf;
     Object.defineProperty(window, 'speechSynthesis', { value: undefined, configurable: true });
   }, { now: opts.now || new Date(2026, 9, 22, 16, 0, 0).getTime() });
+  await page.route('**/voice/index.json', r => r.fulfill({ contentType: 'application/json', body: '{"packs":[],"clips":{}}' })); // no recorded voice either, so answers aren't held up by speech
   page.on('pageerror', e => { failures++; log('  PAGE ERROR:', e.message); });
   page.on('console', m => { if (m.type() === 'error') { failures++; log('  CONSOLE ERROR:', m.text()); } });
 }
@@ -256,6 +260,7 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
   }
 
   await browser.close(); server.close();
+  if (process.env.VOICE_LOG) fs.writeFileSync(process.env.VOICE_LOG, JSON.stringify([...said], null, 1));
   log(`\n${failures ? failures + ' FAILURE(S)' : 'ALL CHECKS PASSED'}`);
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

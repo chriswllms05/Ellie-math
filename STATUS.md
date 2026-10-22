@@ -77,10 +77,19 @@ Checked against Singapore Math's own grade 3 Letters Home (chapters 1–4) and t
 - Comparing says **greater**. Number bonds say "3 and 4 make 7".
 - Times facts now include ×3 and ×4: chapter 4 expects facts for 0–5 and 10 from memory, taught in grade 2.
 
+## Dot's recorded voice (done)
+
+Dot now speaks with a recorded child voice (Azure neural voice "Ana", slightly faster and higher than her default) instead of the iPad's built-in voice. Every line was recorded once and ships inside the app (`voice/`, about 29 MB in 8 packs), so the iPad needs no account and works offline after the first launch.
+- About 2,600 core lines (every fact, its hints, Teach Dot, the app's own lines) are whole recordings. Lines with random big numbers or story names are joined from about 1,000 recorded phrases and numbers ("Round" + "4,000" + "300" + "72" + "to the nearest hundred").
+- Coverage check: every line from the full play-test and from 190,000 freshly generated practice lines plays entirely from recordings. A line that somehow isn't recorded falls back to the iPad voice, and the sound check in the grown-up area names it.
+- Her name is never spoken (it can't be pre-recorded): "Hi, Ellie!" is said as "Hi!". The name still shows on screen.
+- Grown-up area → Voice: **Dot (recorded)** is the default and the first option; the iPad voices are still there.
+- To change lines or the voice: `node tools/voice/collect.js lines.json && node tools/voice/build.js lines.json` (needs the Azure key on the environment; only new lines are recorded). `tools/voice/coverage.js` checks nothing is missing.
+
 ## Needs you
 
 1. **Install on the iPad**: open https://chriswllms05.github.io/Ellie-math/ in Safari (capital E matters), Share → Add to Home Screen.
-2. **Test on her iPad before day 1**: speech voice and timing, mute switch, microphone permission for voice clips, Add to Home Screen, backup via share sheet. I can't run real Safari here.
+2. **Test on her iPad before day 1**: Dot's recorded voice (grown-up area → Sound check should say "Dot's recorded voice: 8 of 8 packs ready"), speech timing, mute switch, microphone permission for voice clips, Add to Home Screen, backup via share sheet. I can't run real Safari here.
 3. **One worksheet photo**: 4-digit numbers to the nearest 10/100, or to the nearest 1,000? Both are in; it decides what School-work leads with.
 
 ## How to look at it

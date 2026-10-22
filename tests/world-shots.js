@@ -14,7 +14,7 @@ const server = http.createServer((req, res) => { let p = req.url.split('?')[0]; 
   await page.goto(`http://localhost:${server.address().port}/index.html`);
   const shot = n => page.screenshot({ path: `${OUT}/w-${THEME}-${n}.png` });
   // stage 1: empty world before placement
-  await page.evaluate(t => { EM.S.theme = t; EM.save(); EM.theme.apply(); EM.go('home'); }, THEME);
+  await page.evaluate(t => { EM.S.theme = t; EM.S.avatar = { skin: 3, hair: 'curly', hairColor: 1, glasses: 'none', shirt: 5, extra: 'headband' }; EM.S.name = 'Mia'; EM.save(); EM.theme.apply(); EM.go('home'); }, THEME);
   await page.waitForTimeout(800); await shot('1-empty');
   // stage 2: a few weeks in — seeded mix of states
   await page.evaluate(() => {

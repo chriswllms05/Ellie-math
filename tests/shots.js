@@ -16,7 +16,7 @@ const server = http.createServer((req, res) => { let p = req.url.split('?')[0]; 
   await page.goto(url);
   const shot = n => page.screenshot({ path: `${OUT}/em-${process.env.THEME || 'garden'}-${n}.png` });
   await page.waitForTimeout(400); await shot('00-pick-world');
-  await page.evaluate(() => { EM.S.theme = (new URLSearchParams(location.search)).get('t') || 'garden'; EM.save(); EM.theme.apply(); EM.go('home'); });
+  await page.evaluate(() => { EM.S.theme = (new URLSearchParams(location.search)).get('t') || 'garden'; EM.S.avatar = { skin: 3, hair: 'curly', hairColor: 1, glasses: 'none', shirt: 5, extra: 'headband' }; EM.S.name = 'Mia'; EM.save(); EM.theme.apply(); EM.go('home'); });
   await shot('01-first-home');
   // seed some progress so the home has a garden, then show screens
   await page.evaluate(() => { EM.S.placement.done = true; EM.SKILLS.forEach(s => { EM.skillRec(s.id).manual = true; }); ['add:3+3', 'add:4+4', 'm10:7', 'add:10+5', 'add:2+1', 'add:5+5', 'add:6+6', 'add:1+1', 'm10:3', 'm10:5', 'add:2+2', 'add:7+7', 'add:10+1', 'add:10+2'].forEach((k, i) => { const r = EM.factRec(k, true); r.box = 2; EM.S.yours.push(k); }); EM.save(); EM.go('home'); });

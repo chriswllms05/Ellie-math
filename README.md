@@ -7,7 +7,7 @@ A number-sense and math-facts practice app for one 3rd grader, built to reward k
 Serve the folder over https (or http on a local network) and open `index.html`. Opening the file directly (`file://`) works for a quick look but speech, the service worker and home-screen install need a real origin.
 
 - Quick local server: `python3 -m http.server 8000` in this folder, then `http://<your-mac-ip>:8000/` on the iPad.
-- Hosting: GitHub Pages from this repo (Settings → Pages → branch `main`, folder `/`), served at https://chriswllms05.github.io/ellie-math/. Any static host works; keep all files together.
+- Hosting: GitHub Pages from this repo (Settings → Pages → branch `main`, folder `/`), served at https://chriswllms05.github.io/Ellie-math/. Any static host works; keep all files together.
 - On the iPad: open in Safari → Share → **Add to Home Screen**. Launch from the icon; it runs full screen and offline.
 
 ## What's in it
@@ -19,7 +19,9 @@ Serve the folder over https (or http on a local network) and open `index.html`. 
 - **Two mastery models**: facts use Leitner boxes that only advance on a fast-right answer on or after the due day (hers = fast on two different days; reviewed at 1, 2, 4, 8, 16 days); procedures (rounding, place value, estimating, column work) count as solid when 8 of the last 10 unscaffolded tries were fast and right across two days.
 - **Pictures in Dimensions Math language**: ten frames, number bonds, number lines with the halfway tick, place-value discs, column regrouping.
 - **Finger-counting countermeasures**: flashed Quick Look behind a "Ready" button, "name your trick" before typing on learning rungs, "How did you know?" check-ins.
-- **Celebration tied to the right things**: a flower garden that grows only from facts that are hers, skill-unlock ceremonies, and the parent's own recorded voice clips at the big moments.
+- **Her world, her choice**: on first launch she picks Garden, Ocean, Space or Classroom. Every fact that's hers adds a flower, fish, star or sticker to it; the colors, celebrations and break screens follow her pick. She can change worlds any time and keeps everything.
+- **Dot**, a ten-frame dot with a face, keeps her company: thinking while she works, delighted at a fast answer, curious (never disappointed) at a miss, cheering at the big moments. While she's answering, Dot is the only thing that moves.
+- **Celebration tied to the right things**: collection items only from facts that are hers, skill-unlock ceremonies, and the parent's own recorded voice clips at the big moments.
 - **Grown-up area** (press and hold): end-of-session card, weekly digest with catch-up targets, skill ladder with per-rung overrides, needs-work list, voice clips; settings and reset sit behind a 4-digit PIN. Backup/restore to a JSON file. State lives in localStorage with an IndexedDB mirror.
 
 ## Files
@@ -32,6 +34,8 @@ Serve the folder over https (or http on a local network) and open `index.html`. 
 | `app.js` | screens and the session controller |
 | `parent.js` | grown-up card, digest, settings, voice clips, backup |
 | `audio.js` | speech, voice-clip recording/playback, small sounds |
+| `theme.js` | the three worlds, Dot, and the collection pictures (all inline SVG) |
+| `fonts/` | Fredoka, bundled so it works offline (SIL Open Font License) |
 | `sw.js`, `manifest.webmanifest`, `icon-*.png` | home-screen install and offline |
 | `tests/playtest.js` | browser play-tests (personas: knower, guesser, counter, IDK-spammer, mixed; multi-day spacing; content sanity) |
 | `tests/shots.js` | screenshots of the main screens |

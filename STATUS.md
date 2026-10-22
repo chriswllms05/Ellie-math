@@ -2,7 +2,7 @@
 
 ## Where things are
 
-**Ellie Math v1 is built, reviewed and working.** It lives in its own repository, https://github.com/chriswllms05/ellie-math. Everything from SPEC-v1 marked v1 is in.
+**Ellie Math v1 is built, reviewed and working.** It lives in its own repository, https://github.com/chriswllms05/Ellie-math. Everything from SPEC-v1 marked v1 is in.
 
 ### Verification so far
 - Browser play-tests (`tests/playtest.js`): five personas (knower, guesser, counter, IDK-spammer, mixed), a six-day simulated run, content sanity across every fact and ~2,000 generated items, and regression checks for every bug the review found.
@@ -39,16 +39,23 @@ Parent side:
 - PIN change asks twice and updates the hint; no silent change on blur.
 - Estimation steps show rounding-right vs adding-right in the digest, and her rounding steps feed her rounding record.
 
+## Visual pass (done)
+
+She picks her world on first launch (Garden, Ocean, Space or Classroom; changeable from home). Each world has its own colors, a collection scene that grows one flower / fish / star / sticker per fact that's hers, themed celebrations and break screens. Dot, a ten-frame dot with a face, reacts to her answers from the corner of the practice screen and cheers at the big moments. Rounded Fredoka type is bundled for offline use. Motion everywhere except while she's answering; it switches off automatically if Reduce Motion is on.
+
+## World building (done)
+
+The world is now the home screen: a full-width scene where each foundation skill has its own place (flower bed, coral reef, constellation, or sticker chart on the classroom whiteboard) and every fact has a spot. Not tried → learning → hers → rock solid shows as soil → sprout → flower → sparkle (and the equivalents in each world), so the world changes after every session, not only at mastery. Milestones at 5, 10, 20, 35, 50, 75, 100, 150, 200 and 300 facts bring something new into the world with its own celebration; home shows how many facts until the next surprise. Tapping a zone opens a close-up with every fact labeled. After a session the summary shows the world with the new arrivals popping in. In the Classroom, Dot is the teacher (with glasses) and greets her with "Good morning."
+
 ## Needs you
 
-1. **Turn on GitHub Pages** (one time): repo Settings → Pages → Source: *Deploy from a branch*, Branch: `main`, folder `/ (root)` → Save. A minute later the app is at https://chriswllms05.github.io/ellie-math/. Open that in Safari on the iPad and Add to Home Screen.
+1. **Install on the iPad**: open https://chriswllms05.github.io/Ellie-math/ in Safari (capital E matters), Share → Add to Home Screen.
 2. **Test on her iPad before day 1**: speech voice and timing, mute switch, microphone permission for voice clips, Add to Home Screen, backup via share sheet. I can't run real Safari here.
 3. **One worksheet photo**: 4-digit numbers to the nearest 10/100, or to the nearest 1,000? Both are in; it decides what School-work leads with.
-4. **Her theme** (garden / ocean / space / animals…) for the visual pass. Not started until she picks.
 
 ## How to look at it
 
-Open https://chriswllms05.github.io/ellie-math/ once Pages is on (or `index.html` locally) for a tour (sound and install need a server; everything else works). Read `FIRST-WEEK.md` before her first session; it now matters that **you set the PIN and record clips before she touches it**, because the PIN can be claimed by whoever sets it first.
+Open https://chriswllms05.github.io/Ellie-math/ once Pages is on (or `index.html` locally) for a tour (sound and install need a server; everything else works). Read `FIRST-WEEK.md` before her first session; it now matters that **you set the PIN and record clips before she touches it**, because the PIN can be claimed by whoever sets it first.
 
 ## Decisions made without you (easy to change)
 

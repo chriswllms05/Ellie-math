@@ -26,6 +26,7 @@
   const DEFAULT = {
     v: 2,
     name: 'Ellie',
+    theme: '',        // garden | ocean | space, picked by her on first launch
     created: 0,
     settings: { fastSec: 3, blockMin: 5, blocks: 3, tts: true, pin: '', pinHint: '', bridge: { est: true, regroup: true }, roundFocus: 'auto', clockOnDigit: true },
     facts: {},        // key -> fact record (Leitner)

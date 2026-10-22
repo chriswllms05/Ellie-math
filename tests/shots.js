@@ -7,18 +7,20 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.webmanifest': '
 const server = http.createServer((req, res) => { let p = req.url.split('?')[0]; if (p === '/') p = '/index.html'; fs.readFile(path.join(ROOT, p), (e, d) => { if (e) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'Content-Type': MIME[path.extname(p)] || 'text/plain' }); res.end(d); }); });
 (async () => {
   await new Promise(r => server.listen(0, r));
-  const url = `http://localhost:${server.address().port}/index.html`;
+  const url = `http://localhost:${server.address().port}/index.html?t=${process.env.THEME || 'garden'}`;
   const browser = await chromium.launch({ executablePath: EXE });
   const ctx = await browser.newContext({ viewport: { width: 834, height: 1112 }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   await page.addInitScript(() => { Object.defineProperty(window, 'speechSynthesis', { value: undefined, configurable: true }); });
   page.on('pageerror', e => console.log('PAGE ERROR', e.message));
   await page.goto(url);
-  const shot = n => page.screenshot({ path: `${OUT}/em-${n}.png` });
+  const shot = n => page.screenshot({ path: `${OUT}/em-${process.env.THEME || 'garden'}-${n}.png` });
+  await page.waitForTimeout(400); await shot('00-pick-world');
+  await page.evaluate(() => { EM.S.theme = (new URLSearchParams(location.search)).get('t') || 'garden'; EM.save(); EM.theme.apply(); EM.go('home'); });
   await shot('01-first-home');
   // seed some progress so the home has a garden, then show screens
-  await page.evaluate(() => { EM.S.placement.done = true; EM.SKILLS.forEach(s => { EM.skillRec(s.id).manual = true; }); ['add:3+3', 'add:4+4', 'm10:7', 'add:10+5', 'add:2+1'].forEach((k, i) => { const r = EM.factRec(k, true); r.box = 2; EM.S.yours.push(k); }); EM.save(); EM.go('home'); });
-  await shot('02-home');
+  await page.evaluate(() => { EM.S.placement.done = true; EM.SKILLS.forEach(s => { EM.skillRec(s.id).manual = true; }); ['add:3+3', 'add:4+4', 'm10:7', 'add:10+5', 'add:2+1', 'add:5+5', 'add:6+6', 'add:1+1', 'm10:3', 'm10:5', 'add:2+2', 'add:7+7', 'add:10+1', 'add:10+2'].forEach((k, i) => { const r = EM.factRec(k, true); r.box = 2; EM.S.yours.push(k); }); EM.save(); EM.go('home'); });
+  await page.waitForTimeout(1600); await shot('02-home');
   await page.evaluate(() => EM.go('skills')); await shot('03-skills');
   const show = async (name, item, step = 0, help = 0, typed) => {
     await page.evaluate(({ item, step, help, typed }) => {
@@ -49,7 +51,11 @@ const server = http.createServer((req, res) => { let p = req.url.split('?')[0]; 
   await show('41-regroup-sub', { kind: 'proc', id: 'regroup', level: 1, tier: 1 }, 0);
   await show('42-regroup-help', { kind: 'proc', id: 'regroup', level: 0, tier: 1 }, 0, 1);
   await page.evaluate(() => EM.go('parent')); await page.waitForTimeout(200);
-  await page.screenshot({ path: `${OUT}/em-50-parent.png`, fullPage: true });
+  await page.screenshot({ path: `${OUT}/em-${process.env.THEME || 'garden'}-50-parent.png`, fullPage: true });
+  // celebration + break + summary
+  await page.evaluate(() => { EM.go('home'); });
+  await page.evaluate(() => { const d = document.createElement('div'); d.id = 'overlay'; d.className = 'overlay'; const T = EM.theme.current(); d.innerHTML = `<div class="sheet"><div class="celebrate-row">${EM.theme.dot('cheer', 92)}<span class="big-item">${T.item(14)}</span></div><h2>7 + 8 is YOURS!</h2><p>You knew it fast today <b>and</b> another day. That's what really knowing looks like.<br>${T.newLine(14)} You now know <b>14</b> facts for keeps.</p><button class="big-btn" data-close="1">Yes!</button></div>`; document.body.appendChild(d); });
+  await page.waitForTimeout(900); await shot('60-celebrate');
   await browser.close(); server.close();
   console.log('done');
 })().catch(e => { console.error(e); process.exit(1); });

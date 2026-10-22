@@ -4,31 +4,52 @@
   const EM = window.EM;
   const { range, shuffle, pick, fmt, esc, dayStr, DAY } = EM;
   const S = EM.load();
+  const T = () => EM.theme.current(), D = (mood, size, opts) => EM.theme.dot(mood, size, opts);
+  EM.theme.apply();
   const $app = document.getElementById('app');
   let screen = 'home', R = null, overlayQueue = [];
 
   // ---------- navigation ----------
   function go(s) { screen = s; render(); window.scrollTo(0, 0); }
   function render() {
-    const views = { home: renderHome, skills: renderSkills, practice: renderPractice, summary: renderSummary, parent: () => EM.parent.render($app, { go, startSession }), break: renderBreak };
+    const views = { world: renderWorld, home: renderHome, skills: renderSkills, practice: renderPractice, summary: renderSummary, parent: () => EM.parent.render($app, { go, startSession }), break: renderBreak };
     (views[screen] || renderHome)();
   }
   EM.go = go; EM.render = render;
 
   // ---------- home ----------
   function todayDone() { const d = dayStr(Date.now()), need = S.settings.blockMin * S.settings.blocks / 2; return S.sessions.some(s => dayStr(s.date) === d && s.kind === 'daily' && (s.items >= 15 || (s.minutes || 0) >= need)); }
-  function garden(n, limit = 60) {
-    if (!n) return '<div class="garden-empty">Your garden is empty for now. Every fact you really know grows a flower here.</div>';
-    const cols = ['#ef6a4c', '#f0b429', '#3d8bd6', '#c45cd6', '#4fb5a6', '#ff8fb1'];
-    const shown = Math.min(n, limit);
-    return `<div class="garden">${range(1, shown).map(i => `<div class="flower" style="--f:${cols[i % cols.length]}; animation-delay:${Math.min(i, 20) * 25}ms"></div>`).join('')}${n > limit ? `<span class="garden-empty">+${n - limit} more</span>` : ''}</div>`;
+  const GROW = { garden: ['sprout', 'sprouts'], ocean: ['egg', 'eggs'], space: ['baby star', 'baby stars'], classroom: ['outline', 'outlines'] };
+  const HI = () => T().id === 'classroom' ? 'Good morning' : 'Hi';
+  // Her world, full width, with Dot and a speech bubble perched in the sky.
+  function worldHTML(bubble, opts = {}) {
+    const w = EM.world.render(opts);
+    return `<div class="world${opts.inset ? ' inset' : ''}">${w.svg}${bubble ? `<div class="perch">${D(opts.mood || 'calm', 60)}<div class="bubble">${bubble}</div></div>` : ''}</div>`;
+  }
+  function worldCounts() { const w = EM.world.render(); return { yours: w.yours, sprouts: w.sprouts }; }
+  function surpriseHTML(known) {
+    const t = T(), next = EM.world.nextMilestone(known);
+    if (!next) return '';
+    const prev = [...EM.world.MILESTONES[t.id]].reverse().find(m => m[0] <= known), from = prev ? prev[0] : 0, left = next[0] - known;
+    return `<div class="surprise">🎁 ${left} more fact${left > 1 ? 's' : ''} until a surprise moves into your ${t.place}<span class="bar"><i style="width:${Math.round((known - from) / (next[0] - from) * 100)}%"></i></span></div>`;
+  }
+  // Her world: picked on first launch, changeable from home.
+  function renderWorld() {
+    const first = !S.theme;
+    $app.innerHTML = `<main class="wrap">
+      ${first ? '' : '<button class="back" data-act="home">‹ Back</button>'}
+      <div class="home-top">${D('wow', 72)}<h1>${first ? `Hi, ${esc(S.name || 'Ellie')}!` : 'Pick your world'}</h1></div>
+      <div class="bubble">${first ? "I'm Dot. Before we start, pick your world. Every fact you really learn adds something to it." : 'You can change your world any time. Everything you earned comes with you.'}</div>
+      ${EM.theme.picker(S.theme)}
+    </main>`;
+    EM.speech.say(first ? "Hi! I'm Dot. Pick your world." : 'Pick your world.');
   }
   function renderHome() {
-    const known = EM.countYours(), name = esc(S.name || 'Ellie');
+    const known = EM.countYours(), name = esc(S.name || 'Ellie'), t = T();
+    if (!S.theme) return renderWorld();
     if (!S.placement.done) {
-      $app.innerHTML = `<main class="wrap">
-        <h1>Hi, ${name}! 👋</h1>
-        <p class="sub">This is <b>Ellie Math</b>. Today isn't a lesson. I just want to see what you already know, so we can start in the right place.</p>
+      $app.innerHTML = `<main class="wrap home">
+        ${worldHTML(t.id === 'classroom' ? `Welcome to class, ${name}! I'm your teacher, Dot. Today I just want to see what you already know, so I know what to teach.` : `Hi, ${name}! This is your ${t.place}. It's empty for now. Today let's find out what you already know and plant the first ${GROW[t.id][1]}.`, { mood: 'wow' })}
         <button class="big-btn" data-act="placement">Let's see what you know<span>About 10 minutes</span></button>
         <div class="card"><h2>Two rules</h2><ul>
           <li>🧠 Think first, then type. There's no rush.</li>
@@ -40,18 +61,23 @@
       return;
     }
     const done = todayDone();
-    $app.innerHTML = `<main class="wrap">
-      <h1>Hi, ${name}! 👋</h1>
-      <p class="sub">${known ? `You really know <b>${known}</b> fact${known > 1 ? 's' : ''}. They're yours for keeps.` : "Let's grow some math muscles."}</p>
-      ${garden(known)}
+    const wc = worldCounts(), g = GROW[t.id];
+    const hello = done ? `Look at your ${t.place}, ${name}! ${wc.yours} ${wc.yours === 1 ? t.one : t.many}${wc.sprouts ? ` and ${wc.sprouts} ${wc.sprouts === 1 ? g[0] : g[1]} growing` : ''}.`
+      : wc.yours ? `${HI()}, ${name}! ${wc.yours} ${wc.yours === 1 ? t.one : t.many} ${t.id === 'classroom' ? 'earned' : 'so far'}.${wc.sprouts ? ` Your ${g[1]} are waiting. Know them fast and they'll turn into ${t.many}!` : ''}`
+      : `${HI()}, ${name}! See your ${g[1]}? Know them fast on two different days and they turn into ${t.many}.`;
+    $app.innerHTML = `<main class="wrap home">
+      ${worldHTML(hello, { mood: done ? 'proud' : 'calm' })}
+      <p class="tap-hint">Tap a ${({ garden: 'flower bed', ocean: 'coral reef', space: 'constellation', classroom: 'sticker chart' })[t.id]} to look closer</p>
+      ${surpriseHTML(known)}
       <button class="big-btn" data-act="today">${done ? 'Practice again' : "Today's practice"}<span>${done ? "You already did today's. Extra is fine!" : `About ${S.settings.blockMin * S.settings.blocks} minutes, ${S.settings.blocks} short parts`}</span></button>
       ${done ? '<button class="btn secondary" data-act="evening" style="margin-bottom:12px">Evening review <span style="font-size:14px;color:var(--muted)">5 minutes, just the facts that are due</span></button>' : ''}
       <button class="btn secondary" data-act="skills">Pick a skill</button>
       <div class="card"><h2>How to play</h2><ul>
         <li>🧠 Think first, then type.</li>
         <li>🙋 Not sure? Tap <b>I don't know</b>. That's how you learn. No guessing!</li>
-        <li>⚡ Know a fact fast on two different days and it's <b>yours</b>. A flower grows.</li>
+        <li>⚡ Know a fact fast on two different days and it's <b>yours</b>. ${({ garden: 'A flower grows.', ocean: 'A fish swims into your reef.', space: 'A star lights up.', classroom: 'You earn a sticker.' })[t.id]}</li>
       </ul></div>
+      <p style="text-align:center;margin:0"><button class="worldbtn" data-act="world">🎨 Change my world</button></p>
       <button class="grownup" data-hold="parent"><span class="fillbar"></span>Grown-ups: press and hold</button>
     </main>`;
   }
@@ -98,7 +124,7 @@
     }
     R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : "Today's practice", blocks, bi: -1, started: Date.now(),
       stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {}, how: { knew: 0, trick: 0, counted: 0 },
-        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } } }, missed: {}, yoursNow: [], howCount: 0, clipPlays: 0 };
+        byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlays: 0, knownBefore: EM.countYours() };
     screen = 'practice';
     nextBlock();
   }
@@ -120,8 +146,8 @@
   function renderBreak() {
     const done = R.bi + 1, total = R.blocks.length;
     $app.innerHTML = `<main class="wrap break">
-      <div class="big">${['🌟', '🚀', '🎉'][R.bi % 3]}</div>
-      <h1>Part ${done} of ${total} done!</h1>
+      <div class="break-scene">${D('cheer', 96)}<span class="art">${T().breakArt}</span></div>
+      <h1>${T().breakTitle ? `${T().breakTitle} ` : ''}Part ${done} of ${total} done!</h1>
       <p class="sub">Shake out your hands. Take a breath. Next up: <b>${esc(R.blocks[R.bi + 1].name)}</b>.</p>
       <button class="big-btn" data-act="nextblock">I'm ready</button>
     </main>`;
@@ -142,7 +168,7 @@
     if (R.idx >= R.queue.length || (R.idx > 0 && blockTimeUp())) return endOfBlock();
     const it = R.queue[R.idx];
     R.cur = it; R.step = 0; R.phase = 'ask'; R.helpStage = 0; R.helpTries = 0; R.input = ''; R.lock = false; R.msg = null; R.trick = null; R.stepRes = []; R.relooked = false;
-    R.waitReady = it.type === 'look';
+    R.waitReady = it.type === 'look'; R.mood = 'think';
     R.waitTrick = needsTrick(it);
     R.waitSpeech = false;
     render();
@@ -201,6 +227,8 @@
   function backspace() { if (!R || R.lock) return; R.input = R.input.slice(0, -1); R.tLast = R.input ? performance.now() : null; updateSlot(); }
   function updateSlot() { const s = document.querySelector('.slot'); if (s) s.innerHTML = R.input ? fmt(Number(R.input)) : '&nbsp;'; }
   function showMsg(kind, html) { R.msg = { kind, html }; const m = document.querySelector('.msg'); if (m) { m.className = `msg ${kind}`; m.innerHTML = html; } }
+  // Dot reacts to what just happened; only the face changes, the question stays still.
+  function mood(m) { R.mood = m; const el = document.querySelector('.topbar .dotpal'); if (el) el.outerHTML = D(m, 44); }
   function setVisual(html) { const v = document.querySelector('.visual'); if (v) v.innerHTML = html || ''; }
 
   function submit() {
@@ -214,7 +242,7 @@
     const fast = ms <= EM.fastMs(R.cur, R.step) && gap <= CONFIRM_MS;
     if (ok) {
       R.stepRes.push({ ok: true, fast, ms, firstTry: true });
-      if (R.step + 1 < R.cur.steps.length) return nextStep(fast ? pick(['⚡ Yes!', '⚡ Quick!']) : '✓ Right!');
+      if (R.step + 1 < R.cur.steps.length) { mood(fast ? 'happy' : 'proud'); return nextStep(fast ? pick(['⚡ Yes!', '⚡ Quick!']) : '✓ Right!'); }
       return completeItem();
     }
     const rushed = ms < EM.rushMs(R.cur);
@@ -238,12 +266,12 @@
   function nextStep(msg) {
     R.lock = true;
     showMsg('good', msg);
-    later(() => { R.step++; R.phase = 'ask'; R.helpStage = 0; R.helpTries = 0; R.input = ''; R.lock = false; R.msg = null; render(); startStepClock(); }, 700);
+    later(() => { R.step++; R.phase = 'ask'; R.helpStage = 0; R.helpTries = 0; R.input = ''; R.lock = false; R.msg = null; R.mood = 'think'; render(); startStepClock(); }, 700);
   }
 
   // ---------- help (two stages) ----------
   function enterHelp(lead, typed) {
-    R.phase = 'help'; R.helpStage = 1; R.helpTries = 0; R.input = ''; R.lock = false;
+    R.phase = 'help'; R.helpStage = 1; R.helpTries = 0; R.input = ''; R.lock = false; R.mood = 'curious';
     const h = R.cur.help(R.step, 1, typed);
     const stepName = R.cur.steps.length > 1 ? '' : '';
     R.msg = { kind: 'help', html: `<b>${lead}</b> ${h.html}${stepName}` };
@@ -260,6 +288,7 @@
       showMsg('good', worked ? '✓ You worked it out!' : `✓ ${EM.sentence ? (R.cur.kind === 'fact' ? EM.sentence(R.cur.f) : fmt(st.ans)) : fmt(st.ans)}`);
       EM.speech.say(worked ? 'You worked it out!' : (R.cur.kind === 'fact' ? EM.sentenceSay(R.cur.f) : `${fmt(st.ans)}.`));
       if (worked) EM.sfx.right();
+      mood('proud');
       R.stepRes[R.stepRes.length - 1].helped = true;
       later(() => { if (R.step + 1 < R.cur.steps.length) { R.step++; R.phase = 'ask'; R.helpStage = 0; R.input = ''; R.lock = false; R.msg = null; render(); startStepClock(); } else completeItem(); }, 1100);
       return;
@@ -293,6 +322,7 @@
     R.stats.items++;
     let becameYours = false, leveledUp = false;
     if (graded && it.kind === 'fact') {
+      if (!S.facts[it.key]) { R.planted++; R.plantedKeys.push(it.key); }
       const g = EM.gradeFact(it.key, outcome, ms); becameYours = g.becameYours;
       if (outcome === 'fast') R.stats.fastKeys.push(it.key);
     } else if (graded && it.kind === 'proc') {
@@ -315,9 +345,9 @@
     if (outcome === 'fast' || outcome === 'slow') {
       const multi = it.steps.length > 1;
       if (R.kind === 'placement') { showMsg('good', outcome === 'fast' ? '⚡' : '✓'); return later(after, 500); }
-      if (it.mode === 'reask') { showMsg('good', pick(['✓ You remembered!', '✓ Got it this time!'])); EM.sfx.right(); return later(after, 900); }
-      if (outcome === 'fast') { showMsg('good', pick(['⚡ You knew it!', '⚡ Quick!', '⚡ Zoom!'])); EM.sfx.fast(); }
-      else { showMsg('good', pick(['✓ Right! You figured it out.', '✓ Yes! You worked it out.'])); EM.sfx.right(); }
+      if (it.mode === 'reask') { showMsg('good', pick(['✓ You remembered!', '✓ Got it this time!'])); EM.sfx.right(); mood('proud'); return later(after, 900); }
+      if (outcome === 'fast') { showMsg('good', pick(['⚡ You knew it!', '⚡ Quick!', '⚡ Zoom!'])); EM.sfx.fast(); mood('happy'); }
+      else { showMsg('good', pick(['✓ Right! You figured it out.', '✓ Yes! You worked it out.'])); EM.sfx.right(); mood('proud'); }
       if (multi && it.done) { showMsg('good', `✓ ${it.done.html}`); EM.speech.say(it.done.say); }
       const delay = multi ? 2200 : outcome === 'fast' ? 700 : 1100;
       later(() => {
@@ -346,24 +376,24 @@
     if (R.kind === 'placement' || it.kind !== 'fact' || outcome !== 'fast' || it.mode === 'reask') return next();
     R.howCount++;
     if (R.howCount % 4 !== 0) return next();
-    overlay(`<h2>How did you know?</h2><p>${esc(it.label)}</p><div class="how">
+    overlay(`<div class="celebrate-row">${D('think', 64)}</div><h2>How did you know?</h2><p>${esc(it.label)}</p><div class="how">
       <button class="btn secondary" data-how="knew">I just knew it</button>
       <button class="btn secondary" data-how="trick">I used a trick</button>
       <button class="btn secondary" data-how="counted">I counted</button></div>`, next);
     EM.speech.say('How did you know?');
   }
   function celebrateYours(it, next) {
-    R.yoursNow.push(it.label);
+    R.yoursNow.push(it.label); R.yoursKeys.push(it.key);
     const n = EM.countYours();
     confetti();
     EM.sfx.yours();
-    overlay(`<div class="celebrate">🌸</div><h2>${esc(it.label)} is YOURS!</h2><p>You knew it fast today <b>and</b> another day. That's what really knowing looks like.<br>A new flower grew. You now know <b>${n}</b> fact${n > 1 ? 's' : ''} for keeps.</p><button class="big-btn" data-close="1">Yes!</button>`, next);
+    overlay(`<div class="celebrate-row">${D('cheer', 92)}<span class="big-item">${T().item(n)}</span></div><h2>${esc(it.label)} is YOURS!</h2><p>You knew it fast today <b>and</b> another day. That's what really knowing looks like.<br>${T().newLine(n)} You now know <b>${n}</b> fact${n > 1 ? 's' : ''} for keeps.</p><button class="big-btn" data-close="1">Yes!</button>`, next);
     EM.speech.say(`${it.label.replace('−', 'minus').replace('+', 'plus').replace('?', 'what')} is yours! You now really know ${n} facts.`).then(() => { if (R.clipPlays < 2) { R.clipPlays++; EM.clips.play(); } });
   }
   function levelUpNote(it, next) {
     const sk = EM.SK[it.skillId], rec = EM.skillRec(it.skillId);
     EM.sfx.unlock();
-    overlay(`<div class="celebrate">🪜</div><h2>${sk.name}: next level!</h2><p>You've got <b>${sk.levels[rec.level - 1]}</b>. Now: <b>${sk.levels[rec.level]}</b>.</p><button class="big-btn" data-close="1">Let's go</button>`, next);
+    overlay(`<div class="celebrate-row">${D('wow', 84)}</div><h2>${sk.name}: next level!</h2><p>You've got <b>${sk.levels[rec.level - 1]}</b>. Now: <b>${sk.levels[rec.level]}</b>.</p><button class="big-btn" data-close="1">Let's go</button>`, next);
     EM.speech.say(`${sk.name}, next level!`);
   }
   function unlockCeremony(skills, next) {
@@ -371,14 +401,25 @@
     if (skills.length > 2) {
       // Many at once (after placement): one ceremony, not a parade.
       EM.sfx.unlock(); confetti();
-      overlay(`<div class="celebrate">🔓</div><h2>${skills.length} skills unlocked!</h2><p>${skills.map(s => `${s.icon} <b>${esc(s.name)}</b>`).join('<br>')}</p><button class="big-btn" data-close="1">Awesome</button>`, next);
+      overlay(`<div class="celebrate-row">${D('cheer', 92)}</div><h2>${skills.length} skills unlocked!</h2><p>${skills.map(s => `${s.icon} <b>${esc(s.name)}</b>`).join('<br>')}</p><button class="big-btn" data-close="1">Awesome</button>`, next);
       EM.speech.say(`${skills.length} skills unlocked!`).then(() => EM.clips.play());
       return;
     }
     const sk = skills[0];
     EM.sfx.unlock(); confetti();
-    overlay(`<div class="celebrate">${sk.icon}</div><h2>New skill unlocked!</h2><p><b>${esc(sk.name)}</b><br>${esc(sk.desc)}</p><button class="big-btn" data-close="1">Awesome</button>`, () => unlockCeremony(skills.slice(1), next));
+    overlay(`<div class="celebrate-row">${D('wow', 84)}<span class="celebrate">${sk.icon}</span></div><h2>New skill unlocked!</h2><p><b>${esc(sk.name)}</b><br>${esc(sk.desc)}</p><button class="big-btn" data-close="1">Awesome</button>`, () => unlockCeremony(skills.slice(1), next));
     EM.speech.say(`New skill unlocked. ${sk.name}.`).then(() => EM.clips.play());
+  }
+  function milestoneCeremony(list) {
+    if (!list.length) return;
+    const [at, emoji, name] = list[0], t = T();
+    EM.sfx.yours(); confetti();
+    overlay(`<div class="celebrate-row">${D('wow', 80)}<span class="milestone-big">${emoji}</span></div><h2>Surprise!</h2><p>You really know <b>${at}</b> facts, so ${name} moved into your ${t.place}!</p><button class="big-btn" data-close="1">Hello, ${name.replace(/^(a|an|the) /, '')}!</button>`, () => milestoneCeremony(list.slice(1)));
+    EM.speech.say(`Surprise! ${name} moved into your ${t.place}!`).then(() => EM.clips.play());
+  }
+  function zoneSheet(id) {
+    overlay(`${EM.world.zoneView(id)}<button class="big-btn" data-close="1" style="margin-top:14px">Back</button>`, null);
+    const sh = document.querySelector('#overlay .sheet'); if (sh) sh.classList.add('zone');
   }
   function confetti() {
     const cols = ['#ef6a4c', '#f0b429', '#3d8bd6', '#c45cd6', '#4fb5a6'];
@@ -395,7 +436,7 @@
 
   // ---------- quit / finish ----------
   function askQuit() {
-    overlay(`<h2>Stop for now?</h2><p>What you did so far is saved.</p><button class="btn secondary" data-quit="yes">Yes, stop</button><button class="big-btn" data-close="1" style="margin-top:10px">Keep going</button>`, null);
+    overlay(`<div class="celebrate-row">${D('curious', 64)}</div><h2>Stop for now?</h2><p>What you did so far is saved.</p><button class="btn secondary" data-quit="yes">Yes, stop</button><button class="big-btn" data-close="1" style="margin-top:10px">Keep going</button>`, null);
   }
   function finishSession() {
     if (!R || R.ended) return;
@@ -408,7 +449,8 @@
     R.newSkills = EM.newlyOpened();
     screen = answered ? 'summary' : 'home';
     render();
-    if (answered && R.newSkills.length) unlockCeremony(R.newSkills, () => {});
+    const ms = EM.world.crossed(R.knownBefore, EM.countYours());
+    if (answered) unlockCeremony(R.newSkills, () => milestoneCeremony(ms));
   }
 
   // Keep the in-flight session in saved state so an iOS-killed app still logs the day.
@@ -453,10 +495,10 @@
   }
   function renderPractice() {
     const help = R.phase === 'help', hidden = (R.waitReady || R.waitTrick || R.waitSpeech) && !help;
-    $app.innerHTML = `<main class="wrap practice">
+    $app.innerHTML = `<main class="wrap practice${help ? ' helping' : ''}">
       <div class="topbar"><button class="icon-btn" data-act="quit" aria-label="Stop practice">✕</button>
         <div class="progress"><i style="width:${Math.min(100, R.idx / Math.max(1, R.planned) * 100)}%"></i></div>
-        <span class="blockname">${esc(R.blocks[R.bi].name)}${R.blocks.length > 1 ? ` ${R.bi + 1}/${R.blocks.length}` : ''}</span></div>
+        <span class="blockname">${esc(R.blocks[R.bi].name)}${R.blocks.length > 1 ? ` ${R.bi + 1}/${R.blocks.length}` : ''}</span>${D(R.mood || 'think', 44)}</div>
       <div class="stage">
         ${stageHTML()}
         <div class="msg ${R.msg ? R.msg.kind : ''}" aria-live="polite">${R.msg ? R.msg.html : ''}</div>
@@ -472,7 +514,7 @@
     const st = R.stats, known = EM.countYours();
     if (R.kind === 'placement') {
       $app.innerHTML = `<main class="wrap">
-        <h1>Thank you! 🙌</h1>
+        ${worldHTML(`Thank you! Look, you planted ${R.planted} ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} in your ${T().place} today!`, { mood: 'cheer', fresh: R.plantedKeys.slice(0, 60) })}
         <p class="sub">Now I know where to start. Tomorrow we begin for real: ${S.settings.blocks} short parts, about ${S.settings.blockMin * S.settings.blocks} minutes.</p>
         <div class="tiles"><div class="tile"><b>${st.fast}</b><span>⚡ Knew it fast</span></div><div class="tile"><b>${st.slow}</b><span>✓ Figured it out</span></div><div class="tile"><b>${st.wrong + st.idk}</b><span>🧠 To learn</span></div></div>
         ${st.idk ? `<div class="note">🙋 You said "I don't know" ${st.idk} time${st.idk > 1 ? 's' : ''}. That's exactly right. Now I know what to teach.</div>` : ''}
@@ -482,15 +524,14 @@
       return;
     }
     const notes = [];
-    if (R.yoursNow.length) notes.push(`🌸 New flowers: <b>${R.yoursNow.map(esc).join(', ')}</b>. Those are yours now.`);
+    if (R.yoursNow.length) notes.push(`${T().big} New ${R.yoursNow.length > 1 ? T().many : T().one}: <b>${R.yoursNow.map(esc).join(', ')}</b>. Those are yours now.`);
     if (st.learned.length) notes.push(`🧠 You didn't know <b>${esc(st.learned[0].label)}</b>${st.learned.length > 1 ? ` and ${st.learned.length - 1} more` : ''} at the start. Then you learned ${st.learned.length > 1 ? 'them' : 'it'}. That's brave, and it's how your brain grows.`);
     if (st.rushed) notes.push(`🐢 ${st.rushed} answer${st.rushed > 1 ? 's were' : ' was'} super quick and wrong. Think first, then tap.`);
     if (st.samCaught) notes.push(`🕵️ Your estimate caught ${st.samCaught} of Sam's mistakes!`);
     if (!R.yoursNow.length) notes.push(`⭐ Facts you get right fast on two different days become yours. Come back tomorrow!`);
     $app.innerHTML = `<main class="wrap">
-      <h1>Nice work, ${esc(S.name || 'Ellie')}! 🎉</h1>
-      <p class="sub">${R.title} · ${st.items} questions</p>
-      ${garden(known)}
+      ${worldHTML(R.yoursKeys.length ? `Nice work, ${esc(S.name || 'Ellie')}! Look what's new in your ${T().place}!` : R.planted ? `Nice work, ${esc(S.name || 'Ellie')}! You planted ${R.planted} new ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} today.` : `Nice work, ${esc(S.name || 'Ellie')}! Your ${GROW[T().id][1]} are getting stronger.`, { mood: 'cheer', fresh: [...R.yoursKeys, ...R.plantedKeys], freshDeco: EM.world.crossed(R.knownBefore, known).map(m => m[0]) })}
+      <p class="sub" style="text-align:center">${R.title} · ${st.items} questions</p>
       <div class="tiles">
         <div class="tile"><b>${st.fast}</b><span>⚡ Knew it fast</span></div>
         <div class="tile"><b>${st.slow}</b><span>✓ Figured it out</span></div>
@@ -507,6 +548,10 @@
   $app.addEventListener('click', e => {
     const d = e.target.closest('[data-d]');
     if (d) return typeDigit(d.dataset.d);
+    const zh = e.target.closest('[data-zone]');
+    if (zh) return zoneSheet(zh.dataset.zone);
+    const tc = e.target.closest('[data-tc]');
+    if (tc) { EM.speech.prime(); EM.clips.prime(); S.theme = tc.dataset.tc; EM.save(); EM.theme.apply(); EM.sfx.unlock(); return go('home'); }
     const tr = e.target.closest('[data-trick]');
     if (tr) return trickTap(tr.dataset.trick);
     const a = e.target.closest('[data-act]');
@@ -515,6 +560,7 @@
     switch (a.dataset.act) {
       case 'home': return go('home');
       case 'skills': return go('skills');
+      case 'world': return go('world');
       case 'placement': return startSession('placement');
       case 'today': return startSession('daily');
       case 'evening': return startSession('evening');

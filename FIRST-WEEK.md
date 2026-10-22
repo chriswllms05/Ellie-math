@@ -8,7 +8,10 @@
 4. Check the settings defaults: 3 parts × 5 minutes, read-aloud on, both school-work topics on. Leave them for week 1.
 5. Tap **Done**, then tap the speaker on any question later to make sure sound works (mute switch off, volume up).
 
-## Day 1: placement (sit with her)
+## Day 1: pick a world, then placement (sit with her)
+
+The first screen asks her to pick her world: Garden, Ocean, Space or Classroom. Let her choose without steering; owning it is the point. Say: *"Every fact you really learn adds something to your world."*
+
 
 What to say: *"This isn't a test and there's nothing to get right. I want the app to find out what you already know so it starts in the right place. If you don't know one, tap 'I don't know.' That's the smart button here."*
 

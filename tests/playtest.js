@@ -41,7 +41,7 @@ async function waitSettled(page) {
 }
 const document_overlay = el => !!el;
 async function clearOverlays(page) { for (let i = 0; i < 40; i++) { const o = await page.$('#overlay [data-close], #overlay [data-how]'); if (!o) return; await o.click(); await page.waitForTimeout(60); } }
-async function nav(page, sel) { await clearOverlays(page); await page.click(sel); await page.waitForTimeout(80); }
+async function nav(page, sel) { await clearOverlays(page); const w = await page.$('[data-tc]'); if (w) { await w.click(); await page.waitForTimeout(80); } await page.click(sel); await page.waitForTimeout(80); }
 async function type(page, s) { for (const ch of String(s)) await page.keyboard.press(ch); }
 async function answer(page, value, { delayMs = 0 } = {}) {
   if (delayMs) await page.evaluate(d => { window.__perf += d; }, delayMs);
@@ -96,7 +96,7 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
     await page.screenshot({ path: `/tmp/em-${name}-placement.png`, fullPage: true });
     await nav(page, '[data-act=home]');
     await nav(page, '[data-act=today]');
-    const n = await play(page, persona, { maxItems: 300 });
+    const n = await play(page, persona, { maxItems: 700 });
     st = await state(page);
     check(st.screen === 'summary', `${name}: daily session ends on summary after ${n} items`);
     const sess = await page.evaluate(() => EM.S.sessions[EM.S.sessions.length - 1]);

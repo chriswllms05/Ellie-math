@@ -394,6 +394,22 @@ input[type=checkbox] { width:22px; height:22px; }
 .clips button { margin:4px 6px 4px 0; }
 .pinpad { max-width:260px; margin:0 auto; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+/* Flashed arrays still hide after 3 s with Reduce Motion on (it's part of the exercise, not decoration); the hide is instant. */
+@media (prefers-reduced-motion: reduce) { .arr.flash { animation:fadeaway .01s 3s forwards !important; } .practice.helping .arr.flash { animation:none !important; } }
+/* ten-frame progress: the curriculum's own object */
+.tenstrip { display:grid; grid-template-columns:repeat(10, 1fr); gap:3px; padding:3px; background:var(--text); border-radius:7px; }
+.tenstrip span { aspect-ratio:1; background:var(--surface); border-radius:3px; display:grid; place-items:center; }
+.tenstrip span.on::after { content:''; width:72%; height:72%; border-radius:50%; background:var(--a); }
+.topbar .tenstrip.progress { flex:1; max-width:340px; height:auto; overflow:visible; }
+.surprise { display:flex; align-items:center; gap:14px; }
+.surprise .surprise-strip { width:150px; flex:none; }
+/* browser surfaces belong to the design too */
+:focus-visible { outline:3px solid var(--accent); outline-offset:3px; border-radius:12px; }
+::selection { background:color-mix(in srgb, var(--accent) 28%, transparent); }
+input, textarea { caret-color:var(--accent); }
+.eq, .slot, .pad button, .seq, .nlput text, .pvc .cnt { font-variant-numeric:tabular-nums; }
+/* the question sits at one fixed place, so nothing jumps between items */
+.practice .stage { justify-content:flex-start; padding-top:clamp(8px, 6vh, 72px); }
 /* widgets that must win over the general rules above */
 .practice .pad.choicepad button { height:auto; min-height:78px; font-size:21px; line-height:1.25; padding:12px 10px; }
 .pvc.mreg .col.mdrop .dcs { width:auto; max-width:210px; min-width:76px; }
@@ -415,15 +431,15 @@ input[type=checkbox] { width:22px; height:22px; }
 </head>
 <body>
 <div id="app"></div>
-<script src="engine.js?v=11"></script>
-<script src="content.js?v=11"></script>
-<script src="audio.js?v=11"></script>
-<script src="manip.js?v=11"></script>
-<script src="theme.js?v=11"></script>
-<script src="world.js?v=11"></script>
-<script src="avatar.js?v=11"></script>
-<script src="teach.js?v=11"></script>
-<script src="parent.js?v=11"></script>
-<script src="app.js?v=11"></script>
+<script src="engine.js?v=12"></script>
+<script src="content.js?v=12"></script>
+<script src="audio.js?v=12"></script>
+<script src="manip.js?v=12"></script>
+<script src="theme.js?v=12"></script>
+<script src="world.js?v=12"></script>
+<script src="avatar.js?v=12"></script>
+<script src="teach.js?v=12"></script>
+<script src="parent.js?v=12"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>

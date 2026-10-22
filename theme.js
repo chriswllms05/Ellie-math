@@ -73,8 +73,8 @@
       one: 'flower', many: 'flowers', place: 'garden', verb: 'grew', item: flower, big: '🌸',
       empty: 'Your garden is waiting. Every fact you really know grows a flower here.',
       newLine: n => `A new flower grew in your garden.`,
-      light: { bg: '#fff7ec', surface: '#ffffff', accent: '#e8583a', accentInk: '#ffffff', rule: '#efe2cf', g0: '#f1e7d8', scene: 'linear-gradient(#fff3d6 0%, #fff3d6 62%, #b9e3a5 62%, #8fd07d 100%)', tint: '#fff1dc' },
-      dark: { bg: '#1a1714', surface: '#26211d', accent: '#ff7b5c', accentInk: '#1a0d08', rule: '#3a322b', g0: '#332c25', scene: 'linear-gradient(#2a241e 0%, #2a241e 62%, #2f5a32 62%, #244a28 100%)', tint: '#2a231c' },
+      light: { bg: '#f2f6e9', surface: '#ffffff', accent: '#2e7a4c', accentInk: '#ffffff', rule: '#dde7cf', g0: '#e4ecd6', scene: 'linear-gradient(#dff0fb 0%, #dff0fb 62%, #b9e3a5 62%, #8fd07d 100%)', tint: '#e8f2dc' },
+      dark: { bg: '#141a15', surface: '#1f2720', accent: '#6fd18f', accentInk: '#0b1a10', rule: '#304034', g0: '#283329', scene: 'linear-gradient(#1c2630 0%, #1c2630 62%, #2f5a32 62%, #244a28 100%)', tint: '#1f2a21' },
       breakArt: '🌻',
     },
     ocean: {

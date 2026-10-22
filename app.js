@@ -46,7 +46,12 @@
     const t = T(), next = EM.world.nextMilestone(known);
     if (!next) return '';
     const prev = [...EM.world.MILESTONES[t.id]].reverse().find(m => m[0] <= known), from = prev ? prev[0] : 0, left = next[0] - known;
-    return `<div class="surprise">🎁 ${left} more fact${left > 1 ? 's' : ''} until a surprise moves into your ${t.place}<span class="bar"><i style="width:${Math.round((known - from) / (next[0] - from) * 100)}%"></i></span></div>`;
+    return `<div class="surprise">${tenStrip((known - from) / (next[0] - from), 'surprise-strip')}<span>${left} more fact${left > 1 ? 's' : ''} until a surprise moves into your ${t.place}</span></div>`;
+  }
+  // Progress drawn as a ten-frame: ten cells, one counter per tenth. It only changes between questions.
+  function tenStrip(frac, cls) {
+    const n = Math.max(0, Math.min(10, Math.floor(frac * 10 + 1e-9)));
+    return `<div class="tenstrip ${cls}" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${n}">${Array.from({ length: 10 }, (_, i) => `<span class="${i < n ? 'on' : ''}"></span>`).join('')}</div>`;
   }
   // Her world: picked on first launch, changeable from home.
   function renderWorld() {
@@ -595,7 +600,7 @@
     const help = R.phase === 'help', hidden = (R.waitReady || R.waitTrick || R.waitSpeech) && !help;
     $app.innerHTML = `<main class="wrap practice${help ? ' helping' : ''}">
       <div class="topbar"><button class="icon-btn" data-act="quit" aria-label="Stop practice">✕</button>
-        <div class="progress"><i style="width:${Math.min(100, R.idx / Math.max(1, R.planned) * 100)}%"></i></div>
+        ${tenStrip(R.idx / Math.max(1, R.planned), 'progress')}
         <span class="blockname">${esc(R.blocks[R.bi].name)}${R.blocks.length > 1 ? ` ${R.bi + 1}/${R.blocks.length}` : ''}</span>${D(R.mood || 'think', 44)}</div>
       <div class="stage">
         ${stageHTML()}

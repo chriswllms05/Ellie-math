@@ -43,7 +43,7 @@
   // Deterministic jitter so the world looks hand-planted but never reshuffles.
   const jit = (i, k) => { const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
   function slots(z, n) {
-    const band = 24 * z.s, zh = z.h - band, ratio = z.w / zh, cols = Math.max(1, Math.ceil(Math.sqrt(n * ratio))), rows = Math.ceil(n / cols);
+    const band = 30 * z.s, zh = z.h - band, ratio = z.w / zh, cols = Math.max(1, Math.ceil(Math.sqrt(n * ratio))), rows = Math.ceil(n / cols);
     const cw = z.w / cols, rh = zh / rows, out = [];
     for (let i = 0; i < n; i++) {
       const c = i % cols, r = Math.floor(i / cols);
@@ -112,7 +112,7 @@
   const SHORT = { look: 'Quick Look', m10: 'Partners & Bonds', plus12: '+1 +2', doubles: 'Doubles', teens: '10 and More', to10: 'Facts to 10', near: 'Near Doubles', bridge: 'Make 10', sub10: 'Minus to 10', subteen: 'Teen Minus' };
   // Opaque, named signs so she can tell the zones apart (drawn after the items so nothing covers them).
   function sign(z, label, bg, fg) {
-    const name = SHORT[z.id] || '', fs = 17 * Math.max(0.8, z.s), w = (name.length * 0.56 + 2.2) * fs + 12, h = fs * 1.6;
+    const name = SHORT[z.id] || '', fs = 21 * Math.max(0.8, z.s), w = (name.length * 0.56 + 2.2) * fs + 12, h = fs * 1.6;
     const sx = z.x - 6, sy = z.y - 10;
     return `<g class="zsign"><rect x="${sx}" y="${sy}" width="${w.toFixed(0)}" height="${h.toFixed(0)}" rx="${(h / 2.4).toFixed(0)}" fill="${bg}" stroke="rgba(0,0,0,.12)"/><text x="${sx + 8}" y="${(sy + h * 0.7).toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="600" fill="${fg}">${label} ${name}</text></g>`;
   }

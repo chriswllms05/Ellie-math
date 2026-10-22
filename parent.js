@@ -116,6 +116,10 @@
       <button class="btn small" style="background:var(--good);color:#fff" data-pc="fast">Knew it fast</button><button class="btn secondary small" data-pc="slow">Counted / slow</button><button class="btn secondary small" data-pc="wrong">Didn't know</button></div>`;
   }
 
+  // Reference sections stay folded unless opened; remember which are open across re-renders.
+  const openSecs = new Set();
+  document.addEventListener('toggle', e => { const d = e.target; if (d.classList && d.classList.contains('psec')) { if (d.open) openSecs.add(d.dataset.sec); else openSecs.delete(d.dataset.sec); } }, true);
+
   // ---------- main view ----------
   P.render = function ($app, ctx) {
     const S_ = S();
@@ -179,23 +183,23 @@
         ${rows.map(r => `<li><span>${esc(r.name)} <span style="color:var(--muted)">(by week ${r.by})</span></span><span class="st ${r.ok ? 'ok' : r.late ? 'late' : ''}">${r.fmt(r.val)}${r.ok ? ' ✓' : r.late ? ' · behind' : ''}</span></li>`).join('')}
       </ul><p style="color:var(--muted)">If a target is behind by its week, change something (more minutes, more of you at the end, a different off-screen game) rather than waiting.</p></section>
 
-      <section><h2>Skills</h2>
+      <details class="psec" data-sec="Skills" ${openSecs.has('Skills') ? 'open' : ''}><summary><h2>Skills</h2></summary>
         <p>Rungs open when the skills they build on are 80% hers. Green is hers, yellow is learning.</p>
-        <div class="scroll"><table><tbody>${skillRows}</tbody></table></div></section>
+        <div class="scroll"><table><tbody>${skillRows}</tbody></table></div></details>
 
-      <section><h2>Addition facts 1–10</h2><div class="grid">${grid}</div>
-        <div class="legend">${STATUS.map(([c, l]) => `<span><i class="${c}"></i>${l}</span>`).join('')}</div></section>
+      <details class="psec" data-sec="Addition" ${openSecs.has('Addition') ? 'open' : ''}><summary><h2>Addition facts 1–10</h2></summary><div class="grid">${grid}</div>
+        <div class="legend">${STATUS.map(([c, l]) => `<span><i class="${c}"></i>${l}</span>`).join('')}</div></details>
 
-      <section><h2>Take-away facts from teens</h2><div class="grid" style="grid-template-columns:repeat(9, minmax(26px, 1fr))">${teenGrid(S_)}</div>
-        <p style="font-size:14px;color:var(--muted);margin-top:8px">Rows are the starting number (11–18), columns what's taken away (2–9). Blank cells aren't part of her facts to 20.</p></section>
+      <details class="psec" data-sec="Take-away" ${openSecs.has('Take-away') ? 'open' : ''}><summary><h2>Take-away facts from teens</h2></summary><div class="grid" style="grid-template-columns:repeat(9, minmax(26px, 1fr))">${teenGrid(S_)}</div>
+        <p style="font-size:14px;color:var(--muted);margin-top:8px">Rows are the starting number (11–18), columns what's taken away (2–9). Blank cells aren't part of her facts to 20.</p></details>
 
-      <section><h2>Needs work</h2>
+      <details class="psec" data-sec="Needs" ${openSecs.has('Needs') ? 'open' : ''}><summary><h2>Needs work</h2></summary>
         ${trouble.length ? `<div class="scroll"><table><thead><tr><th>Fact</th><th>Missed</th><th>Didn't know</th><th>Avg time</th><th>Status</th></tr></thead><tbody>
           ${trouble.map(x => `<tr><td>${esc(EM.labelFact(EM.FACTS[x.k]))}</td><td>${x.r.wrong}</td><td>${x.r.idk}</td><td>${sec(x.avg)}</td><td>${STATUS[statusOf(x.k)][1]}${x.r.peak >= 2 && x.r.box < 2 ? ' (slipped)' : ''}</td></tr>`).join('')}
-        </tbody></table></div>` : '<p>Nothing yet. This fills in after a few sessions.</p>'}</section>
+        </tbody></table></div>` : '<p>Nothing yet. This fills in after a few sessions.</p>'}</details>
 
-      <section><h2>Recent sessions</h2>
-        ${sessRows ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Practice</th><th>Qs</th><th>Fast</th><th>Slow</th><th>Missed</th><th>IDK</th><th>Rushed</th><th>Avg</th><th>Min</th></tr></thead><tbody>${sessRows}</tbody></table></div>` : '<p>No sessions yet.</p>'}</section>
+      <details class="psec" data-sec="Recent" ${openSecs.has('Recent') ? 'open' : ''}><summary><h2>Recent sessions</h2></summary>
+        ${sessRows ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Practice</th><th>Qs</th><th>Fast</th><th>Slow</th><th>Missed</th><th>IDK</th><th>Rushed</th><th>Avg</th><th>Min</th></tr></thead><tbody>${sessRows}</tbody></table></div>` : '<p>No sessions yet.</p>'}</details>
 
       <section><h2>Your voice 🎙️</h2>
         <p>Record a few 3-second clips ("That's my girl!", "So proud of you"). The app plays one at the big moments: when a fact becomes hers, when a skill unlocks, and after a session where she learned something she didn't know.</p>
@@ -212,7 +216,7 @@
           <button class="btn secondary small" data-act="pin" style="margin-top:10px">${S_.settings.pin ? 'Unlock' : 'Set PIN'}</button></div>`}
       </section>
 
-      <section><h2>How Ellie Math works</h2><ul>
+      <details class="psec" data-sec="How" ${openSecs.has('How') ? 'open' : ''}><summary><h2>How Ellie Math works</h2></summary><ul>
         <li><b>No multiple choice.</b> Every answer is typed. There's nothing to tap through.</li>
         <li><b>Three outcomes.</b> Fast-right means she knows it. Slow-right is praised but tells you she's still counting, so the fact stays in practice. Wrong or "I don't know" turns into a picture lesson with a guiding question first; the answer only appears after a second try.</li>
         <li><b>Retention, not completion.</b> A fact is hers only after a fast, correct answer on two different days, reviewed again after 2, 4, 8 and 16 days. One miss sends it back.</li>
@@ -220,15 +224,15 @@
         <li><b>Guessing gets flagged.</b> Wrong answers in about a second count as rushed. She's told to slow down, and you see the count above.</li>
         <li><b>Finger counting</b> is a stage, not a sin. Quick Look flashes dots so counting fails and seeing wins. Naming her trick before typing nudges her toward strategies. "How did you know?" tells you both whether recall is real.</li>
         <li><b>Dimensions Math language</b>: number bonds, make 10, place-value discs, "nearer to," column regrouping.</li>
-      </ul></section>
+      </ul></details>
 
-      <section><h2>Off-screen, 5 minutes that matter</h2><ul>
+      <details class="psec" data-sec="Off-screen," ${openSecs.has('Off-screen,') ? 'open' : ''}><summary><h2>Off-screen, 5 minutes that matter</h2></summary><ul>
         <li>React to the card at the end of each session. Praise the specific thing: "you didn't count that."</li>
         <li>Ask <b>"how did you know?"</b> about any number at dinner. "I counted" is honest and useful.</li>
         <li>Egg carton with 10 cups and pennies: "7 in, how many more to make 10?" Then with the lid closed.</li>
         <li>Dice, dominoes, cards: say the total without counting. You do it out loud too: "I see 5 and 3, so 8."</li>
         <li>Tape a number line on the floor, 30 to 40. Stand on 37, walk to the nearer ten, count steps both ways. Then 300 to 400 on paper, then 3,000 to 4,000.</li>
-      </ul></section>
+      </ul></details>
     </main>`;
     renderClips();
   };

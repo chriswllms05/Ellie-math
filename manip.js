@@ -38,7 +38,7 @@
     },
     // Number line from lo to hi with a marker she drags. lab: 'ends' | 'mid' | 'all'. tgt: an arrow where it goes (help).
     line(d) {
-      const lo = +d.lo, hi = +d.hi, span = hi - lo, X0 = 50, X1 = 550, Y = 70, x = v => X0 + (v - lo) / span * (X1 - X0);
+      const lo = +d.lo, hi = +d.hi, span = hi - lo, X0 = 40, X1 = 560, Y = 70, x = v => X0 + (v - lo) / span * (X1 - X0);
       let s = `<svg viewBox="0 0 600 130" class="nlput" role="img" aria-label="Number line from ${fmt(lo)} to ${fmt(hi)}"><rect x="0" y="0" width="600" height="130" fill="transparent"/>`;
       s += `<line x1="${X0}" y1="${Y}" x2="${X1}" y2="${Y}" stroke-width="4"/>`;
       for (let i = 0; i <= 10; i++) { const v = lo + i * span / 10, h = i % 10 === 0 ? 16 : i === 5 ? 12 : 7; s += `<line x1="${x(v)}" y1="${Y - h}" x2="${x(v)}" y2="${Y + h}" stroke-width="${i % 5 ? 2 : 3}"/>`; }
@@ -46,7 +46,7 @@
       if (d.lab === 'all') for (let i = 0; i <= 10; i++) s += label(lo + i * span / 10, i % 10 ? 'small' : '');
       else { s += label(lo) + label(hi); if (d.lab === 'mid') s += label(lo + span / 2, 'muted'); }
       if (d.tgt) s += `<path d="M${x(+d.tgt)} ${Y - 22} l-9 -14 h18z" style="fill:var(--good)"/>`;
-      if (d.val !== '') s += `<g class="mmark"><line x1="${x(+d.val)}" y1="${Y - 30}" x2="${x(+d.val)}" y2="${Y + 6}" stroke-width="4" style="stroke:var(--a)"/><circle cx="${x(+d.val)}" cy="${Y - 34}" r="13" style="fill:var(--a)"/></g>`;
+      if (d.val !== '') s += `<g class="mmark"><line x1="${x(+d.val)}" y1="${Y - 30}" x2="${x(+d.val)}" y2="${Y + 6}" stroke-width="4" style="stroke:var(--a)"/><circle cx="${x(+d.val)}" cy="${Y - 36}" r="17" style="fill:var(--a)"/></g>`;
       else s += `<text class="muted" x="300" y="22" text-anchor="middle">Tap or drag on the line</text>`;
       return s + '</svg>';
     },
@@ -68,7 +68,7 @@
   // ---------- number line ----------
   function lineValue(root, clientX) {
     const svg = root.querySelector('svg'), r = svg.getBoundingClientRect(), d = root.dataset;
-    const vx = (clientX - r.left) / r.width * 600, t = Math.min(1, Math.max(0, (vx - 50) / 500)), lo = +d.lo, hi = +d.hi, step = (hi - lo) / 100;
+    const vx = (clientX - r.left) / r.width * 600, t = Math.min(1, Math.max(0, (vx - 40) / 520)), lo = +d.lo, hi = +d.hi, step = (hi - lo) / 100;
     return lo + Math.round(t * 100) * step;
   }
   function setLine(root, v) {

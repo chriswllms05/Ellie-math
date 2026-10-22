@@ -568,8 +568,8 @@
     if (tier <= 1) {
       const firstText = steps[0].html.replace(/<div class="eq">.*<\/div>/, '');
       const choices = compare ? ['Greater amount: add ➕', 'Difference or smaller: subtract ➖'] : ['The whole: add ➕', 'A part: subtract ➖'];
-      const ask = compare ? 'This is a comparison model. Is the question mark the greater amount, the smaller amount, or the difference?' : 'This is a part-whole model. Is the question mark the whole or a part?';
-      steps.unshift({ ans: whole ? 1 : 2, choices, html: `${firstText}<div class="ask"><small>${ask}</small></div>`, say: `${steps[0].say} ${ask}`, vis: model, choice: true });
+      const ask = compare ? 'Comparison model: is the ? the greater amount, or the difference?' : 'Part-whole model: is the ? the whole or a part?';
+      steps.unshift({ ans: whole ? 1 : 2, choices, html: `${firstText}<div class="ask"><small>${ask}</small></div>`, say: `${steps[0].say} ${ask.replace('?', 'question mark')}`, vis: model, choice: true });
     }
     const lead = typed => grabs.includes(typed) ? (typed === grabs[0] ? `Hmm, read it again. Does it end up with more or fewer ${th}? ` : `That's a number from the story. What does the question ask? `) : '';
     return { type: 'word', steps, label: `Story: ${text.slice(0, 40)}…`,

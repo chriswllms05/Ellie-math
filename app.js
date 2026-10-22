@@ -587,7 +587,9 @@
     const html = st.html.replace('<span class="slot">&nbsp;</span>', `<span class="slot">${R.input ? fmt(Number(R.input)) : '&nbsp;'}</span>`).replace('<span class="slot wide">&nbsp;</span>', `<span class="slot wide">${R.input ? fmt(Number(R.input)) : '&nbsp;'}</span>`);
     const speaker = it.kind === 'fact' && EM.speech.enabled() ? `<button class="speaker" data-act="speak" aria-label="Hear it">🔊</button>` : (EM.speech.enabled() ? `<button class="speaker" data-act="speak" aria-label="Hear it again">🔊</button>` : '');
     const tricks = R.waitTrick && !help ? `<div class="tricks"><span class="lab">Which trick will you use?</span>${EM.TRICK_SKILLS[skillOfFact(it.key, true)].map(t => `<button data-trick="${esc(t)}">${esc(t)}</button>`).join('')}</div>` : '';
-    return `${it.mode === 'reask' && !help ? '<div class="tag">Try this one again</div>' : ''}${html}<div class="visual">${vis}</div>${speaker}${tricks}`;
+    // Bigger-number work reads question → picture → answer box; facts keep the equation first.
+    const body = it.kind === 'proc' && html.includes('<div class="eq">') ? html.replace('<div class="eq">', `<div class="visual">${vis}</div><div class="eq">`) : `${html}<div class="visual">${vis}</div>`;
+    return `${it.mode === 'reask' && !help ? '<div class="tag">Try this one again</div>' : ''}${body}${speaker}${tricks}`;
   }
   function renderPractice() {
     const help = R.phase === 'help', hidden = (R.waitReady || R.waitTrick || R.waitSpeech) && !help;

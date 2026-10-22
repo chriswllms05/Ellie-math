@@ -47,6 +47,18 @@ She picks her world on first launch (Garden, Ocean, Space or Classroom; changeab
 
 The world is now the home screen: a full-width scene where each foundation skill has its own place (flower bed, coral reef, constellation, or sticker chart on the classroom whiteboard) and every fact has a spot. Not tried → learning → hers → rock solid shows as soil → sprout → flower → sparkle (and the equivalents in each world), so the world changes after every session, not only at mastery. Milestones at 5, 10, 20, 35, 50, 75, 100, 150, 200 and 300 facts bring something new into the world with its own celebration; home shows how many facts until the next surprise. Tapping a zone opens a close-up with every fact labeled. After a session the summary shows the world with the new arrivals popping in. In the Classroom, Dot is the teacher (with glasses) and greets her with "Good morning."
 
+## Teach Dot, avatar, review fixes (done)
+
+She builds her own avatar on the device (never uploaded; the repo is public). Teach Dot: on facts that are already hers she checks Dot's work or teaches Dot the steps; a miss there counts as a real retention miss. A whole-app review then fixed, among others: the collection never shrinks (a slipped fact shows as thirsty instead of disappearing), quieter day-2 celebrations, a "Show me" button in help, honest column-subtraction steps once hints fade, subtract-from-10 for teen take-away, no counting "tricks", PIN relock, and iPad sizing.
+
+## Catch-up tuning, iPad dragging, parent loop, next units (done)
+
+- **Engine**: at most 8 facts in learning at once, each woven in three times per session; easiest facts first; a fact becoming hers gives its turn-around a head start; subtraction facts open as soon as their addition partner is hers. While facts to 20 are behind, the daily plan gives facts a second burst.
+- **Dragging**: Number Bonds (new Foundations skill; Make 10 builds on it), Where Does It Go? (number-line placement), drag-to-make-10 and split-the-bond in help, drag a ten-disc to regroup in column subtraction help, movable milestone surprises in her world. Anything that drags also works with a tap. A skill she has already opened never re-locks when a new prerequisite is added.
+- **Parent loop**: "do this now" on the card, counting slips (answers off by one), one-minute parent check, this week's 3 things, teen take-away grid, a recorded reply that plays at her next session, newest voice clip plays first, a nudge when clips are over two weeks old.
+- **Next units**: In Your Head (Dimensions chapter 2 mental math), Story Problems with bar models (help notices number-grabbing and wrong-operation answers), and a separate "getting ready for times tables" track (skip counting, arrays, ×2 ×5 ×10) that only takes a small share of School work.
+- **Fixed along the way**: the yellow "fill the ten" counters were invisible in help, and the iPad size rules never applied (they were overridden by the base styles). Both fixed.
+
 ## Needs you
 
 1. **Install on the iPad**: open https://chriswllms05.github.io/Ellie-math/ in Safari (capital E matters), Share → Add to Home Screen.

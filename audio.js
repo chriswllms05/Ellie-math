@@ -14,6 +14,7 @@
   function quality(v) {
     const id = `${v.name} ${v.voiceURI || ''}`;
     if (NOVELTY.test(v.name)) return -1;
+    if (/siri/i.test(id)) return 4; // only listed on some iOS versions; best when it is
     if (/premium|natural|neural|online/i.test(id)) return 3;
     if (/enhanced/i.test(id)) return 2;
     return NATURAL.test(v.name) ? 1 : 0;

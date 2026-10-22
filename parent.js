@@ -240,7 +240,7 @@
   // Voice: best installed voice first. Premium/Enhanced voices sound far more natural and work offline once downloaded.
   function voiceHTML() {
     EM.speech.pick();
-    const vs = EM.speech.voices(), cur = EM.speech.voice, tag = q => q >= 3 ? ' ★ Premium' : q >= 2 ? ' ★ Enhanced' : '';
+    const vs = EM.speech.voices(), cur = EM.speech.voice, tag = q => q >= 4 ? ' ★ Siri' : q >= 3 ? ' ★ Premium' : q >= 2 ? ' ★ Enhanced' : '';
     if (!vs.length) return '<p style="color:var(--muted)">No voices found on this device yet.</p>';
     return `<label class="set">Voice <select data-voice="1">${vs.map(v => `<option value="${esc(v.uri)}" ${cur && cur.voiceURI === v.uri ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})${tag(v.q)}</option>`).join('')}</select> <button class="btn secondary small" data-act="voicetest">▶ Hear it</button></label>
       ${EM.speech.quality < 2 ? `<p class="warn-banner">For a much more natural voice (free, works offline): on the iPad open <b>Settings → Accessibility → Spoken Content → Voices → English</b>, pick a voice marked <b>Premium</b> or <b>Enhanced</b> (Ava, Zoe and Evan are good), and download it. Then close and reopen Ellie Math and choose it here.</p>` : ''}`;

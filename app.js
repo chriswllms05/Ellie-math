@@ -48,7 +48,7 @@
     const prev = [...EM.world.MILESTONES[t.id]].reverse().find(m => m[0] <= known), from = prev ? prev[0] : 0, left = next[0] - known;
     return `<div class="surprise">${tenStrip((known - from) / (next[0] - from), 'surprise-strip')}<span>${left} more fact${left > 1 ? 's' : ''} until a surprise moves into your ${t.place}</span></div>`;
   }
-  // Progress drawn as a ten-frame: ten cells, one counter per tenth. It only changes between questions.
+  // Home only: progress toward the next surprise as a ten-frame. Never used on practice screens, where ten-frames mean math.
   function tenStrip(frac, cls) {
     const n = Math.max(0, Math.min(10, Math.floor(frac * 10 + 1e-9)));
     return `<div class="tenstrip ${cls}" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${n}">${Array.from({ length: 10 }, (_, i) => `<span class="${i < n ? 'on' : ''}"></span>`).join('')}</div>`;
@@ -600,7 +600,7 @@
     const help = R.phase === 'help', hidden = (R.waitReady || R.waitTrick || R.waitSpeech) && !help;
     $app.innerHTML = `<main class="wrap practice${help ? ' helping' : ''}">
       <div class="topbar"><button class="icon-btn" data-act="quit" aria-label="Stop practice">✕</button>
-        ${tenStrip(R.idx / Math.max(1, R.planned), 'progress')}
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(Math.min(1, R.idx / Math.max(1, R.planned)) * 100)}"><i style="width:${Math.min(100, R.idx / Math.max(1, R.planned) * 100)}%"></i></div>
         <span class="blockname">${esc(R.blocks[R.bi].name)}${R.blocks.length > 1 ? ` ${R.bi + 1}/${R.blocks.length}` : ''}</span>${D(R.mood || 'think', 44)}</div>
       <div class="stage">
         ${stageHTML()}

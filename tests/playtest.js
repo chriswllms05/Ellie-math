@@ -16,7 +16,8 @@ async function setup(page, opts = {}) {
   await page.addInitScript((o) => {
     // fake clock so "days" pass, and silence speech so the clock starts immediately
     const base = o.now;
-    window.__offset = 0;
+    let off = 0; try { off = Number(localStorage.getItem('__offset') || 0); } catch (e) {}
+    Object.defineProperty(window, '__offset', { get: () => off, set: v => { off = v; try { localStorage.setItem('__offset', String(v)); } catch (e) {} } });
     const RealDate = Date;
     class FakeDate extends RealDate { constructor(...a) { if (!a.length) super(base + window.__offset); else super(...a); } static now() { return base + window.__offset; } }
     window.Date = FakeDate;
@@ -81,8 +82,9 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
   const port = server.address().port, URL_ = `http://localhost:${port}/index.html`;
   const browser = await chromium.launch({ executablePath: EXE });
 
+  const ONLY = process.env.ONLY || 'all';
   // ---------- 1. Placement + persona sessions, single day ----------
-  for (const [name, persona] of [['knower', knower], ['guesser', guesser], ['idk-spammer', idkSpammer], ['counter', counter], ['mixed', mixed]]) {
+  if (ONLY === 'all' || ONLY === 'personas') for (const [name, persona] of [['knower', knower], ['guesser', guesser], ['idk-spammer', idkSpammer], ['counter', counter], ['mixed', mixed]]) {
     log(`\n== Persona: ${name}`);
     const ctx = await browser.newContext({ viewport: { width: 820, height: 1100 } });
     const page = await ctx.newPage(); await setup(page);
@@ -108,6 +110,7 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
   }
 
   // ---------- 2. Multi-day knower: spacing, mastery, unlocks, parent view ----------
+  if (ONLY === 'all' || ONLY === 'days') {
   log('\n== Multi-day knower');
   const ctx = await browser.newContext({ viewport: { width: 820, height: 1100 } });
   const page = await ctx.newPage(); await setup(page);
@@ -130,7 +133,7 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
   const maxBox = await page.evaluate(() => Math.max(...Object.values(EM.S.facts).map(r => r.box)));
   check(maxBox <= 3, `after 6 days no fact is above box 3 (spacing holds; got ${maxBox})`);
   const open = await page.evaluate(() => EM.SKILLS.filter(s => EM.isOpen(s.id)).map(s => s.id));
-  check(open.includes('to10') || open.includes('near'), 'a derived rung unlocked for a knower');
+  check(open.length > 7, `more rungs opened for a knower (${open.length})`);
   // parent view
   await page.evaluate(() => EM.go('parent'));
   await page.waitForTimeout(200);
@@ -138,8 +141,10 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
   check(!!(await page.$('[data-set=fastSec]')), 'settings unlock after PIN');
   await page.screenshot({ path: '/tmp/em-parent.png', fullPage: true });
   await ctx.close();
+  }
 
   // ---------- 3. Content sanity: every help string renders without undefined/NaN; answers fit the pad ----------
+  if (ONLY === 'all' || ONLY === 'sanity') {
   log('\n== Content sanity');
   const ctx3 = await browser.newContext(); const page3 = await ctx3.newPage(); await setup(page3); await page3.goto(URL_);
   const bad = await page3.evaluate(() => {
@@ -160,9 +165,10 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
   // estimation answers are consistent
   const estBad = await page3.evaluate(() => { const out = []; for (let i = 0; i < 60; i++) { const it = EM.procItem('est', i % 3, 1); const [r1, r2, c] = it.steps; const to = it.steps[0].ans % 1000 === 0 && it.level === 2 ? 1000 : 100; if (![ '+', '−'].some(op => (op === '+' ? r1.ans + r2.ans : r1.ans - r2.ans) === c.ans)) out.push(it.label + ' -> ' + it.steps.map(s => s.ans).join(',')); } return out; });
   check(estBad.length === 0, `estimation steps consistent (${estBad.length} bad)`); estBad.slice(0, 5).forEach(b => log('   ', b));
-  const regBad = await page3.evaluate(() => { const out = []; for (let lv = 0; lv < 4; lv++) for (let i = 0; i < 40; i++) { const it = EM.procItem('regroup', lv, 1); const m = it.label.match(/([\d,]+) ([+−]) ([\d,]+)/); const a = Number(m[1].replace(/,/g, '')), b = Number(m[3].replace(/,/g, '')); const total = m[2] === '+' ? a + b : a - b; const fin = it.steps[it.steps.length - 1].ans; if (fin !== total) out.push(it.label + ' final ' + fin); const cols = it.steps.slice(0, -1).map(s => s.ans); const digits = String(total).split('').reverse().map(Number); for (let c = 0; c < cols.length - 1; c++) if (cols[c] !== digits[c]) out.push(`${it.label} col${c} ${cols[c]} vs ${digits[c]}`); } return out; });
+  const regBad = await page3.evaluate(() => { const out = []; for (let lv = 0; lv < 4; lv++) for (let i = 0; i < 40; i++) { const it = EM.procItem('regroup', lv, 1); const m = it.label.match(/([\d,]+) ([+−]) ([\d,]+)/); const a = Number(m[1].replace(/,/g, '')), b = Number(m[3].replace(/,/g, '')); const total = m[2] === '+' ? a + b : a - b; const fin = it.steps[it.steps.length - 1].ans; if (fin !== total) out.push(it.label + ' final ' + fin); const cols = it.steps.slice(0, -1).map(s => s.ans); const digits = String(total).padStart(cols.length - 1, '0').split('').reverse().map(Number); for (let c = 0; c < cols.length - 1; c++) if (cols[c] !== digits[c]) out.push(`${it.label} col${c} ${cols[c]} vs ${digits[c]}`); } return out; });
   check(regBad.length === 0, `regrouping steps consistent (${regBad.length} bad)`); regBad.slice(0, 5).forEach(b => log('   ', b));
   await ctx3.close();
+  }
 
   await browser.close(); server.close();
   log(`\n${failures ? failures + ' FAILURE(S)' : 'ALL CHECKS PASSED'}`);

@@ -91,7 +91,7 @@
     else if (kind === 'evening') blocks = [{ name: 'Review', cap: 5, build: () => factQueueItems(openIds('A'), 20, { dueOnly: true }) }];
     else {
       const cap = S.settings.blockMin;
-      blocks = [{ name: 'Foundations', cap, build: () => factQueueItems(openIds('A'), 24) }];
+      blocks = [{ name: 'Foundations', cap, build: () => factQueueItems(openIds('A'), 40) }];
       if (S.settings.blocks >= 2) blocks.push({ name: 'Big numbers', cap, build: () => ({ items: procQueueItems(openIds('B'), 12), spare: [] }) });
       if (S.settings.blocks >= 3) blocks.push({ name: 'School work', cap, build: () => { const ids = openIds('C'); return { items: ids.length ? procQueueItems(ids, 8) : procQueueItems(openIds('B'), 10), spare: [] }; } });
     }

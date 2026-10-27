@@ -43,6 +43,11 @@ const server = http.createServer((req, res) => { let p = decodeURIComponent(req.
       'This is Dot. If you can hear me, the sound is working.', "Hi, NAME! 8 plus 5 is 13. You didn't count that one, you just knew it!", 'Hi, NAME! This is how I will sound.', '4,372.', '56.',
       ...['Foundations', 'Quick facts', 'Times facts', 'Big numbers', 'School work', 'Teach Dot', 'Looking', 'Review'].map(b => `Part 1 done! Shake out your hands. Next up, ${b}.`)].forEach(add);
     EM.SKILLS.forEach(sk => { add(`${sk.name}, next level!`); add(`New skill unlocked. ${sk.name}.`); });
+    // village.js lines (v2 slice 1)
+    ['The bridge is fixed! The meadow is open.', 'The bridge is broken. Know 8 make 10 facts and it gets fixed.', 'Tap an empty spot.', 'You caught 8 fish!',
+      'Whoa, too fast! The fish got away. Think first.', "The fish got away. Let's look together.", "Good call asking. Let's look together."].forEach(add);
+    for (const c of [2, 3, 4, 5, 6, 9, 10]) add(`You need ${c} fish for that. Go fishing to catch more!`);
+    for (let a = 0; a <= 10; a++) { add(`Yes! ${a} and ${10 - a} make 10.`); add(`${a} + ${10 - a} = 10 is yours!`); }
     const GROW = { garden: ['sprout', 'sprouts'], ocean: ['egg', 'eggs'], space: ['baby star', 'baby stars'], classroom: ['outline', 'outlines'] };
     const was = EM.S && EM.S.theme;
     for (const id of ['garden', 'ocean', 'space', 'classroom']) {

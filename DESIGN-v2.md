@@ -57,7 +57,7 @@ Every v1 skill becomes a job in a place in her world. She can do any open job du
 
 | Place | Job | Skills inside it |
 |---|---|---|
-| Fishing dock | Each fish carries a number; catch the one that makes 10 with yours | Partners of 10, Number Bonds, Make a 10 |
+| Fishing dock | The fish on her line shows a number; she types its partner to make 10 and reels it in | Partners of 10 (later: Number Bonds, Make a 10) |
 | Bakery | Fill the trays: double the batch, then one more | Doubles, Near Doubles |
 | Market stall | Customers buy and return things | +1 +2, Ten and More, Facts to 10, Take Away to 10, Ten Take Away |
 | Bridge crew | Join planks to span the gap; take away to fit | Make a 10 bridges, Take Away from Teens |
@@ -141,6 +141,8 @@ Mostly unchanged: the weekly view, this week's 3 things, the parent check, catch
 ## Build plan
 
 ### Slice 1: test the riskiest assumption
+
+**Status: built** on branch `claude/village-slice1` (see STATUS.md). The village is reached from a new button on home; v1 practice is unchanged.
 
 The risk is that a math job is fun enough on its own. Before rebuilding anything else:
 

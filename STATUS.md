@@ -86,6 +86,18 @@ Dot now speaks with a recorded child voice (Azure neural voice "Ana", slightly f
 - Grown-up area → Voice: **Dot (recorded)** is the default and the first option; the iPad voices are still there.
 - To change lines or the voice: `node tools/voice/collect.js lines.json && node tools/voice/build.js lines.json` (needs the Azure key on the environment; only new lines are recorded). `tools/voice/coverage.js` checks nothing is missing.
 
+## Her village, slice 1 (built, not live yet)
+
+The first slice of the v2 design (`DESIGN-v2.md`): a pixel-art village she reaches from a new **🏡 My village** button on home. Everything in v1 is unchanged and still the daily practice.
+- **Her plot**: 6 × 3 spots in front of her house. 10 things to build (flowers, berry bush, pumpkin, lantern, bench, birdhouse, little tree, flag, doghouse, wishing well), each paid for in fish. Tap to place; tap a placed thing to paint it (9 colors), move it, or put it away for a full refund; or drag it to a new spot. No math in building. She starts with 3 fish so she can build something right away.
+- **Fishing (make 10)**: the fish on her line shows a number; she types the partner that makes 10. It runs on the real engine: facts come from `buildFactQueue(['m10'])`, are graded with `gradeFact`, and use the same fast and rushed rules as practice. Only a right answer catches a fish; a miss lets it get away and opens the same two-step help; "I don't know" is safe; a missed fact comes back a few fish later. Rounds of 8; each round's answers are logged as a session, so the grown-up view counts them.
+- **The meadow**: across a broken bridge. When 8 of the 11 Partners of 10 are hers, the bridge is fixed and the meadow opens: a second plot and three new things (sheep, haystack, scarecrow). A sign on the map shows her progress.
+- **Her in pixels**: her village self wears her avatar's skin, hair and shirt colors. Dot is a little glowing wisp.
+- All of Dot's new lines are recorded in Ana's voice.
+- Code: `pixel.js` (art kit: palette, ground, props, people, buildable items), `village.js` (map, building, fishing, unlocks). Checks and screenshots: `node tests/village-shots.js [outdir]` (portrait and landscape).
+
+What to watch when she tries it: does she go back to fishing without being asked? Does she build when nothing is required? Do the rushed flags stay low?
+
 ## Needs you
 
 1. **Install on the iPad**: open https://chriswllms05.github.io/Ellie-math/ in Safari (capital E matters), Share → Add to Home Screen.

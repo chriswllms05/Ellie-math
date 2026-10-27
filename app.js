@@ -17,7 +17,7 @@
     screen = s; render(); window.scrollTo(0, 0);
   }
   function render() {
-    const views = { avatar: () => { $app.innerHTML = EM.avatar.builder(!S.avatar); }, world: renderWorld, home: renderHome, skills: renderSkills, practice: renderPractice, summary: renderSummary, parent: () => EM.parent.render($app, { go, startSession }), break: renderBreak };
+    const views = { avatar: () => { $app.innerHTML = EM.avatar.builder(!S.avatar); }, world: renderWorld, home: renderHome, skills: renderSkills, practice: renderPractice, summary: renderSummary, parent: () => EM.parent.render($app, { go, startSession }), break: renderBreak, village: () => EM.village.render($app) };
     (views[screen] || renderHome)();
   }
   EM.go = go; EM.render = render;
@@ -93,6 +93,7 @@
       ${cardLine()}
       <button class="big-btn" data-act="today">${done ? 'Practice again' : "Today's practice"}<span>${done ? "You already did today's. Extra is fine!" : `About ${S.settings.minutes || 15} minutes, ${partsToday()} short parts`}</span></button>
       ${done && dueTonight() ? '<button class="btn secondary" data-act="evening" style="margin-bottom:12px">Evening review <span style="font-size:14px;color:var(--muted)">5 minutes, just the facts that are due</span></button>' : ''}
+      <button class="big-btn village-btn" data-act="village">🏡 My village<span>New! Go fishing and build your own plot</span></button>
       <button class="btn secondary" data-act="skills">Pick a skill</button>
       <div class="card"><h2>How to play</h2><ul>
         <li>🧠 Think first, then type.</li>
@@ -672,6 +673,7 @@
     switch (a.dataset.act) {
       case 'home': return go('home');
       case 'skills': return go('skills');
+      case 'village': return go('village');
       case 'world': return go('world');
       case 'avatar': return go('avatar');
       case 'notebook': {

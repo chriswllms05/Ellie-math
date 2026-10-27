@@ -121,7 +121,11 @@
   // ---------- screen plumbing ----------
   let $root = null, mode = 'map', B = { item: null, sel: null, moving: null }, F = null;
   const pct = ([x, y]) => `left:${(x / W * 100).toFixed(2)}%;top:${(y / H * 100).toFixed(2)}%`;
-  const scaleFor = () => Math.max(3, Math.min(8, Math.round(Math.min(window.innerWidth, window.innerHeight * 1.43) * (window.devicePixelRatio || 1) / W)));
+  // The world fills the screen edge to edge (like CSS "cover"): a sliver may be cropped on iPads of other shapes.
+  const coverSize = () => { const vw = window.innerWidth, vh = window.innerHeight, w = Math.max(vw, vh * W / H); return { w, h: w * H / W, left: (vw - w) / 2, top: (vh - w * H / W) / 2 }; };
+  const scaleFor = () => Math.max(3, Math.min(10, Math.round(coverSize().w * (window.devicePixelRatio || 1) / W)));
+  function fit() { const st = document.getElementById('vstage'); if (!st) return; const c = coverSize(); Object.assign(st.style, { width: c.w + 'px', height: c.h + 'px', left: c.left + 'px', top: c.top + 'px' }); }
+  window.addEventListener('resize', fit);
   const toScene = (canvas, e) => { const r = canvas.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
   const say = t => EM.speech && EM.speech.say(t);
   function icon(id, paint) { const c = document.createElement('canvas'); c.width = 16; c.height = 16; px.drawItem(px.kit(c.getContext('2d')), id, 0, 0, paint); return c.toDataURL(); }
@@ -141,15 +145,16 @@
     const bubble = v.news === 'meadow' ? 'The bridge is fixed! The meadow is open. Sheep are waiting!'
       : build ? (B.item ? `Tap a spot on your plot for the ${px.ITEM[B.item].name.toLowerCase()}.` : sel ? 'Paint it, move it, or put it away.' : 'Pick something to build, then tap a spot.')
       : v.placed.length ? `${v.fish} fish to spend. Want to build, or go fishing?` : 'Welcome to your village! Catch fish at the pond, then build your plot.';
-    $root.innerHTML = `<main class="village ${build ? 'building' : ''}">
-      <div class="vtop"><button class="back" data-v="home">‹ Home</button><span class="vfish">🐟 <b>${v.fish}</b></span></div>
+    $root.innerHTML = `<main class="village full ${build ? 'building' : ''}">
       <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas>
         <div class="vbubble" id="vbubble">${esc(bubble)}</div>
         ${!v.open.meadow ? `<div class="vlock" style="${pct([254, 28])}">🔒 Fix the bridge to the meadow<small>${p.have} of ${p.need} make-10 facts are yours</small></div>` : ''}
-        <div class="vlabel" style="${pct([60, 196])}">🎣 Fishing pond</div>
+        <div class="vlabel" style="${pct([64, 104])}">🎣 Fishing pond</div>
       </div>
-      ${build ? buildTray(items, sel) : `<div class="vactions"><button class="big-btn" data-v="fish">🎣 Go fishing<span>Catch fish to build with</span></button><button class="big-btn alt" data-v="build">🔨 Build<span>Place and paint things on your plot</span></button></div>`}
+      <div class="vhud vtl"><button class="vpill" data-v="home">‹ Home</button><span class="vpill vfish">🐟 <b>${v.fish}</b></span></div>
+      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="fish">🎣 Go fishing<span>Catch fish to build with</span></button><button class="big-btn alt" data-v="build">🔨 Build<span>Place and paint your plot</span></button></div>`}
     </main>`;
+    fit();
     const canvas = document.getElementById('vcanvas');
     const info = drawVillage(canvas, { build, sel: B.sel, scale: scaleFor(), drag: B.drag });
     const b = document.getElementById('vbubble'); b.setAttribute('style', pct([info.dot[0] - 6, info.dot[1] - 12]));
@@ -159,12 +164,12 @@
   function buildTray(items, sel) {
     if (sel) {
       const it = px.ITEM[sel.item];
-      return `<div class="vtray"><div class="vtray-h"><img src="${itemIcon(sel.item, sel.paint)}" alt=""> <b>${esc(it.name)}</b> <button class="btn secondary small" data-v="deselect">Done</button></div>
+      return `<div class="vtray vpanel"><div class="vtray-h"><img src="${itemIcon(sel.item, sel.paint)}" alt=""> <b>${esc(it.name)}</b> <button class="btn secondary small" data-v="deselect">Done</button></div>
         <div class="vpaints">${PAINTS.map(c => `<button class="vpaint ${sel.paint === c ? 'on' : ''}" data-paint="${c}" style="background:${px.PAINT[c][1]}" aria-label="${c}"></button>`).join('')}</div>
-        <div class="vrow"><button class="btn secondary" data-v="move">↔ Move</button><button class="btn secondary" data-v="putaway">↩ Put away (+${it.cost} 🐟)</button></div></div>`;
+        <div class="vcol"><button class="btn secondary" data-v="move">↔ Move</button><button class="btn secondary" data-v="putaway">↩ Put away (+${it.cost} 🐟)</button></div></div>`;
     }
     const v = V();
-    return `<div class="vtray"><div class="vtray-h"><b>Build</b><span class="vhint">Drag things to move them. Tap one to paint it.</span><button class="btn secondary small" data-v="done">Done building</button></div>
+    return `<div class="vtray vpanel"><div class="vtray-h"><b>Build</b><button class="btn secondary small" data-v="done">Done</button></div><div class="vhint">Pick something, then tap a spot. Drag things to move them; tap one to paint it.</div>
       <div class="vitems">${items.map(i => `<button class="vitem ${B.item === i.id ? 'on' : ''} ${v.fish < i.cost ? 'poor' : ''}" data-item="${i.id}"><img src="${itemIcon(i.id)}" alt=""><span>${esc(i.name)}</span><b>${i.cost} 🐟</b></button>`).join('')}</div></div>`;
   }
   function hookCanvas(canvas) {
@@ -229,22 +234,21 @@
   }
   function renderFishing() {
     const f = F.f, help = F.help;
-    $root.innerHTML = `<main class="village fishing">
-      <div class="vtop"><button class="back" data-v="stopfish">‹ Done fishing</button><span class="vchip">Catch ${GOAL} fish <b>${Math.min(F.caught, GOAL)}/${GOAL}</b></span><span class="vfish">🐟 <b>${V().fish}</b></span></div>
+    $root.innerHTML = `<main class="village full fishing">
       <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas>
         <div class="vtag" id="vtag">${f.a}</div>
-        <div class="vbubble" id="vbubble">${esc(F.msg || `Your fish says ${f.a}. What makes 10?`)}</div>
+        ${help ? '' : `<div class="vbubble" id="vbubble">${esc(F.msg || `Your fish says ${f.a}. What makes 10?`)}</div>`}
       </div>
-      <div class="vwork">
-        <div class="vq ${help ? 'helping' : ''}">${help ? `<div class="vhelp">${help.vis ? `<div class="visual">${help.vis}</div>` : ''}<div class="vhelp-t">${help.html}</div></div>` : '<div class="ask">Make 10</div>'}
-          <div class="eq">${f.a} + <span class="slot">${F.input || '&nbsp;'}</span> = 10</div></div>
-        <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-fd="${d}">${d}</button>`).join('')}<button data-v="fback" aria-label="Delete">⌫</button><button data-fd="0">0</button><button class="ok" data-v="fok" aria-label="Check">✓</button></div>
-        ${help ? '' : '<button class="idk" data-v="fidk">🙋 I don\'t know</button>'}
-      </div>
+      <div class="vhud vtl"><button class="vpill" data-v="stopfish">‹ Done fishing</button><span class="vpill vfish">🐟 <b>${V().fish}</b></span></div>
+      <div class="vq vpanel ${help ? 'helping' : ''}">${help ? `<div class="vhelp">${F.msg ? `<div class="vhelp-lead">${esc(F.msg)}</div>` : ''}${help.vis ? `<div class="visual">${help.vis}</div>` : ''}<div class="vhelp-t">${help.html}</div></div>` : `<div class="ask">Make 10 <span class="vcaught">· caught ${Math.min(F.caught, GOAL)} of ${GOAL}</span></div>`}
+        <div class="eq">${f.a} + <span class="slot">${F.input || '&nbsp;'}</span> = 10</div></div>
+      <div class="vpadwrap vpanel"><div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-fd="${d}">${d}</button>`).join('')}<button data-v="fback" aria-label="Delete">⌫</button><button data-fd="0">0</button><button class="ok" data-v="fok" aria-label="Check">✓</button></div>
+        ${help ? '' : '<button class="idk" data-v="fidk">🙋 I don\'t know</button>'}</div>
     </main>`;
+    fit();
     const info = drawFishing(document.getElementById('vcanvas'), { caught: F.caught, scale: scaleFor(), bite: F.phase === 'ask' });
     document.getElementById('vtag').setAttribute('style', pct([info.bob[0], info.bob[1] - 22]));
-    document.getElementById('vbubble').setAttribute('style', pct([info.dot[0] - 6, info.dot[1] - 12]));
+    const bb = document.getElementById('vbubble'); if (bb) bb.setAttribute('style', pct([info.dot[0] - 6, info.dot[1] - 12]));
   }
   function fType(d) { if (F.phase === 'wait' || F.input.length >= 2) return; F.input = F.input === '0' ? d : F.input + d; F.tLast = performance.now(); const s = document.querySelector('.vq .slot'); if (s) s.textContent = F.input; }
   function fBack() { F.input = F.input.slice(0, -1); F.tLast = F.input ? performance.now() : null; const s = document.querySelector('.vq .slot'); if (s) s.innerHTML = F.input || '&nbsp;'; }

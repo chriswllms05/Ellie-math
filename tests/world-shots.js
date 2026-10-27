@@ -8,7 +8,7 @@ const server = http.createServer((req, res) => { let p = req.url.split('?')[0]; 
 (async () => {
   await new Promise(r => server.listen(0, r));
   const browser = await chromium.launch({ executablePath: EXE, args: ['--mute-audio'] });
-  const page = await (await browser.newContext({ viewport: { width: 834, height: 1112 } })).newPage();
+  const page = await (await browser.newContext({ viewport: { width: 1194, height: 834 } })).newPage();
   await page.addInitScript(() => { Object.defineProperty(window, 'speechSynthesis', { value: undefined, configurable: true }); });
   page.on('pageerror', e => console.log('PAGE ERROR', e.message));
   await page.goto(`http://localhost:${server.address().port}/index.html`);

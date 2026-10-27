@@ -1,6 +1,6 @@
 /* Village (v2 slice 1) checks and screenshots. Run: node tests/village-shots.js [outdir]
    Drives the map, build mode (place, paint, drag, put away), fishing (fast catch, rushed miss with help, "I don't know"),
-   session logging, and the meadow opening when Partners of 10 are hers. iPad portrait and landscape. */
+   session logging, and the meadow opening when Partners of 10 are hers. Landscape iPad sizes; upright shows the turn-sideways card. */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..'), OUT = process.argv[2] || '/tmp';
@@ -12,7 +12,7 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
 (async () => {
   await new Promise(r => server.listen(0, r));
   const browser = await chromium.launch({ executablePath: EXE });
-  for (const [vw, vh, tag] of [[834, 1112, 'portrait'], [1194, 834, 'landscape']]) {
+  for (const [vw, vh, tag] of [[1194, 834, 'ipad11'], [1024, 768, 'ipad4x3'], [1133, 744, 'ipadmini']]) {
     console.log(`== ${tag}`);
     const ctx = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: 1, serviceWorkers: 'block' });
     const page = await ctx.newPage();
@@ -114,6 +114,13 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     check(st.placed.length === 16, `built ${st.placed.length} things across the plot and the meadow`);
     await shot('06-built');
     await ctx.close();
+  }
+  { // held upright: the app hides behind the turn-sideways card
+    console.log('== upright');
+    const ctx = await browser.newContext({ viewport: { width: 834, height: 1112 }, serviceWorkers: 'block' }); const page = await ctx.newPage();
+    await page.goto(`http://localhost:${server.address().port}/`);
+    check(await page.isVisible('#turn') && !(await page.isVisible('#app')), 'upright shows only the turn-sideways card');
+    await page.screenshot({ path: `${OUT}/village-upright-turn.png` }); await ctx.close();
   }
   await browser.close(); server.close();
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL VILLAGE CHECKS PASSED');

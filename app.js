@@ -7,6 +7,7 @@
   const NAME = () => S.name || 'friend';
   const T = () => EM.theme.current(), D = (mood, size, opts) => EM.theme.dot(mood, size, opts);
   EM.theme.apply();
+  { const t = document.getElementById('turn'); if (t) t.innerHTML = `<div class="turn-card">${EM.theme.dot('wow', 96)}<div class="turn-ipad"></div><h1>Turn your iPad sideways</h1><p>Ellie Math plays sideways.</p><p class="turn-note">Grown-ups: swipe down from the top-right corner and tap Rotation Lock while it's sideways, so it stays put.</p></div>`; }
   const $app = document.getElementById('app');
   let screen = 'home', R = null, overlayQueue = [];
 
@@ -56,7 +57,7 @@
   // Her world: picked on first launch, changeable from home.
   function renderWorld() {
     const first = !S.theme;
-    $app.innerHTML = `<main class="wrap">
+    $app.innerHTML = `<main class="wrap pickworld">
       ${first ? '' : '<button class="back" data-act="home">‹ Back</button>'}
       <div class="home-top">${D('wow', 72)}<h1>${first ? (S.name ? `Hi, ${esc(S.name)}!` : 'Hi there!') : 'Pick your world'}</h1></div>
       <div class="bubble">${first ? "I'm Dot. Before we start, pick your world. Every fact you really learn adds something to it." : 'You can change your world any time. Everything you earned comes with you.'}</div>
@@ -116,7 +117,7 @@
         ${st.done ? '<span class="done">⭐</span>' : ''}
       </button>`;
     };
-    $app.innerHTML = `<main class="wrap">
+    $app.innerHTML = `<main class="wrap skillsview">
       <button class="back" data-act="home">‹ Back</button>
       <h1>Pick a skill</h1>
       <p class="sub">Green is what you really know. Yellow is what you're learning.</p>
@@ -618,7 +619,7 @@
     const st = R.stats, known = EM.countCollected();
     const gcard = `<details class="gwrap"><summary>For a grown-up 👋</summary>${EM.parent.grownupCard(R)}</details>`;
     if (R.kind === 'placement') {
-      $app.innerHTML = `<main class="wrap">
+      $app.innerHTML = `<main class="wrap sumview">
         ${worldHTML(`Thank you! Look, you planted ${R.planted} ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} in your ${T().place} today!`, { mood: 'cheer', fresh: R.plantedKeys.slice(0, 60) })}
         <p class="sub">Now I know where to start. Tomorrow we begin for real: a few short parts, about ${S.settings.minutes || 15} minutes.</p>
         <div class="tiles"><div class="tile"><b>${st.fast}</b><span>⚡ Knew it fast</span></div><div class="tile"><b>${st.slow}</b><span>✓ Figured it out</span></div><div class="tile"><b>${st.wrong + st.idk}</b><span>🧠 To learn</span></div></div>
@@ -636,7 +637,7 @@
     const missed = st.wrong + st.idk, graded = st.fast + st.slow + missed;
     if (graded && missed > graded / 2) notes.unshift(`💪 You stuck with ${missed} tough ones today. Dot is proud of you. Tough days are how brains grow.`);
     if (!R.yoursNow.length) { const tomorrow = Object.values(S.facts).filter(r => r.box === 1 && EM.startOfDay(r.due) <= EM.startOfDay(Date.now() + DAY)).length; notes.push(tomorrow ? `🌱 Tomorrow, ${tomorrow} ${tomorrow === 1 ? GROW[T().id][0] + ' is' : GROW[T().id][1] + ' are'} ready to turn into ${T().many}. Know them fast and they're yours!` : `⭐ Facts you get right fast on two different days become yours. Come back tomorrow!`); }
-    $app.innerHTML = `<main class="wrap">
+    $app.innerHTML = `<main class="wrap sumview">
       ${worldHTML(R.yoursKeys.length ? `Nice work, ${esc(NAME())}! Look what's new in your ${T().place}!` : R.planted ? `Nice work, ${esc(NAME())}! You planted ${R.planted} new ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} today.` : `Nice work, ${esc(NAME())}! Your ${GROW[T().id][1]} are getting stronger.`, { mood: 'cheer', fresh: [...R.yoursKeys, ...R.plantedKeys], freshDeco: EM.world.crossed(R.knownBefore, known).map(m => m[0]) })}
       <p class="sub" style="text-align:center">${R.title} · ${st.items} questions</p>
       <div class="tiles">

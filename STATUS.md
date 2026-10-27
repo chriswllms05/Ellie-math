@@ -86,6 +86,10 @@ Dot now speaks with a recorded child voice (Azure neural voice "Ana", slightly f
 - Grown-up area → Voice: **Dot (recorded)** is the default and the first option; the iPad voices are still there.
 - To change lines or the voice: `node tools/voice/collect.js lines.json && node tools/voice/build.js lines.json` (needs the Azure key on the environment; only new lines are recorded). `tools/voice/coverage.js` checks nothing is missing.
 
+## Landscape only (built, not live yet)
+
+The whole app is laid out for an iPad held sideways. Held upright, it shows a "Turn your iPad sideways" card with Dot and a Rotation Lock note for grown-ups (iPadOS ignores a web app's orientation setting, so this is the reliable way). Practice puts the question on the left and a bigger pad on the right, so nothing needs scrolling; home and the session summary put her world beside the buttons; pick a skill and pick a world are two-column grids. The village is full-bleed: the pixel world fills the screen edge to edge (a sliver is cropped on iPads of other shapes) and every control floats on top.
+
 ## Her village, slice 1 (built, not live yet)
 
 The first slice of the v2 design (`DESIGN-v2.md`): a pixel-art village she reaches from a new **🏡 My village** button on home. Everything in v1 is unchanged and still the daily practice.
@@ -101,6 +105,7 @@ What to watch when she tries it: does she go back to fishing without being asked
 ## Needs you
 
 1. **Install on the iPad**: open https://chriswllms05.github.io/Ellie-math/ in Safari (capital E matters), Share → Add to Home Screen.
+   The app is **landscape only**. iPadOS doesn't let a web app lock its own orientation, so held upright it shows a "Turn your iPad sideways" card. While she plays, turn the iPad sideways and turn on **Rotation Lock** (swipe down from the top-right corner).
 2. **Test on her iPad before day 1**: Dot's recorded voice (grown-up area → Sound check should say "Dot's recorded voice: 8 of 8 packs ready"), speech timing, mute switch, microphone permission for voice clips, Add to Home Screen, backup via share sheet. I can't run real Safari here.
 3. **One worksheet photo**: 4-digit numbers to the nearest 10/100, or to the nearest 1,000? Both are in; it decides what School-work leads with.
 

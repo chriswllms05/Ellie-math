@@ -9,7 +9,7 @@ const server = http.createServer((req, res) => { let p = req.url.split('?')[0]; 
   await new Promise(r => server.listen(0, r));
   const url = `http://localhost:${server.address().port}/index.html?t=${process.env.THEME || 'garden'}`;
   const browser = await chromium.launch({ executablePath: EXE });
-  const ctx = await browser.newContext({ viewport: { width: 834, height: 1112 }, deviceScaleFactor: 1 });
+  const ctx = await browser.newContext({ viewport: { width: 1194, height: 834 }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   await page.addInitScript(() => { Object.defineProperty(window, 'speechSynthesis', { value: undefined, configurable: true }); });
   page.on('pageerror', e => console.log('PAGE ERROR', e.message));

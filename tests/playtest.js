@@ -92,7 +92,7 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
   // ---------- 1. Placement + persona sessions, single day ----------
   if (ONLY === 'all' || ONLY === 'personas') for (const [name, persona] of [['knower', knower], ['guesser', guesser], ['idk-spammer', idkSpammer], ['counter', counter], ['mixed', mixed]].filter(([n]) => !process.env.PERSONA || process.env.PERSONA === n)) {
     log(`\n== Persona: ${name}`);
-    const ctx = await browser.newContext({ viewport: { width: 820, height: 1100 } });
+    const ctx = await browser.newContext({ viewport: { width: 1180, height: 820 } });
     const page = await ctx.newPage(); await setup(page);
     await page.goto(URL_);
     await nav(page, '[data-act=placement]');
@@ -118,7 +118,7 @@ const mixed = { move: (R, n) => n % 4 === 1 ? 'idk' : n % 4 === 2 ? { value: R.a
   // ---------- 2. Multi-day knower: spacing, mastery, unlocks, parent view ----------
   if (ONLY === 'all' || ONLY === 'days') {
   log('\n== Multi-day knower');
-  const ctx = await browser.newContext({ viewport: { width: 820, height: 1100 } });
+  const ctx = await browser.newContext({ viewport: { width: 1180, height: 820 } });
   const page = await ctx.newPage(); await setup(page);
   await page.goto(URL_);
   await nav(page, '[data-act=placement]'); await play(page, knower, { maxItems: 120 }); await nav(page, '[data-act=home]');

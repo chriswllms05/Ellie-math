@@ -22,6 +22,7 @@
     (views[screen] || renderHome)();
   }
   EM.go = go; EM.render = render;
+  EM.todayDone = () => todayDone(); EM.dueTonight = () => dueTonight();
 
   // ---------- home ----------
   function todayDone() { const d = dayStr(Date.now()), need = (S.settings.minutes || 15) / 2; return S.sessions.some(s => dayStr(s.date) === d && s.kind === 'daily' && (s.items >= 15 || (s.minutes || 0) >= need)); }
@@ -66,9 +67,11 @@
     EM.speech.say(first ? "Hi! I'm Dot. Pick your world." : 'Pick your world.');
   }
   function renderHome() {
-    const known = EM.countCollected(), name = esc(NAME()), t = T();
-    if (!S.theme) return renderWorld();
+    // One world now: the village is home. New players build their avatar, then arrive in the village.
+    if (!S.theme) { S.theme = 'garden'; EM.save(); EM.theme.apply(); }
     if (!S.avatar) { screen = 'avatar'; return render(); }
+    if (EM.village) { screen = 'village'; return EM.village.render($app); }
+    const known = EM.countCollected(), name = esc(NAME()), t = T();
     if (!S.placement.done) {
       $app.innerHTML = `<main class="wrap home">
         ${worldHTML(t.id === 'classroom' ? `Welcome to class, ${name}! I'm your teacher, Dot. Today I just want to see what you already know, so I know what to teach.` : `Hi, ${name}! This is your ${t.place}. It's empty for now. Today let's find out what you already know and plant the first ${GROW[t.id][1]}.`, { mood: 'wow' })}
@@ -654,7 +657,21 @@
   }
 
   // ---------- events ----------
+  // Pad keys act the moment a finger lands. iPad Safari can drop a click on quick repeats ("11") or a finger that
+  // slides a little, and a dropped digit feels like the app ignoring her. The click that follows is then ignored.
+  let padDownAt = -1e9;
+  const padBusy = () => !R || R.lock || R.waitReady || R.waitTrick || R.waitSpeech;
+  function nudgePad() { const p = document.querySelector('.practice .pad'); if (!p) return; p.classList.remove('nudge'); void p.offsetWidth; p.classList.add('nudge'); }
+  setInterval(() => { if (screen !== 'practice') return; const p = document.querySelector('.practice .pad'); if (p) p.classList.toggle('busy', !!(R && (R.lock || R.waitSpeech) && !R.waitReady && !R.waitTrick)); }, 120);
+  $app.addEventListener('pointerdown', e => {
+    const k = e.target.closest('.pad [data-d], .pad [data-act=ok], .pad [data-act=back]');
+    if (!k || e.button > 0 || screen !== 'practice') return;
+    padDownAt = performance.now();
+    if (padBusy()) return nudgePad();
+    if (k.dataset.d) typeDigit(k.dataset.d); else if (k.dataset.act === 'ok') submit(); else backspace();
+  });
   $app.addEventListener('click', e => {
+    if (e.target.closest('.pad [data-d], .pad [data-act=ok], .pad [data-act=back]') && performance.now() - padDownAt < 1500) return;
     const d = e.target.closest('[data-d]');
     if (d) return typeDigit(d.dataset.d);
     const av = e.target.closest('[data-av]');

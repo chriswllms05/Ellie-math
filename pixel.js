@@ -29,7 +29,8 @@
   const hex = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
 
   // Drawing primitives bound to one canvas, plus a back-to-front draw list (things lower on screen draw later).
-  function kit(g) {
+  function kit(g0) {
+    let g = g0;
     const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x | 0, y | 0, w | 0, h | 0); };
     const P = (x, y, c) => R(x, y, 1, 1, c);
     const sprite = (x, y, rows, map) => rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch !== '.' && map[ch]) P(x + i, y + j, map[ch]); } });
@@ -37,9 +38,29 @@
     const line = (x0, y0, x1, y1, c) => { x0 |= 0; y0 |= 0; x1 |= 0; y1 |= 0; let dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, e = dx + dy; for (;;) { P(x0, y0, c); if (x0 === x1 && y0 === y1) break; const e2 = 2 * e; if (e2 >= dy) { e += dy; x0 += sx; } if (e2 <= dx) { e += dx; y0 += sy; } } };
     const shadowEll = (cx, cy, rx, ry) => ell(cx, cy, rx, ry, 'rgba(28,36,58,.30)');
     const list = [], shadows = [];
-    const add = (y, f) => list.push({ y, f }), shadow = f => shadows.push(f);
+    // add(y, f, tall): tall things also become occluders, so a moving character can pass behind them
+    const add = (y, f, tall = true) => list.push({ y, f, tall }), shadow = f => shadows.push(f);
     const flush = () => { shadows.forEach(f => f()); list.sort((a, b) => a.y - b.y).forEach(t => t.f()); list.length = 0; shadows.length = 0; };
-    const k = { g, R, P, sprite, ell, line, shadowEll, add, shadow, flush, C };
+    const k = { R, P, sprite, ell, line, shadowEll, add, shadow, flush, C, get g() { return g; } };
+    k.setCtx = c => { g = c; };
+    // Draw everything onto the current canvas, and also cut each tall thing out as its own sprite (with its base y).
+    k.bake = (W, H) => {
+      shadows.forEach(f => f());
+      const base = g, sc = document.createElement('canvas'); sc.width = W; sc.height = H; const sx = sc.getContext('2d', { willReadFrequently: true });
+      const sprites = [];
+      list.sort((a, b) => a.y - b.y).forEach(t => {
+        t.f();
+        if (!t.tall) return;
+        sx.clearRect(0, 0, W, H); g = sx; t.f(); g = base;
+        const d = sx.getImageData(0, 0, W, H).data; let x0 = W, y0 = H, x1 = -1, y1 = -1;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        if (x1 < 0) return;
+        const c = document.createElement('canvas'); c.width = x1 - x0 + 1; c.height = y1 - y0 + 1; c.getContext('2d').drawImage(sc, x0, y0, c.width, c.height, 0, 0, c.width, c.height);
+        sprites.push({ y: t.y, x: x0, top: y0, w: c.width, h: c.height, c });
+      });
+      list.length = 0; shadows.length = 0;
+      return sprites;
+    };
 
     // ---- tree: shaded canopy from discs, selective outline ----
     k.tree = (x, y, opt = {}) => {
@@ -109,8 +130,10 @@
     k.barrel = (x, y) => { shadow(() => shadowEll(x + 3, y, 4, 1)); add(y, () => { R(x, y - 8, 7, 8, C.k2); R(x, y - 8, 1, 8, C.k3); R(x + 6, y - 8, 1, 8, C.k1); R(x, y - 6, 7, 1, C.s1); R(x, y - 2, 7, 1, C.s1); R(x + 1, y - 9, 5, 1, C.k3); }); };
     k.crate = (x, y, fill) => { shadow(() => shadowEll(x + 4, y, 5, 1)); add(y, () => { R(x, y - 6, 8, 6, C.k2); R(x, y - 6, 8, 1, C.k3); R(x, y - 1, 8, 1, C.k1); line(x, y - 6, x + 7, y - 1, C.k1); if (fill) for (let a = 0; a < 3; a++) { P(x + 1 + a * 2, y - 7, fill); P(x + 2 + a * 2, y - 7, fill); P(x + 2 + a * 2, y - 8, fill); } }); };
     k.reeds = (x, y) => add(y, () => { R(x, y - 11, 1, 11, C.l2); R(x + 1, y - 8, 1, 8, C.l3); R(x, y - 14, 1, 4, C.k1); P(x, y - 14, C.k2); });
-    k.lily = (x, y, flower) => add(0, () => { sprite(x, y, ['.ggg.', 'gGggg', 'gggg.', '.gg..'], { g: C.l3, G: C.l4 }); if (flower) { P(x + 2, y - 1, '#ff9ac6'); P(x + 1, y, '#ff9ac6'); P(x + 3, y, '#ff9ac6'); P(x + 2, y, '#ffe066'); } });
-    k.fish = (x, y, c, under = true) => add(under ? 0 : y, () => sprite(x, y, ['..ccc.t', '.ccccctt', 'cecccc.t', '.ccccctt', '..ccc..t'], { c, t: c, e: '#2b2433' }));
+    k.lily = (x, y, flower) => add(0, () => { sprite(x, y, ['.ggg.', 'gGggg', 'gggg.', '.gg..'], { g: C.l3, G: C.l4 }); if (flower) { P(x + 2, y - 1, '#ff9ac6'); P(x + 1, y, '#ff9ac6'); P(x + 3, y, '#ff9ac6'); P(x + 2, y, '#ffe066'); } }, false);
+    const FISH = ['..ccc.t', '.ccccctt', 'cecccc.t', '.ccccctt', '..ccc..t'], FISHR = FISH.map(r => [...r.padEnd(8, '.')].reverse().join(''));
+    k.drawFish = (x, y, c, flip) => sprite(x, y, flip ? FISHR : FISH, { c, t: c, e: '#2b2433' });
+    k.fish = (x, y, c, under = true) => add(under ? 0 : y, () => k.drawFish(x, y, c), !under);
     k.flowersGround = (x, y, c) => { P(x, y, c); P(x - 1, y, c); P(x + 1, y, c); P(x, y - 1, c); P(x, y + 1, c); P(x, y, '#ffd34a'); };
     // ---- fence: posts and two rails ----
     k.fence = (x0, y0, x1, y1) => {
@@ -118,24 +141,37 @@
       else for (let y = y0; y <= y1; y += 5) add(y + 1, () => { R(x0, y - 6, 2, 7, C.k3); R(x0 + 1, y - 6, 1, 7, C.k2); if (y + 5 <= y1) R(x0, y - 2, 1, 5, C.k2); });
     };
     // ---- people: 9x15 sprites; she is drawn in her avatar's colors ----
+    // Draws a person right now (no draw list). opt: walk frame 0-3, flip (facing left), blink, bob (px up), wave.
+    k.drawPerson = (x, y, look, opt = {}) => {
+      const m = { h: look.hair, s: look.skin, S: look.skinD, e: '#2b2433', b: look.shirt, B: look.shirtD, p: '#4a3b5a', o: '#2b2433', c: '#f08a8a' };
+      const long = look.long, eyes = opt.blink ? (long ? 'hhsSsSsh.' : '.hsSsSsh.') : (long ? 'hhsesesh.' : '.hsesesh.');
+      const w = opt.walk || 0;
+      const arms = opt.wave ? ['.bbbbbbBs', '.sbbbbBS.', '..bbbbB..'] : w % 2 ? ['.bbbbbbB.', 'sbbbbbB.S', '.sbbbbB..'] : ['.bbbbbbB.', '.sbbbbBS.', '.sbbbbBs.'];
+      const legs = w === 1 ? ['..pp..pp.', '.pp...pp.', '.oo....o.'] : w === 3 ? ['.pp..pp..', '.pp...pp.', '.o....oo.'] : ['..pp.pp..', '..pp.pp..', '..oo.oo..'];
+      let rows = ['..hhhhh..', '.hhhhhhh.', 'hhhssshhh', eyes, (long ? 'hhsssssh' : '.hsssssh') + (long ? 'h' : '.'),
+        long ? 'h.scscS.h' : '..scscS..', long ? 'h..SSS..h' : '...SSS...', '..bbbbb..', ...arms, '..bbbbB..', ...legs];
+      if (opt.flip) rows = rows.map(r => [...r].reverse().join(''));
+      sprite(x, y - 15 - (opt.bob || 0), rows, m);
+    };
     k.person = (x, y, look, opt = {}) => {
       shadow(() => shadowEll(x + 4, y, 4, 1));
-      add(y, () => {
-        const m = { h: look.hair, s: look.skin, S: look.skinD, e: '#2b2433', b: look.shirt, B: look.shirtD, p: '#4a3b5a', o: '#2b2433', c: '#f08a8a' };
-        const long = look.long;
-        sprite(x, y - 15, [
-          '..hhhhh..', '.hhhhhhh.', 'hhhssshhh', (long ? 'hhsesesh' : '.hsesesh') + '.', (long ? 'hhsssssh' : '.hsssssh') + (long ? 'h' : '.'),
-          long ? 'h.scscS.h' : '..scscS..', long ? 'h..SSS..h' : '...SSS...', '..bbbbb..', '.bbbbbbB.', '.sbbbbBS.', '.sbbbbBs.', '..bbbbB..', '..pp.pp..', '..pp.pp..', '..oo.oo..',
-        ], m);
-        if (opt.rodLeft) { line(x, y - 7, x - 14, y - 22, C.k2); P(x - 14, y - 22, C.k3); }
-      });
+      add(y, () => { k.drawPerson(x, y, look, opt); if (opt.rodLeft) { line(x, y - 7, x - 14, y - 22, C.k2); P(x - 14, y - 22, C.k3); } });
     };
-    // ---- Dot: a little glowing wisp with Dot's face ----
-    k.dot = (cx, cy) => add(999, () => {
-      sprite(cx - 6, cy - 6, ['....ooooo....', '..ooFFFFFoo..', '.oFFHHFFFFFo.', '.oFHHFFFFFFo.', 'oFFFFFFFFFFFo', 'oFFeFFFFFeFFo', 'oFFeFFFFFeFFo', 'oFFFFFFFFFFFo', 'oFFFmFFFmFFFo', '.oFFFmmmFFFo.', '.oFFFFFFFFDo.', '..ooFFFFDoo..', '....ooooo....'],
+    // Dot, drawn right now: bobbing and blinking is up to the caller; sparkles twinkle with t (ms)
+    k.drawDot = (cx, cy, t = 0, blink = false) => {
+      sprite(cx - 6, cy - 6, ['....ooooo....', '..ooFFFFFoo..', '.oFFHHFFFFFo.', '.oFHHFFFFFFo.', 'oFFFFFFFFFFFo', blink ? 'oFFFFFFFFFFFo' : 'oFFeFFFFFeFFo', blink ? 'oFFeeFFFeeFFo' : 'oFFeFFFFFeFFo', 'oFFFFFFFFFFFo', 'oFFFmFFFmFFFo', '.oFFFmmmFFFo.', '.oFFFFFFFFDo.', '..ooFFFFDoo..', '....ooooo....'],
         { o: '#b8403a', F: '#f06a4f', H: '#ffb199', e: '#2b2433', m: '#2b2433', D: '#d4503f' });
-      [[-11, 5], [9, -10], [12, 6], [-8, -9]].forEach(([a, b]) => { P(cx + a, cy + b, '#fff7c2'); P(cx + a + 1, cy + b, '#ffe27a'); P(cx + a, cy + b + 1, '#ffe27a'); });
-    });
+      [[-11, 5, 0], [9, -10, 1], [12, 6, 2], [-8, -9, 3]].forEach(([a, b, i]) => { if (Math.sin(t / 260 + i * 1.7) > -.2) { P(cx + a, cy + b, '#fff7c2'); P(cx + a + 1, cy + b, '#ffe27a'); P(cx + a, cy + b + 1, '#ffe27a'); } });
+    };
+    // notice board: two posts, a roof, pinned notes
+    k.board = (x, y) => { shadow(() => shadowEll(x + 9, y, 10, 2)); add(y, () => {
+      R(x + 1, y - 18, 2, 18, C.k1); R(x + 15, y - 18, 2, 18, C.k1); R(x + 1, y - 18, 1, 18, C.k2); R(x + 15, y - 18, 1, 18, C.k2);
+      R(x - 1, y - 17, 20, 12, C.k2); R(x - 1, y - 17, 20, 1, C.k3); R(x - 1, y - 6, 20, 1, C.k1);
+      for (let j = 0; j < 4; j++) R(x - 3 + j, y - 21 + j, 24 - 2 * j, 1, j % 2 ? C.r1 : C.r2); R(x - 3, y - 18, 24, 1, C.r0);
+      [[1, -15, '#f7ecd0'], [7, -16, '#ffe9a0'], [12, -14, '#d9ecff']].forEach(([a, b, c]) => { R(x + a, y + b, 5, 6, c); R(x + a + 1, y + b + 2, 3, 1, '#a08a74'); R(x + a + 1, y + b + 4, 2, 1, '#a08a74'); P(x + a + 2, y + b, '#d84a4a'); });
+    }); };
+    // ---- Dot: a little glowing wisp with Dot's face ----
+    k.dot = (cx, cy) => add(999, () => k.drawDot(cx, cy), false);
     k.smoke = (x, y) => add(998, () => { [[0, 0, 2], [2, -5, 3], [0, -11, 3], [3, -17, 4]].forEach(([a, b, r], i) => { ell(x + a, y + b, r, r - (r > 2 ? 1 : 0), i > 2 ? 'rgba(255,255,255,.55)' : '#f3f1f6'); P(x + a + r - 1, y + b + 1, '#cfcbd8'); }); });
     return k;
   }

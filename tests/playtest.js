@@ -45,7 +45,15 @@ async function waitSettled(page) {
 }
 const document_overlay = el => !!el;
 async function clearOverlays(page) { for (let i = 0; i < 40; i++) { const o = await page.$('#overlay [data-close], #overlay [data-how]'); if (!o) return; await o.click(); await page.waitForTimeout(60); } }
-async function nav(page, sel) { await clearOverlays(page); const w = await page.$('[data-tc]'); if (w) { await w.click(); await page.waitForTimeout(80); } const a = await page.$('[data-av-done]'); if (a) { await a.click(); await page.waitForTimeout(80); } await page.click(sel); await page.waitForTimeout(80); }
+// The village is home: practice starts from its notice board (the arrival story is skipped in tests).
+const BOARD = { '[data-act=placement]': '[data-b=placement]', '[data-act=today]': '[data-b=today]', '[data-act=evening]': '[data-b=evening]' };
+async function nav(page, sel) {
+  await clearOverlays(page);
+  const a = await page.$('[data-av-done]'); if (a) { await a.click(); await page.waitForTimeout(80); }
+  if (sel === '[data-act=home]' && !(await page.$(sel))) { await page.evaluate(() => EM.go('home')); await page.waitForTimeout(80); return; }
+  if (BOARD[sel]) { await page.evaluate(() => { if (EM._screen() !== 'village') EM.go('home'); const v = EM.village.state(); v.introDone = true; EM.save(); EM.village.openBoard(); }); await page.click(BOARD[sel]); await page.waitForTimeout(80); return; }
+  await page.click(sel); await page.waitForTimeout(80);
+}
 async function type(page, s) { for (const ch of String(s)) await page.keyboard.press(ch); }
 async function answer(page, value, { delayMs = 0 } = {}) {
   if (delayMs) await page.evaluate(d => { window.__perf += d; }, delayMs);

@@ -180,7 +180,8 @@
       const a = f.a, pic = frames([...fill(a, 'a'), ...fill(10 - a, 'e')]);
       if (a === 0) return two(pic, 'No dots. How many empty boxes?', 'No dots. How many empty boxes?', 'All 10 boxes are empty. 0 and 10 make 10.', 'All ten boxes are empty. Zero and ten make ten.');
       if (a === 10) return two(pic, 'The frame is full. How many empty boxes?', 'The frame is full. How many empty boxes?', 'No empty boxes. 10 and 0 make 10.', 'No empty boxes. Ten and zero make ten.');
-      return two(pic + bond(10, a, stage === 1 ? '?' : A), `${a} dots. How many empty boxes?`, `${a} dots. How many empty boxes?`, `${A} empty boxes. ${a} and ${A} make 10.`, `${A} empty boxes. ${a} and ${A} make ten.`);
+      const dots = `${a} dot${a === 1 ? '' : 's'}`, empties = `${A} empty box${A === 1 ? '' : 'es'}`;
+      return two(pic + bond(10, a, stage === 1 ? '?' : A), `${dots}. How many empty boxes?`, `${dots}. How many empty boxes?`, `${empties}. ${a} and ${A} make 10.`, `${empties}. ${a} and ${A} make ten.`);
     }
     if (f.type === 'add') {
       const { a, b } = f, big = Math.max(a, b), small = Math.min(a, b), seq = [...fill(big, 'a'), ...fill(small, 'b')];

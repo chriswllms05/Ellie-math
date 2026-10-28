@@ -86,11 +86,24 @@ Dot now speaks with a recorded child voice (Azure neural voice "Ana", slightly f
 - Grown-up area → Voice: **Dot (recorded)** is the default and the first option; the iPad voices are still there.
 - To change lines or the voice: `node tools/voice/collect.js lines.json && node tools/voice/build.js lines.json` (needs the Azure key on the environment; only new lines are recorded). `tools/voice/coverage.js` checks nothing is missing.
 
-## Landscape only (built, not live yet)
+## The village comes alive, and it's home (built, not live yet)
+
+After a weekend of use: the village felt like wallpaper, the home screen felt disconnected from it, and the copy didn't build any attachment. Changes:
+- **The village is home.** No world picker any more: a new player builds an avatar and arrives in the village. Today's practice, the evening review and "pick a skill" live on a **notice board** in the village (a "!" floats over it when something is waiting). Summaries return to the village. Grown-ups: press and hold the small button in the bottom-right corner.
+- **An arrival story.** The first time, Dot greets her by name and shows her the house, the empty yard, the pond ("everyone here trades with fish"), and the broken bridge ("nobody knows what's on the other side"), one beat at a time, with the camera moving to each place. Tap to continue; there's a Skip.
+- **The world moves.** She walks where you tap (along the paths, behind trees and houses), blinks and waves; Dot floats along beside her; fish glide under the water, smoke drifts from chimneys, butterflies flutter, cloud shadows pass, the water sparkles and ripples.
+- **Transitions.** Tapping the pond walks her to the dock and the camera zooms in; leaving zooms back out. Building pops things in with a little dust.
+- **Fishing feels like fishing.** She casts, the bobber splashes down, a fish swims up and nibbles, and the question (and its clock) starts only when the fish arrives. A right answer pulls the fish out in a leap into her basket with a splash, sparkles and "+1"; a fast one glows gold. A miss lets the fish dart away. Her first round is 3 fish, then rounds of 5.
+- **The bridge is the progress bar.** Each make-10 fact that becomes hers lays one plank, shown as a short scene the next time she's in the village. Eight planks open the meadow.
+- **Copy**: "This fish has 7. How many more make 10?"; "Go fishing: fish are money here"; "Fix up your yard"; "Oops, it got away. Let's figure it out together."; "yard" instead of "plot".
+- **Fixes**: the number pad now acts the moment a finger lands (quick double taps like "11" were being dropped), dims while it's waiting, and wiggles if tapped then. Placement and practice questions were cut off at the sides on a sideways iPad (an old portrait width limit); fixed. "1 dots" now reads "1 dot".
+- All new lines are recorded in Ana's voice.
+
+## Landscape only (live)
 
 The whole app is laid out for an iPad held sideways. Held upright, it shows a "Turn your iPad sideways" card with Dot and a Rotation Lock note for grown-ups (iPadOS ignores a web app's orientation setting, so this is the reliable way). Practice puts the question on the left and a bigger pad on the right, so nothing needs scrolling; home and the session summary put her world beside the buttons; pick a skill and pick a world are two-column grids. The village is full-bleed: the pixel world fills the screen edge to edge (a sliver is cropped on iPads of other shapes) and every control floats on top.
 
-## Her village, slice 1 (built, not live yet)
+## Her village, slice 1 (live; superseded by the section above where they differ)
 
 The first slice of the v2 design (`DESIGN-v2.md`): a pixel-art village she reaches from a new **🏡 My village** button on home. Everything in v1 is unchanged and still the daily practice.
 - **Her plot**: 6 × 3 spots in front of her house. 10 things to build (flowers, berry bush, pumpkin, lantern, bench, birdhouse, little tree, flag, doghouse, wishing well), each paid for in fish. Tap to place; tap a placed thing to paint it (9 colors), move it, or put it away for a full refund; or drag it to a new spot. No math in building. She starts with 3 fish so she can build something right away.

@@ -45,7 +45,7 @@ function audit() {
     if (r.right > innerWidth + 1 || r.left < -1) out.push({ kind: 'offscreen', text: t.slice(0, 60), sel: el.className || el.tagName });
   }
   // wide content cut off by its column (an equation pushing the answer box under the keypad)
-  document.querySelectorAll('.eq, .vq, .vnote, .vcard, .vpanel, .jbub, .jsign').forEach(el => { if (!visible(el)) return; const p = el.parentElement, r = el.getBoundingClientRect(), pr = p.getBoundingClientRect(); if (el.scrollWidth > el.clientWidth + 2 || r.right > pr.right + 2 || r.right > innerWidth + 1) out.push({ kind: 'clipped', text: el.textContent.trim().slice(0, 40), sel: el.className }); });
+  document.querySelectorAll('.eq, .vq, .vnote, .vcard, .vpanel, .jbub, .jsign, .jlabel').forEach(el => { if (!visible(el)) return; const p = el.parentElement, r = el.getBoundingClientRect(), pr = p.getBoundingClientRect(); if (el.scrollWidth > el.clientWidth + 2 || r.right > pr.right + 2 || r.right > innerWidth + 1) out.push({ kind: 'clipped', text: el.textContent.trim().slice(0, 40), sel: el.className }); });
   // tap targets: buttons smaller than 40x40 css px
   document.querySelectorAll('button, [data-act], [data-v], [data-b]').forEach(b => { if (!visible(b)) return; const r = b.getBoundingClientRect(); if ((r.width < 40 || r.height < 36) && b.textContent.trim().length < 30) out.push({ kind: 'small-target', text: (b.textContent.trim() || b.getAttribute('aria-label') || '').slice(0, 30), w: Math.round(r.width), h: Math.round(r.height), sel: b.className }); });
   return out;
@@ -94,6 +94,11 @@ function audit() {
     await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'hello', null, { timeout: 8000 }); await check('09d-market-hello', 300); await page.click('#vstage');
     await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'ask' && !EM.village._job().waitSpeech, null, { timeout: 10000 }); await check('09e-market', 400);
     await page.click('[data-v=jidk]'); await check('09f-market-help', 700);
+    await page.click('[data-v=leavejob]'); await page.waitForTimeout(1500);
+    await page.click('[data-v=post]'); await page.waitForSelector('.post', { timeout: 30000 });
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'hello', null, { timeout: 8000 }); await page.click('#vstage');
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'ask' && !EM.village._job().waitSpeech, null, { timeout: 10000 }); await check('09f2-post', 400);
+    await page.click('[data-v=jidk]'); await check('09f3-post-help', 700);
     await page.click('[data-v=leavejob]'); await page.waitForTimeout(1500);
     await page.evaluate(() => EM.village.openBoard()); await check('09g-board-orders');
     await page.click('[data-b=close]');

@@ -184,6 +184,19 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     await shot('07g-market-help');
     await page.click('[data-v=leavejob]'); await page.waitForSelector('.village:not(.market)', { timeout: 6000 }); await page.waitForTimeout(1500);
 
+    // ---- Mo's post office: place value ----
+    await page.click('[data-v=post]'); await page.waitForSelector('.post', { timeout: 30000 });
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'hello', null, { timeout: 8000 }); await page.click('#vstage');
+    await oAsk(); await page.waitForTimeout(300); await shot('07g2-post');
+    const p1 = await page.evaluate(() => { const O = EM.village._job(); return { ans: O.f.ans, skill: O.item.skillId, houses: O.houses, label: document.getElementById('jlabel').innerHTML.length, coins: EM.village.state().coins }; });
+    check(['pv_build', 'pv_count'].includes(p1.skill) && p1.houses.includes(p1.ans) && p1.houses.length === 3 && p1.label > 20, `Mo's package needs a house number (${p1.skill}, ${p1.ans}; houses ${p1.houses.join(', ')})`);
+    await page.waitForTimeout(900);
+    for (const d of String(p1.ans)) await page.click(`.jpad [data-fd="${d}"]`); await page.click('.jpad [data-v=fok]'); await page.waitForTimeout(300);
+    check((await page.evaluate(() => EM.village.state().coins)) === p1.coins + 1 && (await page.$('.jtag.hit')) !== null, 'the right house lights up and Mo pays a coin');
+    await page.click('[data-v=leavejob]'); await page.waitForSelector('.village:not(.post)', { timeout: 6000 }); await page.waitForTimeout(1500);
+    const pl = await page.evaluate(() => EM.S.sessions[EM.S.sessions.length - 1]);
+    check(pl.kind === 'post' && pl.items === 1, 'the post office logs a session');
+
     // ---- the morning orders: the board lists them; when all are done the village says thank you ----
     await page.evaluate(() => EM.village.openBoard()); await page.waitForSelector('.vorders');
     check(await page.$('[data-b=lesson]') !== null && (await page.$$('.vorders li')).length === 3, "the board lists today's three orders and Dot's lesson");

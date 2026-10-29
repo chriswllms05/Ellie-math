@@ -31,13 +31,14 @@
   const PATHS = [[118, 112, 116, 9], [134, 112, 9, 34], [244, 52, 9, 62], [94, 112, 26, 9], [244, 121, 9, 56]];
   const ORCHARD = [14, 44, 80, 62], ROSA = [82, 110];             // Rosa's orchard on the map, and where she stands
   const STALL = [258, 166], PIP = [272, 186];                     // Mr. Pip's pie stall, and where he waits
+  const POST = [112, 102], MO = [152, 108];                       // the post office, and Mo by its door
   const inRect = (x, y, [rx, ry, rw, rh]) => x >= rx && x < rx + rw && y >= ry && y < ry + rh;
   const area = id => id === 'meadow' ? MEADOW : YARD;
   const cellAt = (x, y) => { for (const id of ['plot', 'meadow']) { const a = area(id); if (id === 'meadow' && !V().open.meadow) continue; const cx = Math.floor((x - a.x) / 16), cy = Math.floor((y - a.y) / 16); if (cx >= 0 && cy >= 0 && cx < a.cols && cy < a.rows) return { area: id, cx, cy }; } return null; };
   const placedAt = c => V().placed.find(p => p.area === c.area && p.cx === c.cx && p.cy === c.cy);
   // where she can walk: stops joined by paths (she takes the shortest way), plus free walking on grass
-  const NODES = { dock: [114, 144], bend: [138, 141], cross: [138, 118], yard: [166, 118], board: [190, 118], home: [244, 118], hill: [248, 98], bridge: [248, 82], orchard: [98, 116], market: [250, 176] };
-  const EDGES = [['dock', 'bend'], ['bend', 'cross'], ['cross', 'yard'], ['yard', 'board'], ['board', 'home'], ['home', 'hill'], ['hill', 'bridge'], ['cross', 'orchard'], ['home', 'market']];
+  const NODES = { dock: [114, 144], bend: [138, 141], cross: [138, 118], yard: [166, 118], board: [190, 118], home: [244, 118], hill: [248, 98], bridge: [248, 82], orchard: [98, 116], market: [250, 176], post: [130, 116] };
+  const EDGES = [['dock', 'bend'], ['bend', 'cross'], ['cross', 'yard'], ['yard', 'board'], ['board', 'home'], ['home', 'hill'], ['hill', 'bridge'], ['cross', 'orchard'], ['home', 'market'], ['cross', 'post']];
   const CAM_FULL = { x: 0, y: 0, w: W, h: H };
   const camAround = (cx, cy, w) => ({ x: Math.max(0, Math.min(W - w, cx - w / 2)), y: Math.max(0, Math.min(H - w * H / W, cy - w * H / W / 2)), w, h: w * H / W });
 
@@ -179,8 +180,11 @@
     // Rosa's orchard: two rows of apple trees, and her crate by the path
     [[24, 66], [48, 62], [72, 66], [34, 92], [58, 90]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 2), apples: true }));
     k.crate(90, 112, '#e8473f'); k.crate(70, 106, '#f7c531');
-    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [126, 26], [150, 20], [168, 30], [8, 108], [290, 100], [290, 140], [116, 206], [20, 206], [196, 204], [262, 206], [160, 74], [140, 64]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
-    [[106, 86], [206, 128], [130, 190], [222, 196]].forEach(([x, y]) => k.bush(x, y));
+    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [126, 26], [150, 20], [168, 30], [8, 108], [290, 100], [290, 140], [116, 206], [20, 206], [196, 204], [262, 206], [168, 64]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
+    [[206, 128], [130, 190], [222, 196]].forEach(([x, y]) => k.bush(x, y));
+    // the post office: a little house with an envelope over the door
+    k.house(POST[0], POST[1], 36, 'red', { lit: true });
+    k.add(POST[1] + 1, () => { const x = POST[0] + 13, y = POST[1] - 26; k.R(x, y, 10, 7, '#f4ecdc'); k.R(x, y, 10, 1, '#fffaf0'); k.line(x, y, x + 5, y + 4, '#a8978a'); k.line(x + 9, y, x + 4, y + 4, '#a8978a'); k.R(x + 9, y, 1, 7, '#c9b9a0'); k.R(x, y + 6, 10, 1, '#c9b9a0'); });
     // Mr. Pip's pie stall: striped awning, a counter, pies when it's open
     k.add(STALL[1] + 4, () => { const [x, y] = STALL, open = jobOpen('market');
       k.R(x, y - 18, 2, 20, C.k1); k.R(x + 30, y - 18, 2, 20, C.k1);
@@ -230,7 +234,7 @@
       </div>
       <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${v.coins}</b></span><button class="vguide vpanel" id="vguide" data-v="guide"></button></div>
       <div class="vhud vbr"><button class="vpill vgrown grownup" data-hold="parent"><span class="fillbar"></span>Grown-ups: hold</button></div>
-      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="orchard">🍎 Help Rosa<span>Pick apples, earn coins</span></button>${jobOpen('market') ? '<button class="big-btn" data-v="market">🥧 Help Mr. Pip<span>Count his coins back</span></button>' : ''}<button class="big-btn" data-v="fish">🎣 Go fishing<span>Sell fish for coins</span></button><button class="big-btn alt" data-v="build">🔨 Fix up your yard<span>Spend your coins</span></button></div>`}
+      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="orchard">🍎 Help Rosa<span>Pick apples, earn coins</span></button>${jobOpen('market') ? '<button class="big-btn" data-v="market">🥧 Help Mr. Pip<span>Count his coins back</span></button>' : ''}<button class="big-btn" data-v="post">📦 Help Mo<span>Deliver the mail</span></button><button class="big-btn" data-v="fish">🎣 Go fishing<span>Sell fish for coins</span></button><button class="big-btn alt" data-v="build">🔨 Fix up your yard<span>Spend your coins</span></button></div>`}
       <div class="vfade" id="vfade"></div>
     </main>`;
     fit();
@@ -285,10 +289,11 @@
       if (next.id === 'fish') return { ...pond, ...tag, text: next.text + count };
       return { ...board(next.text, "Dot's lesson is on the board."), ...tag };
     }
-    // the day is hers: build, or keep helping (newest friend first)
+    // the day is hers: build, or keep helping (whoever she's helped least)
     if (v.coins >= 6) return { ...yard, label: 'Free time' };
-    if (jobOpen('market') && !v.marketRounds) return { ...pip, label: 'Free time' };
-    return { ...(jobOpen('market') && (v.marketRounds || 0) < (v.orchardRounds || 0) ? pip : rosa), label: 'Free time' };
+    const mo = { job: 'post', text: 'Help Mo deliver the mail', say: 'Mo has packages to deliver. Tap Mo!', mark: [MO[0] + 4, MO[1] - 20], go: () => walkTo('post', toPost) };
+    const friends = [[rosa, v.orchardRounds || 0], [mo, v.postRounds || 0], ...(jobOpen('market') ? [[pip, v.marketRounds || 0]] : [])];
+    return { ...friends.sort((a, b) => a[1] - b[1])[0][0], label: 'Free time' };
   }
   function mapOverlays() {
     place(document.getElementById('vbubble'), dot.x, dot.y - 9);
@@ -316,6 +321,8 @@
     // Rosa by her orchard, in her straw hat; she waves when helping her is the next job
     items.push({ y: ROSA[1], box: [ROSA[0] - 2, ROSA[1] - 19, 13, 20], draw: () => { const [x, y] = ROSA; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, ROSA_LOOK, { blink: (t % 3900) < 120, wave: (t % 5200) < 1100 && (mission() || {}).text === 'Help Rosa pick apples' });
       k.R(x + 2, y - 18, 5, 2, '#e2ae52'); k.R(x + 2, y - 18, 3, 1, '#f8dc8a'); k.R(x, y - 16, 9, 1, '#c08636'); k.R(x + 2, y - 17, 5, 1, '#b84a3e'); } });
+    items.push({ y: MO[1], box: [MO[0] - 2, MO[1] - 17, 13, 18], draw: () => { const [x, y] = MO; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, MO_LOOK, { flip: true, blink: ((t + 2600) % 4700) < 120, wave: (t % 6100) < 1100 && (mission() || {}).job === 'post' });
+      k.R(x + 1, y - 16, 7, 2, '#3a5aa8'); k.R(x, y - 14, 9, 1, '#2b2b3a'); } });
     items.push({ y: PIP[1], box: [PIP[0] - 2, PIP[1] - 17, 13, 18], draw: () => { const [x, y] = PIP; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, PIP_LOOK, { flip: true, blink: ((t + 1700) % 4300) < 120, wave: (t % 5600) < 1100 && (mission() || {}).job === 'market' });
       k.R(x + 2, y - 10, 5, 2, '#e8e8f0'); k.P(x + 4, y - 8, '#e8e8f0'); } });
     // things she just built pop in
@@ -429,6 +436,7 @@
     if (px.inEll(x, y, ...POND) || inRect(x, y, DOCK)) { ui.pulsePond = false; return walkTo('dock', () => toFishing()); }
     if (inRect(x, y, ORCHARD) || Math.hypot(x - ROSA[0] - 4, y - ROSA[1] + 8) < 10) return walkTo('orchard', toOrchard);
     if (inRect(x, y, [STALL[0] - 4, STALL[1] - 26, 42, 30]) || Math.hypot(x - PIP[0] - 4, y - PIP[1] + 8) < 10) return walkTo('market', marketTap);
+    if (inRect(x, y, [POST[0] - 4, POST[1] - 40, 46, 42]) || Math.hypot(x - MO[0] - 4, y - MO[1] + 8) < 10) return walkTo('post', toPost);
     if (c && c.area === 'plot') { ui.pulseYard = false; return walkTo('yard', () => enterBuild(placedAt(c) ? c : null)); }
     if (inRect(x, y, [BOARD[0] - 4, BOARD[1] - 24, 28, 26])) return walkTo('board', openBoard);
     if (inRect(x, y, [232, 40, 40, 34])) return walkTo('bridge', () => { const p = meadowProgress(); say(V().open.meadow ? 'The bridge is fixed! Tap the meadow to build there.' : `${p.have} of ${PLANKS} planks fixed. Every make 10 fact you really know fixes one more.`); });
@@ -650,7 +658,7 @@
     if ((F.phase !== 'ask' && F.phase !== 'help') || F.waitSpeech || !F.input) return F.input ? nudge() : null;
     const typed = Number(F.input), ok = typed === F.f.ans, tn = performance.now();
     if (F.help) { // in help: the right answer moves on, but this fish already got away
-      if (ok) { F.phase = 'reel'; F.anim = { kind: 'reel', t0: now() }; F.help = null; F.msg = `Yes! ${F.f.a} and ${F.f.ans} make 10.`; renderFishWork(); EM.speech && EM.speech.say(F.msg); return setTimeout(nextFish, 1700); }
+      if (ok) { F.phase = 'reel'; F.anim = { kind: 'reel', t0: now() }; F.help = null; F.msg = `Yes! ${F.f.a} and ${F.f.ans} make 10.`; renderFishWork(); EM.speech && EM.speech.say(F.msg); const cur = F; return setTimeout(() => { if (F === cur) nextFish(); }, 1700); }
       if (F.help.stage === 1) return enterHelp(2); F.input = ''; renderFishWork(); return;
     }
     const ms = (F.tLast || tn) - (F.t0 || tn), gap = tn - (F.tLast || tn);
@@ -662,7 +670,9 @@
       F.msg = fast ? '⚡ Got it! You just knew that one.' : 'Got one! Nice thinking.';
       renderFishWork(); sfx(fast ? 'fast' : 'right');
       if (g.becameYours) checkUnlocks();
+      const cur = F;
       return setTimeout(() => {
+        if (F !== cur) return;
         if (g.becameYours) return celebrate(`${F.f.a} + ${F.f.ans} = 10 is yours now!`, meadowProgress().have <= PLANKS ? 'That fixes a plank on the bridge. Go see!' : 'You knew it fast on two different days.', afterCatch);
         afterCatch();
       }, 1250);
@@ -722,6 +732,7 @@
   // =====================================================================
   const JCAM = { x: 0, y: 0, w: 236, h: 236 * H / W };              // the close-up: 236 scene pixels across
   const ROSA_LOOK = { hair: '#a84a2a', skin: '#f2c49c', skinD: '#d9997a', shirt: '#4f8a5b', shirtD: '#2f5a3b', long: true };
+  const MO_LOOK = { hair: '#3a2418', skin: '#c98a6c', skinD: '#a8705a', shirt: '#3a5aa8', shirtD: '#26346a', long: false };
   const PIP_LOOK = { hair: '#e8e8f0', skin: '#f2c49c', skinD: '#d9997a', shirt: '#7a4a2a', shirtD: '#5a3420', long: false };
   const fillN = (n, c) => Array(Math.max(0, n)).fill(c), ten = (...parts) => [...parts.flat(), ...fillN(10 - parts.flat().length, 'e')];
   let O = null;
@@ -823,6 +834,46 @@
         drawNpc(k, t, this, O, hop);
       },
     },
+    // the post office: Mo the mail carrier. Read the place-value discs on a package (or count on along the street) to
+    // find which house it goes to. Place value, graded like practice's big-number skills.
+    post: {
+      npc: 'Mo', chibi: 'mo', order: 'Mo needs help with the mail', marks: 'mail', node: 'post', mapCam: [150, 92, 96], rounds: 'postRounds', log: 'Delivering mail with Mo',
+      skills: ['pv_build', 'pv_count'], proc: true, maxLen: 5, tagCount: 3,
+      her: [84, 144], npcAt: [158, 136], head: [166, 113], sign: [11, 81, 72, 24], dotHome: [44, 118], dotHelp: () => [146, 94],
+      houses: [6, 64, 122], labelAt: [108, 100], labelW: 50,
+      // three houses on the street: the right one and two that are easy to mix up with it (digits swapped, or one place off)
+      setup(O) {
+        const n = O.f.ans, d = String(n).split(''), L = d.length, sw = (i, j) => { const x = d.slice(); [x[i], x[j]] = [x[j], x[i]]; return Number(x.join('')); };
+        const alts = [sw(L - 2, L - 1), sw(L - 3, L - 2), n + 10, n - 10, n + 100, n - 100].filter((m, i, a) => m !== n && String(m).length === L && a.indexOf(m) === i);
+        O.houses = EM.shuffle([n, ...EM.shuffle(alts).slice(0, 2)]);
+      },
+      ask: (f, i, O) => O.item.skillId === 'pv_count' ? 'I deliver along the street, counting on. Which house comes next?' : 'Read the label on this package. Which house is it for?',
+      solved: f => `Yes! It goes to ${EM.fmt(f.ans)}.`,
+      words: t => t,
+      signHtml: (O, slot) => `<span>House</span>${slot}`,
+      label(O) { const st = O.item.steps[0]; if (O.help && O.help.vis) return O.help.vis; return O.item.skillId === 'pv_build' ? O.item.visFor(0) : st.html.replace(/<span class="slot[^"]*">(&nbsp;)?<\/span>/, '<b class="q">?</b>'); },
+      deal() { return [{ who: 0, t0: now() + 200, x: -20, y: 108 }]; },
+      land: () => [104, 104],
+      falling: (k, x, y) => k.package(x, y, 18, 12),
+      tags(O) { return O.houses.map((n, i) => ({ x: this.houses[i] + 22, y: 36, text: EM.fmt(n), on: true, hit: O.phase === 'right' || O.phase === 'solved' ? n === O.f.ans : false })); },
+      still(g, k) {
+        px.ground(g, W, H, { path: (x, y) => y > 70 && y < 88 + Math.sin(x / 40) * 2, tall: (x, y) => y > 190 });
+        this.houses.forEach((x, i) => k.house(x, 66, 44, ['red', 'blue', 'gold'][i], { chimney: i !== 1, lit: i === 1 }));
+        k.house(180, 66, 44, 'red', { chimney: true });
+        [[244, 100], [270, 150], [230, 190], [16, 196]].forEach(([x, y], i) => k.tree(x, y, { r: 11 + (i % 2) }));
+        k.bush(200, 120); k.fence(0, 104, 0, 104);
+        // a mailbox by the sign
+        k.add(122, () => { k.R(4, 106, 2, 16, C.k1); k.R(0, 98, 10, 8, '#c06456'); k.R(0, 98, 10, 1, '#d8786a'); k.R(9, 96, 1, 4, C.k1); k.R(9, 96, 3, 2, '#e8473f'); });
+        k.add(122, () => k.sign(10, 122, 74, 26));
+        return [];
+      },
+      draw(k, t, O, hop) {
+        k.cart(88, 132);
+        if (O.phase !== 'pick') k.package(96 - (O.phase === 'right' ? hop : 0), 104, 18, 12);
+        k.package(118, 110, 12, 8); k.package(132, 108, 10, 9);
+        drawHer(k, t, this.her, O, hop); drawNpc(k, t, this, O, hop);
+      },
+    },
   };
   const jobOpen = id => JOBS[id].skills.some(s => EM.isOpen(s));
   function drawHer(k, t, [x, y], O, hop) { const l = look(), c = px.CHIBI.her(l, l.long); k.chibi(x, y, c.rows, c.mat, { blink: (t % 3600) < 120, bob: O.phase === 'right' ? hop : 0 }); }
@@ -833,15 +884,17 @@
     ui.busy = true; her.path = [];
     tweenCam(camAround(...J.mapCam), 800, () => { const f = document.getElementById('vfade'); if (f) f.classList.add('on'); setTimeout(() => { ui.busy = false; startJob(id); }, 260); });
   }
-  const toOrchard = () => toJob('orchard'), toMarket = () => toJob('market');
+  const toOrchard = () => toJob('orchard'), toMarket = () => toJob('market'), toPost = () => toJob('post');
   // Mr. Pip's stall opens with the take-away facts (Ten Take Away needs Partners of 10)
   function marketTap() { if (jobOpen('market')) return toMarket(); say("Mr. Pip's stall opens once your partners of 10 get strong. Keep fishing!"); }
   // What each villager says the first time, and the surprise they promise for three full rounds
   const MEET = {
     orchard: "Hi! I'm Rosa. Apples are falling everywhere! Help me count them, and I'll pay you a coin for each one. Fill my baskets three times and I'll have a surprise for you.",
+    post: "Hi, I'm Mo, the mail carrier! Every package has its house number on the label, written in number discs. Read them for me and I'll pay you a coin for each one. Help me three times and I'll have a surprise.",
     market: "Hello! I'm Mr. Pip. I buy a pie every day, but I always mix up my coins. Help me count my coins back, and there's a coin in it for you. Help me three times and I'll have a surprise.",
   };
   const GIFT = { orchard: { item: 'appletree', title: 'Rosa gave you an apple tree!', text: 'Grown from her very best apples. It\'s waiting in your yard tray.' },
+    post: { item: 'mailbox', title: 'Mo gave you a mailbox!', text: 'Now you can get letters too. It\'s waiting in your yard tray.' },
     market: { item: 'kitten', title: 'Mr. Pip gave you a kitten!', text: 'One of his cat\'s kittens needs a home. It\'s waiting in your yard tray.' } };
   const giftDue = id => (V()[JOBS[id].rounds] || 0) >= 3 && !(V().gifted || {})[id] ? GIFT[id] : null;
   function giveGift(g, next) {
@@ -871,10 +924,15 @@
     O.queue.push(...EM.buildFactQueue(open.length ? open : [O.J.skills[0]], 14).queue.filter(e => O.J.fact(EM.FACTS[e.key])));
   }
   function nextQ() {
-    clearTimeout(O.helloT); O.i++; if (O.i >= O.queue.length) jobRefill();
-    if (!O.queue[O.i]) { const keys = O.J.skills.flatMap(id => EM.SK[id].facts).filter(k => O.J.fact(EM.FACTS[k])); O.queue.push({ key: keys[Math.floor(Math.random() * keys.length)], mode: 'normal' }); }
+    clearTimeout(O.helloT); O.i++; if (O.i >= O.queue.length && !O.J.proc) jobRefill();
+    if (!O.queue[O.i] && !O.J.proc) { const keys = O.J.skills.flatMap(id => EM.SK[id].facts).filter(k => O.J.fact(EM.FACTS[k])); O.queue.push({ key: keys[Math.floor(Math.random() * keys.length)], mode: 'normal' }); }
+    if (O.J.proc) { // a place-value question, at her level in that skill, chosen like practice chooses them
+      const open = O.J.skills.filter(id => EM.isOpen(id)), id = EM.pickProcSkills(open.length ? open : O.J.skills, 1)[0] || O.J.skills[0], rec = EM.skillRec(id);
+      O.item = EM.procItem(id, rec.level, EM.procTier(id, rec.level)); O.key = O.item.key; O.mode = 'normal'; O.f = { a: 0, b: 0, ans: O.item.steps[0].ans }; O.J.setup(O);
+      O.queue[O.i] = { key: O.key, mode: 'normal' };
+    }
     const e = O.queue[O.i];
-    O.key = e.key; O.mode = e.mode; O.item = EM.factItem(e.key, e.mode); O.f = EM.FACTS[e.key];
+    if (!O.J.proc) { O.key = e.key; O.mode = e.mode; O.item = EM.factItem(e.key, e.mode); O.f = EM.FACTS[e.key]; }
     O.input = ''; O.help = null; O.crates = null; O.t0 = null; O.tLast = null; O.waitSpeech = false; O.cheer = 0;
     // the things arrive (apples fall, coins are counted out); the question starts when they've landed
     O.phase = 'pick'; O.shown = [0, 0]; O.drops = O.J.deal(O.f, O.i);
@@ -882,7 +940,7 @@
     renderJobWork();
   }
   function jobAsk() {
-    O.phase = 'ask'; O.said = O.J.ask(O.f, O.i);
+    O.phase = 'ask'; O.said = O.J.ask(O.f, O.i, O);
     renderJobWork();
     // her first question each round is read aloud; the clock waits until the villager has finished talking
     if (O.picked === 0 && EM.speech && EM.speech.enabled()) jobHear(); else O.t0 = performance.now();
@@ -901,7 +959,7 @@
     $root.innerHTML = `<main class="village full job ${O.id}">
       <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze deep"></div>
         <div class="jsign ${J.chalk ? 'chalk' : ''}" id="jsign"></div><div class="jbub" id="jbub"></div>
-        <div class="jtag" id="jtag0"></div><div class="jtag" id="jtag1"></div>
+        ${Array.from({ length: J.tagCount || 2 }, (_, i) => `<div class="jtag" id="jtag${i}"></div>`).join('')}${J.label ? '<div class="jlabel" id="jlabel"></div>' : ''}
       </div>
       <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span><div class="jorder vpanel"><b>${esc(J.order)}</b><div class="jmarks ${J.marks}" id="jmarks">${marks}</div></div></div>
       <div class="vhud vtr"><button class="jhome vpanel" data-v="leavejob">🏠 Village</button></div>
@@ -917,16 +975,18 @@
     const sign = document.getElementById('jsign'); if (!sign || !O) return;
     const asking = O.phase === 'ask' || O.phase === 'help', J = O.J, f = O.f || { a: 0, b: 0 }, { a, b } = f;
     const sa = O.phase === 'pick' ? (J.boxes ? O.shown[0] : O.shown[0]) : a, sb = O.phase === 'pick' && J.boxes ? O.shown[1] : b;
-    sign.innerHTML = `<span>${J.eq(sa, O.phase === 'pick' && !J.boxes ? '?' : sb)}</span><span class="slot ${asking && !O.waitSpeech ? 'cursor' : ''}">${O.phase === 'right' || O.phase === 'solved' ? f.ans : esc(O.input)}</span>`;
+    const slot = `<span class="slot ${asking && !O.waitSpeech ? 'cursor' : ''}">${O.phase === 'right' || O.phase === 'solved' ? (J.proc ? EM.fmt(f.ans) : f.ans) : esc(O.input)}</span>`;
+    sign.innerHTML = J.signHtml ? J.signHtml(O, slot) : `<span>${J.eq(sa, O.phase === 'pick' && !J.boxes ? '?' : sb)}</span>${slot}`;
+    const lab = document.getElementById('jlabel'); if (lab) { const html = O.phase === 'pick' || O.phase === 'hello' || !O.item ? '' : J.label(O); if (lab.dataset.k !== O.key + O.phase + (O.help ? O.help.stage : '')) { lab.dataset.k = O.key + O.phase + (O.help ? O.help.stage : ''); lab.innerHTML = html; } lab.classList.toggle('on', !!html); }
     sign.classList.toggle('right', O.phase === 'right' || O.phase === 'solved');
     const bub = document.getElementById('jbub'), dotTalks = !!O.help || O.phase === 'solved';
-    const words = O.phase === 'help' ? `${O.lead ? `<b>${esc(O.lead)}</b> ` : ''}${O.help.html}` : O.phase === 'pick' ? '' : esc(O.said);
+    const words = O.phase === 'help' ? `${O.lead ? `<b>${esc(O.lead)}</b> ` : ''}${O.help.html}${O.help.vis && !J.cells && !J.label ? `<div class="jvis">${O.help.vis}</div>` : ''}` : O.phase === 'pick' ? '' : esc(O.said);
     if (O.phase === 'hello') { sign.innerHTML = '<span>Hello!</span>'; }
     bub.innerHTML = words ? `<small>${dotTalks ? 'Dot' : esc(J.npc)}</small>${words}` : ''; bub.classList.toggle('on', !!words); bub.classList.toggle('bydot', dotTalks);
     const busy = !asking || O.waitSpeech;
     document.getElementById('jpad').classList.toggle('busy', busy);
     document.querySelector('.jidk').style.visibility = O.help || busy ? 'hidden' : 'visible';
-    (O.f ? J.tags(O) : [{}, {}]).forEach((tg, i) => { const el = document.getElementById(`jtag${i}`); el.textContent = tg.text || ''; el.classList.toggle('on', !!O.f && !O.crates && !!tg.on); });
+    (O.f ? J.tags(O) : Array.from({ length: J.tagCount || 2 }, () => ({}))).forEach((tg, i) => { const el = document.getElementById(`jtag${i}`); if (!el) return; el.textContent = tg.text || ''; el.classList.toggle('on', !!O.f && !O.crates && !!tg.on); el.classList.toggle('hit', !!tg.hit); });
     const m = document.getElementById('jmarks'); if (m) [...m.children].forEach((el, i) => el.classList.toggle('on', i < O.picked));
     showCoins();
   }
@@ -941,7 +1001,7 @@
   }
   // the bubble opens above whoever is talking (scene point x, y), clear of the number pad, and never over the sign's
   // answer box: beside it if there's room, otherwise above it
-  function placeBubble(x, y, [x0, y0, x1, y1]) {
+  function placeBubble(x, y, [x0, y0, x1, y1], avoid) {
     const st = document.getElementById('vstage'), bub = document.getElementById('jbub'); if (!st || !bub) return;
     const [sx, sy] = toStage(x, y), r = st.getBoundingClientRect(), padL = document.getElementById('jpad').getBoundingClientRect().left - r.left;
     bub.style.width = ''; let w = bub.offsetWidth, left = Math.max(-r.left + 12, Math.min(sx - w * .55, padL - w - 14)), top = sy - bub.offsetHeight - 14;
@@ -950,13 +1010,23 @@
       if (room >= 230) { left = x1 + 10; if (room < w) { bub.style.width = `${room}px`; w = room; } top = sy - bub.offsetHeight - 14; }
       else top = Math.min(top, y0 - bub.offsetHeight - 10);
     }
+    // and clear of anything else that must stay readable (the post office's label): above it if they'd meet
+    if (avoid && left < avoid[2] + 8 && left + w > avoid[0] - 8 && top < avoid[3] && top + bub.offsetHeight > avoid[1]) top = avoid[1] - bub.offsetHeight - 10;
     top = Math.max(top, -r.top + 72);
     bub.style.transform = `translate(${left.toFixed(1)}px, ${top.toFixed(1)}px)`; bub.style.setProperty('--tx', `${Math.max(18, Math.min(w - 36, sx - left - 11)).toFixed(0)}px`);
   }
   function jobOverlays() {
     if (!document.getElementById('vstage') || !O) return;
     const J = O.J, rect = placeSign(J.sign), dotTalks = document.getElementById('jbub').classList.contains('bydot');
-    if (dotTalks) placeBubble(O.dotAt[0], O.dotAt[1] - 8, rect); else placeBubble(J.head[0], J.head[1], rect);
+    let avoid = null; const lab = document.getElementById('jlabel');
+    if (lab && J.labelAt) {
+      // the label is scaled to J.labelW scene pixels wide, its bottom centered on J.labelAt
+      const [lx, ly] = toStage(...J.labelAt), [lx1] = toStage(J.labelAt[0] + J.labelW, 0), z = Math.min(1.2, (lx1 - lx) / Math.max(1, lab.offsetWidth));
+      const w = lab.offsetWidth * z, h = lab.offsetHeight * z;
+      lab.style.transform = `translate(${(lx - w / 2).toFixed(1)}px, ${(ly - h).toFixed(1)}px) scale(${z.toFixed(3)})`;
+      if (lab.classList.contains('on')) avoid = [lx - w / 2, ly - h, lx + w / 2, ly];
+    }
+    if (dotTalks) placeBubble(O.dotAt[0], O.dotAt[1] - 8, rect, avoid); else placeBubble(J.head[0], J.head[1], rect, avoid);
     if (O.f) J.tags(O).forEach((tg, i) => place(document.getElementById(`jtag${i}`), tg.x, tg.y));
   }
   function drawJob(sc, k, t) {
@@ -977,20 +1047,21 @@
     k.drawDot(O.dotAt[0], O.dotAt[1], t, (t % 4200) < 130);
     clouds(k, t);
   }
-  function oType(d) { if ((O.phase !== 'ask' && O.phase !== 'help') || O.waitSpeech) return nudge(); if (O.input.length >= 2) return; O.input = O.input === '0' ? d : O.input + d; O.tLast = performance.now(); renderJobWork(); }
+  function oType(d) { if ((O.phase !== 'ask' && O.phase !== 'help') || O.waitSpeech) return nudge(); if (O.input.length >= (O.J.maxLen || 2)) return; O.input = O.input === '0' ? d : O.input + d; O.tLast = performance.now(); renderJobWork(); }
   function oBack() { O.input = O.input.slice(0, -1); O.tLast = O.input ? performance.now() : null; renderJobWork(); }
   const oGraded = () => O.mode !== 'rehearse' && O.mode !== 'reask';
   function oGrade(outcome, ms) {
     const st = O.stats; st.items++; st[outcome]++;
     if (outcome === 'fast' || outcome === 'slow') st.times.push(ms);
     if (outcome === 'fast') st.fastKeys.push(O.key);
+    if (O.J.proc) { const it = O.item; return { becameYours: false, ...EM.gradeProc(it.skillId, it.level, { ok: outcome === 'fast' || outcome === 'slow', fast: outcome === 'fast', scaff: it.scaff, outcome }) }; }
     return oGraded() ? EM.gradeFact(O.key, outcome, ms) : { becameYours: false };
   }
   function oOk() {
     if ((O.phase !== 'ask' && O.phase !== 'help') || O.waitSpeech || !O.input) return O.input ? nudge() : null;
     const typed = Number(O.input), ok = typed === O.f.ans, tn = performance.now(), { a, b, ans } = O.f, J = O.J;
     if (O.help) { // in help: the right answer moves on, but pays nothing
-      if (ok) { O.phase = 'solved'; O.help = null; O.crates = null; O.said = J.solved(O.f); O.cheer = now(); renderJobWork(); EM.speech && EM.speech.say(O.said); sfx('right'); return setTimeout(nextQ, 1900); }
+      if (ok) { O.phase = 'solved'; O.help = null; O.crates = null; O.said = J.solved(O.f); O.cheer = now(); renderJobWork(); EM.speech && EM.speech.say(O.said); sfx('right'); const cur = O; return setTimeout(() => { if (O === cur) nextQ(); }, 1900); }
       if (O.help.stage === 1) return enterJobHelp(2); O.input = ''; renderJobWork(); return;
     }
     const ms = (O.tLast || tn) - (O.t0 || tn), gap = tn - (O.tLast || tn);
@@ -1001,7 +1072,10 @@
       O.phase = 'right'; O.cheer = now(); O.said = fast ? 'Wow, you just knew that! Here, a coin.' : 'Thank you! Here, a coin.';
       J.tags(O).forEach(tg => burst(tg.x, tg.y + 4, 8, ['#fff7c2', '#ffe27a', '#ffffff'], { up: true, spread: 2, speed: 40, life: 600 }));
       floatText('+1', J.head[0], J.head[1] - 4, 'coin'); renderJobWork(); sfx(fast ? 'fast' : 'right');
+      const cur = O;
       return setTimeout(() => {
+        if (O !== cur) return;
+        if (g.leveledUp) return celebrate(`${EM.SK[O.item.skillId].name}, next level!`, 'Harder numbers from now on. You earned it.', afterQ);
         if (g.becameYours) return celebrate(`${J.eq(a, b)} ${ans} is yours now!`, 'You knew it fast on two different days.', afterQ, null, O.id === 'market' ? `${a} take away ${b} is ${ans}. That one is yours now!` : `${a} + ${b} = ${ans} is yours now!`);
         afterQ();
       }, 1400);
@@ -1014,9 +1088,9 @@
   function oIdk() { if (!O || O.help || O.phase !== 'ask' || O.waitSpeech) return; oGrade('idk', 0); enterJobHelp(1, "Good idea to ask. Let's look together."); }
   function enterJobHelp(stage, lead) {
     // a fact she missed comes back a few questions later, like in practice (at most twice per fact)
-    if (stage === 1) { const n = (O.reasks = O.reasks || {})[O.key] || 0; if (n < 2) { O.reasks[O.key] = n + 1; O.queue.splice(Math.min(O.queue.length, O.i + 3), 0, { key: O.key, mode: 'reask' }); } }
+    if (stage === 1 && !O.J.proc) { const n = (O.reasks = O.reasks || {})[O.key] || 0; if (n < 2) { O.reasks[O.key] = n + 1; O.queue.splice(Math.min(O.queue.length, O.i + 3), 0, { key: O.key, mode: 'reask' }); } }
     const h = O.item.help(0, stage);
-    O.help = { stage, html: O.J.words(h.html), say: O.J.words(h.say) }; O.input = ''; O.phase = 'help'; O.crates = O.J.cells(O.f);
+    O.help = { stage, html: O.J.words(h.html), say: O.J.words(h.say), vis: h.vis }; O.input = ''; O.phase = 'help'; O.crates = O.J.cells ? O.J.cells(O.f) : null;
     if (lead) O.lead = lead; else if (stage === 2) O.lead = '';
     renderJobWork(); EM.speech && EM.speech.say(`${O.lead} ${O.help.say}`);
   }
@@ -1024,7 +1098,7 @@
     if (O.picked >= O.goal) {
       const J = O.J; V()[J.rounds] = (V()[J.rounds] || 0) + 1; EM.save();
       const gift = giftDue(O.id);
-      const title = O.id === 'orchard' ? "Rosa's baskets are full!" : 'Mr. Pip has his pies!';
+      const title = { orchard: "Rosa's baskets are full!", market: 'Mr. Pip has his pies!', post: 'All the mail is delivered!' }[O.id];
       const next = () => { O.picked = 0; renderJobWork(); nextQ(); };
       if (gift) return celebrate(title, `${J.npc} paid you ${O.goal} coins.`, () => giveGift(gift, next));
       return celebrate(title, `${J.npc} paid you ${O.goal} coins. You have ${V().coins} coins.${untilGift(O.id)}`, next, [['Keep going', 'keep'], ['Spend them', 'tobuild']]);
@@ -1084,6 +1158,7 @@
       case 'orchard': return walkTo('orchard', toOrchard);
       case 'guide': { const m = mission(); if (m && !ui.story && !ui.busy) m.go(); return; }
       case 'market': return walkTo('market', marketTap);
+      case 'post': return walkTo('post', toPost);
       case 'jhear': return mode === 'fish' ? fishHear() : jobHear();
       case 'jidk': return mode === 'fish' ? fIdk() : oIdk();
       case 'fidk': return fIdk();

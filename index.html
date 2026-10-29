@@ -318,7 +318,7 @@ body { background:var(--bg); }
 .pvc .dcs { display:flex; flex-wrap:wrap; gap:3px; justify-content:center; min-height:84px; width:76px; }
 .pvc .cnt { text-align:center; font-weight:800; margin-top:4px; }
 .disc { display:inline-grid; place-items:center; width:32px; height:32px; border-radius:50%; font-style:normal; font-size:11px; font-weight:800; color:#fff; }
-.disc.d1 { background:var(--d1); } .disc.d10 { background:var(--d10); } .disc.d100 { background:var(--d100); } .disc.d1000 { background:var(--d1000); }
+.disc.d1 { background:var(--d1); color:#120e18; } .disc.d10 { background:var(--d10); color:#120e18; } .disc.d100 { background:var(--d100); color:#120e18; } .disc.d1000 { background:var(--d1000); }
 .pvpair { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
 .pvpair.trio { gap:8px; flex-wrap:nowrap; }
 .pvpair.trio .pvc { gap:3px; } .pvpair.trio .col { min-width:40px; padding:2px; } .pvpair.trio .dcs { width:38px; min-height:56px; gap:2px; } .pvpair.trio .disc { width:21px; height:21px; font-size:8px; } .pvpair.trio .lab { font-size:11px; } .pvpair.trio .cnt { font-size:14px; } .pvpair.trio .pvtitle { font-size:15px; }
@@ -549,6 +549,12 @@ input, textarea { caret-color:var(--accent); }
 .vgift { width:96px; height:96px; image-rendering:pixelated; }
 .jmarks.fish i.on { background:#f2a33a; box-shadow:inset -3px -3px 0 #b8701c, inset 3px 3px 0 #ffd08a; }
 .jbub .jvis { margin-top:8px; zoom:.62; pointer-events:none; }
+/* the post office: the package's label (number discs, or the street's numbers so far), house plaques, mail marks */
+.jlabel { position:absolute; left:0; top:0; background:#fffbf0; border:3px solid #b8987a; border-radius:14px; padding:10px 14px; box-shadow:0 4px 0 rgba(60,50,40,.18); pointer-events:none; opacity:0; transition:opacity .2s; font-weight:700; color:#2b2433; width:max-content; max-width:560px; }
+.jlabel.on { opacity:1; } .jlabel .eq { font-size:40px; } .jlabel .ask { font-size:22px; } .jlabel .q { color:#b4402f; }
+.jlabel { transform-origin:0 0; }
+.jtag.hit { background:#2e7d4f; border-color:#1d5233; color:#fff; animation:tagpop .35s cubic-bezier(.3,1.6,.6,1) both; } @keyframes tagpop { from { scale:.4 } to { scale:1 } }
+.jmarks.mail i.on { background:#c89a64; box-shadow:inset -3px -3px 0 #9a6e40, inset 3px 3px 0 #e2bc88; }
 /* Dot's lesson and the other plain screens sit over a soft view of her village */
 body.inworld { background:transparent; }
 body.inworld::before { content:""; position:fixed; inset:-24px; z-index:-1; background:var(--world) center / cover no-repeat; filter:blur(7px) saturate(.85); opacity:.34; }
@@ -624,18 +630,18 @@ body.inworld::before { content:""; position:fixed; inset:-24px; z-index:-1; back
 <body>
 <div id="app"></div>
 <div id="turn" aria-live="polite"></div>
-<script src="engine.js?v=21"></script>
-<script src="content.js?v=21"></script>
-<script src="voice.js?v=21"></script>
-<script src="audio.js?v=21"></script>
-<script src="manip.js?v=21"></script>
-<script src="theme.js?v=21"></script>
-<script src="world.js?v=21"></script>
-<script src="avatar.js?v=21"></script>
-<script src="pixel.js?v=21"></script>
-<script src="village.js?v=21"></script>
-<script src="teach.js?v=21"></script>
-<script src="parent.js?v=21"></script>
-<script src="app.js?v=21"></script>
+<script src="engine.js?v=22"></script>
+<script src="content.js?v=22"></script>
+<script src="voice.js?v=22"></script>
+<script src="audio.js?v=22"></script>
+<script src="manip.js?v=22"></script>
+<script src="theme.js?v=22"></script>
+<script src="world.js?v=22"></script>
+<script src="avatar.js?v=22"></script>
+<script src="pixel.js?v=22"></script>
+<script src="village.js?v=22"></script>
+<script src="teach.js?v=22"></script>
+<script src="parent.js?v=22"></script>
+<script src="app.js?v=22"></script>
 </body>
 </html>

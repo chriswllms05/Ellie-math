@@ -228,6 +228,11 @@
         if (v === 'a') k.coin(cx, cy + 1);
         else if (v === 'x') sprite(cx, cy + 1, ['.oooo.', 'o....o', 'o....o', 'o....o', '.oooo.'], { o: '#a08a6a' }); }
     };
+    // a parcel-post package (tied with string) and the mail cart
+    k.package = (x, y, w = 14, h = 10) => { R(x, y, w, h, '#c89a64'); R(x, y, w, 1, '#e2bc88'); R(x + w - 1, y, 1, h, '#9a6e40'); R(x, y + h - 1, w, 1, '#9a6e40'); R(x + Math.floor(w / 2), y, 2, h, '#b84a3e'); R(x, y + Math.floor(h / 2), w, 1, '#b84a3e'); };
+    k.cart = (x, y) => { shadowEll(x + 30, y + 8, 30, 3); R(x, y - 16, 60, 16, C.k1); R(x + 1, y - 15, 58, 14, C.k2); R(x + 1, y - 15, 58, 1, C.k3); for (let i = x + 8; i < x + 60; i += 12) R(i, y - 15, 1, 14, C.k1);
+      for (const wx of [x + 10, x + 50]) { k.ell(wx, y + 2, 6, 6, C.k1); k.ell(wx, y + 2, 5, 5, C.k3); k.ell(wx, y + 2, 2, 2, C.k1); R(wx - 5, y + 2, 10, 1, C.k2); R(wx, y - 3, 1, 10, C.k2); }
+      R(x + 60, y - 10, 14, 2, C.k1); };
     // a wooden sign on two posts; returns its face [x, y, w, h] for the words drawn over it
     k.sign = (x, y, w, h) => {
       shadowEll(x + w / 2, y, w / 2 + 2, 2);
@@ -300,6 +305,8 @@
   const CHIBI = {
     her: (look, long) => ({ rows: ['....hhhh', '..hhhhhh', '.hhHHhhh', '.hHhhhhh', 'hhhhhhhh', 'hhhhshss', ...(long ? FACE : FACE_SHORT), long ? 'hh.bbbbb' : '...bbbbb', long ? 'h.bBbbbb' : '..bBbbbb', '.bbbbbbb', '.sbbbbbb', '..pppppp', '.ppppppp', '.....ss.', '....fff.'],
       mat: { h: ramp(look.hair), s: ramp(look.skin), b: ramp(look.shirt), p: ramp('#55467a'), f: ramp('#6b4430') } }),
+    mo: () => ({ rows: ['....qqqq', '..qqQQqq', '.qqQqqqq', '.qqqqqqq', 'kkkkkkkk', '.hhsssss', '.hsswess', '.hsseess', '.hscsssss'.slice(0, 8), '.hhssssm', '..hsssss', '.....sss', '..qqqqqq', '.qqqqqqq', '.qqyqqqq', '.sqqqqqq', '..qqqqqq', '.ddddddd', '.....dd.', '....fff.'],
+      mat: { q: ramp('#3a5aa8'), k: ramp('#2b2b3a'), h: ramp('#3a2418'), s: ramp('#c98a6c'), y: ramp('#e2ae52'), d: ramp('#3a3a4e'), f: ramp('#6b4430') } }),
     pip: () => ({ rows: ['....ssss', '..sSssss', '.sSsssss', '.sssssss', 'wsssssss', 'wwssssss', 'wwsswess', 'wwsseess', 'wwscssss', '.wsswwww', '.wwwwwww', '..wwwwww', '...wwwww', '..bv.www', '.bvvvvbb', '.bvvVvbb', '.svvvvbb', '..vvvvvv', '.ppppppp', '.....pp.', '....fff.'],
       mat: { s: ramp('#f2c49c'), w: ramp('#e8e8f0'), v: ramp('#7a4a2a'), b: ramp('#c8d4ea'), p: ramp('#6a6a7a'), f: ramp('#6b4430') } }),
     rosa: () => ({ rows: ['.....yyy', '...yYYyy', '..yYyyyy', '..rrrrrr', 'yyyyyyyy', '.hhhhhhh', '.hhsssss', '.hsswess', '.hsseess', '.hscssss', '.hhssssm', 'hhhhssss', 'hh....ss', '..bbbbbb', '.bbaaaaa', '.bbaAaaa', '.sbaaaaa', '..aaaaaa', '.ppppppp', '.....ss.', '....fff.'],
@@ -332,6 +339,7 @@
     // gifts from the villagers: free, and only once they've given them to her
     { id: 'appletree', name: "Rosa's apple tree", cost: 0, paint: 'green', gift: 'orchard' },
     { id: 'kitten', name: "Mr. Pip's kitten", cost: 0, paint: 'orange', gift: 'market' },
+    { id: 'mailbox', name: "Mo's mailbox", cost: 0, paint: 'blue', gift: 'post' },
   ];
   const ITEM = Object.fromEntries(ITEMS.map(i => [i.id, i]));
   // x,y = top-left of the cell
@@ -350,6 +358,7 @@
       case 'appletree': { const leaf = [C.l0, pd, pb, pl]; sh(8, 7); R(x + 7, y + 9, 2, 7, C.k2); P(x + 7, y + 9, C.k3); for (let py = 0; py <= 11; py++) for (let px = 0; px <= 16; px++) { const a = ((px - 8) / 7.5) ** 2 + ((py - 6) / 5.8) ** 2; if (a > 1) continue; const e = a > .8, l = -(px - 8) * .12 - (py - 5) * .2 + (hash(px >> 1, py >> 1, 57) - .5) * .8; P(x + px, y + py, e ? (px > 8 || py > 8 ? leaf[0] : leaf[1]) : l > .45 ? leaf[3] : l > -.25 ? leaf[2] : leaf[1]); }
         [[4, 4], [10, 3], [7, 8], [12, 8], [3, 9]].forEach(([a, b]) => { P(x + a, y + b, '#e8473f'); P(x + a + 1, y + b, '#c22f39'); P(x + a, y + b + 1, '#c22f39'); P(x + a + 1, y + b + 1, '#8e2335'); P(x + a, y + b, '#ffb0a0'); }); break; }
       case 'kitten': sh(7, 6); sprite(x + 1, y + 4, ['..o...o.........', '.oOo.oOo........', '.oOOOOOo........', 'oOeOOOeOo.......', 'oOOOnOOOo.......', '.oOOOOOo....t...', '..oOOOOo.....t..', '.oOOOOOOo....t..', '.oOLLOOOOottt...', '.oOLLOOOOOOo....', '..oooooooooo....'], { o: pd, O: pb, L: pl, e: '#2b2433', n: '#f08a8a', t: pd }); break;
+      case 'mailbox': sh(8, 4); R(x + 7, y + 8, 2, 8, C.k2); R(x + 7, y + 8, 1, 8, C.k3); sprite(x + 3, y + 1, ['..bbbbbb..', '.bBBBBBBb.', 'bBLLBBBBBb', 'bBBBBBBBBb', 'bBBBBBBBBb', 'bbbbbbbbbb'], { b: pd, B: pb, L: pl }); R(x + 12, y, 1, 5, C.k1); R(x + 12, y, 3, 2, '#e8473f'); R(x + 5, y + 4, 4, 1, pd); break;
       case 'flag': sh(5, 3); R(x + 4, y + 1, 1, 15, C.k1); P(x + 4, y, C.y4); sprite(x + 5, y + 2, ['FFFFFFFF', 'FLLFFFFd', 'FFFFFFd.', 'FFFFFFFF', 'dddddddd'], { F: pb, L: pl, d: pd }); break;
       case 'doghouse': sh(8, 8); sprite(x, y + 1, ['......rr........', '.....rRRr.......', '....rRRRRr......', '...rRLRRRRr.....', '..rRLRRRRRRr....', '.rrrrrrrrrrrr...', '..wwwwwwwwww....', '..wwwkkkkwww....', '..wwkkkkkkww....', '..wwkkkkkkww....', '..wwkkkkkkww....', '..WWWWWWWWWW....'], { r: pd, R: pb, L: pl, w: C.k3, W: C.k2, k: C.k0 });
         sprite(x + 10, y + 7, ['.ee...', 'eaaa..', 'aaaan.', 'aaaa..', '.a.a..'], { a: '#e8c08a', e: '#9a6a3a', n: '#2b2433' }); P(x + 12, y + 8, '#2b2433'); break;

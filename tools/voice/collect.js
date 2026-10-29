@@ -77,6 +77,9 @@ const server = http.createServer((req, res) => { let p = decodeURIComponent(req.
     // villagers, gifts and the morning orders
     ["Hi! I'm Rosa. Apples are falling everywhere! Help me count them, and I'll pay you a coin for each one. Fill my baskets three times and I'll have a surprise for you.",
       "Hello! I'm Mr. Pip. I buy a pie every day, but I always mix up my coins. Help me count my coins back, and there's a coin in it for you. Help me three times and I'll have a surprise.",
+      "Hi, I'm Mo, the mail carrier! Every package has its house number on the label, written in number discs. Read them for me and I'll pay you a coin for each one. Help me three times and I'll have a surprise.",
+      'Read the label on this package. Which house is it for?', 'I deliver along the street, counting on. Which house comes next?', 'Mo gave you a mailbox!', 'All the mail is delivered!', 'Mo has packages to deliver. Tap Mo!',
+      ...[407, 563, 1250, 4627, 9080].map(n => `Yes! It goes to ${n.toLocaleString('en-US')}.`),
       'Rosa gave you an apple tree!', 'Mr. Pip gave you a kitten!', 'Mr. Pip has his pies!', "Today's orders are done!", 'You worked hard today!',
       "Mr. Pip's pie stall is open! He needs help counting his coins.", 'Mr. Pip needs help with his coins. Tap him!', "Dot's lesson is on the board.",
       "Mr. Pip's stall opens once your partners of 10 get strong. Keep fishing!"].forEach(add);

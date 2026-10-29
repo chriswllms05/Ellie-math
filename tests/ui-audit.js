@@ -35,7 +35,7 @@ function audit() {
     const el = n.parentElement; if (!el || seen.has(el) || ['SCRIPT', 'STYLE', 'TITLE'].includes(el.tagName) || el.closest('svg')) continue; seen.add(el);
     if (!visible(el)) continue;
     const s = getComputedStyle(el), fg = parse(s.color); if (!fg) continue;
-    let { bg, overArt } = bgOf(el); if (el.closest('.jsign') && !el.closest('.slot')) { bg = { r: 217, g: 177, b: 124, a: 1 }; overArt = false; } // the sign's wood is drawn on the canvas
+    let { bg, overArt } = bgOf(el); if (el.closest('.jsign') && !el.closest('.slot')) { bg = el.closest('.chalk') ? { r: 47, g: 74, b: 58, a: 1 } : { r: 217, g: 177, b: 124, a: 1 }; overArt = false; } // the sign (wood or chalkboard) is drawn on the canvas
     const f = blend(fg, bg);
     const L1 = lum(f), L2 = lum(bg), ratio = (Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05);
     const size = parseFloat(s.fontSize), bold = Number(s.fontWeight) >= 700, large = size >= 24 || (size >= 18.6 && bold);
@@ -79,13 +79,26 @@ function audit() {
     await page.click('[data-b=close]');
     await tapScene(60, 160); await page.waitForSelector('.fishing', { timeout: 8000 });
     await page.waitForFunction(() => EM.village._fish() && EM.village._fish().phase === 'ask', null, { timeout: 8000 }); await check('07-fishing', 400);
-    await page.click('[data-v=fidk]'); await check('08-fishing-help');
+    await page.click('[data-v=jidk]'); await check('08-fishing-help');
     await page.evaluate(() => { const ans = EM.village._fish().f.ans; });
     await page.click('[data-v=stopfish]'); await page.waitForTimeout(1500);
     await page.click('[data-v=orchard]'); await page.waitForSelector('.orchard', { timeout: 10000 });
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'hello', null, { timeout: 8000 }); await check('09-rosa-hello', 300); await page.click('#vstage');
     await page.waitForFunction(() => EM.village._orch() && EM.village._orch().phase === 'ask' && !EM.village._orch().waitSpeech, null, { timeout: 10000 }); await check('09a-orchard', 400);
     await page.click('[data-v=jidk]'); await check('09b-orchard-help', 700);
     await page.click('[data-v=leavejob]'); await page.waitForTimeout(1500);
+    // the market, the board's orders, and the day-done thank-you
+    await page.evaluate(() => { EM.SK.m10.facts.forEach(k => { const r = EM.factRec(k, true); r.box = 3; r.peak = 3; }); EM.S.placement.done = true; EM.save(); EM.go('home'); });
+    await page.waitForSelector('[data-v=market]', { timeout: 30000 }); await page.waitForTimeout(600); await check('09c-map-market');
+    await page.click('[data-v=market]'); await page.waitForSelector('.market', { timeout: 30000 });
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'hello', null, { timeout: 8000 }); await check('09d-market-hello', 300); await page.click('#vstage');
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'ask' && !EM.village._job().waitSpeech, null, { timeout: 10000 }); await check('09e-market', 400);
+    await page.click('[data-v=jidk]'); await check('09f-market-help', 700);
+    await page.click('[data-v=leavejob]'); await page.waitForTimeout(1500);
+    await page.evaluate(() => EM.village.openBoard()); await check('09g-board-orders');
+    await page.click('[data-b=close]');
+    await page.evaluate(() => { EM.village.orders().list.forEach(x => { x.got = x.need; }); EM.save(); EM.go('home'); });
+    await page.waitForSelector('.vover', { timeout: 15000 }); await check('09h-day-done', 400); await page.click('.vover [data-ov]'); await page.waitForTimeout(400);
     // practice screens, placement, summary, break, skills, grown-ups
     const show = async (name, item, step = 0, help = 0, typed) => {
       await page.evaluate(({ item, step, help, typed }) => {

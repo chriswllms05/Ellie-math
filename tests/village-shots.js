@@ -59,14 +59,14 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     await page.click('[data-v=fback]'); await page.click('[data-v=fback]');
     // a rushed wrong answer: no fish, help, flagged
     await typeAns((await ans() + 3) % 10);
-    check(await page.$('.vhelp') !== null, 'a miss opens help');
+    check(await page.evaluate(() => !!EM.village._fish().help && /Dot/.test(document.getElementById('jbub').textContent)), 'a miss opens help in Dot\'s bubble');
     check((await page.evaluate(() => EM.village.state().coins)) === 1, 'a miss catches nothing');
     check((await page.evaluate(() => EM.village._fish().stats.rushed)) === 1, 'an instant wrong answer is flagged as rushed');
     await page.waitForTimeout(400); await shot('03-help');
     await typeAns(await ans());
     // "I don't know" is safe
-    await nextAsk(); await page.click('[data-v=fidk]');
-    check(await page.$('.vhelp') !== null && (await page.evaluate(() => EM.village.state().coins)) === 1, '"I don\'t know" opens help and costs nothing');
+    await nextAsk(); await page.click('[data-v=jidk]');
+    check(await page.evaluate(() => !!EM.village._fish().help) && (await page.evaluate(() => EM.village.state().coins)) === 1, '"I don\'t know" opens help and costs nothing');
     await typeAns(await ans());
     // back to the village logs a session
     await nextAsk();
@@ -122,10 +122,14 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     // ---- Dot's guide and the orchard ----
     check(await page.isVisible('#vguide') && /note on the board/.test(await page.textContent('#vguide')), "Dot's guide names the next job (the board's note, before placement)");
     await page.evaluate(() => { EM.S.placement.done = true; EM.save(); });
-    await page.waitForFunction(() => /Help Rosa/.test(document.getElementById('vguide').textContent), null, { timeout: 4000 });
-    check(true, 'after placement, the guide sends her to Rosa');
+    await page.waitForFunction(() => /Rosa/.test(document.getElementById('vguide').textContent), null, { timeout: 4000 });
+    check(/Today's orders/.test(await page.textContent('#vguide')), `after placement, today's orders start with Rosa: "${(await page.textContent('#vguide')).trim()}"`);
     await shot('07a-guide');
     await tapScene(86, 102); await page.waitForSelector('.orchard', { timeout: 10000 });
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'hello', null, { timeout: 6000 });
+    check(/Rosa/.test(await page.textContent('#jbub')), 'the first time, Rosa says hello and promises a surprise');
+    await shot('07a2-rosa-hello');
+    await page.click('#vstage');
     const oAsk = () => page.waitForFunction(() => EM.village._orch() && EM.village._orch().phase === 'ask' && !EM.village._orch().waitSpeech, null, { timeout: 12000 });
     await oAsk(); await page.waitForTimeout(300); await shot('07b-orchard');
     const o1 = await page.evaluate(() => { const O = EM.village._orch(); return { a: O.f.a, b: O.f.b, ans: O.f.ans, coins: EM.village.state().coins, sign: document.getElementById('jsign').textContent }; });
@@ -134,6 +138,7 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     for (const d of String(o1.ans)) await page.click(`.jpad [data-fd="${d}"]`);
     await page.click('.jpad [data-v=fok]'); await page.waitForTimeout(300);
     check((await page.evaluate(() => EM.village.state().coins)) === o1.coins + 1 && (await page.evaluate(() => EM.village._orch().picked)) === 1, 'a right answer earns a coin from Rosa');
+    check((await page.evaluate(() => EM.village.orders().list[0].got)) === 1, "and moves Rosa's order forward");
     await shot('07c-orchard-right');
     await oAsk();
     await page.evaluate(() => { const O = EM.village._orch(); O.t0 = performance.now(); });
@@ -148,6 +153,46 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     await page.click('[data-v=leavejob]'); await page.waitForSelector('.village:not(.orchard)', { timeout: 6000 }); await page.waitForTimeout(1400);
     const ol = await page.evaluate(() => EM.S.sessions[EM.S.sessions.length - 1]);
     check(ol.kind === 'orchard' && ol.items === 2, `the orchard logs a session (${ol.items} answers)`);
+
+    // ---- Rosa's surprise: three full rounds ----
+    await page.click('[data-v=orchard]'); await page.waitForSelector('.orchard', { timeout: 10000 }); await oAsk();
+    await page.evaluate(() => { EM.village.state().orchardRounds = 2; EM.village._job().picked = 4; });
+    const og = await page.evaluate(() => EM.village._job().f.ans); await page.waitForTimeout(900);
+    for (const d of String(og)) await page.click(`.jpad [data-fd="${d}"]`); await page.click('.jpad [data-v=fok]');
+    await page.waitForSelector('.vover [data-ov]', { timeout: 6000 }); await page.click('.vover [data-ov]');
+    await page.waitForSelector('.vgift', { timeout: 6000 }); await shot('07e-gift');
+    check(/apple tree/.test(await page.textContent('.vover')), 'after three full rounds, Rosa gives her an apple tree');
+    await page.click('.vover [data-ov=tobuild]'); await page.waitForSelector('[data-item=appletree]', { timeout: 10000 });
+    check(/Gift/.test(await page.textContent('[data-item=appletree]')), 'the gift waits in the yard tray, free');
+    await page.click('[data-v=done]'); await page.waitForTimeout(800);
+
+    // ---- Mr. Pip's market opens with partners of 10 ----
+    await page.evaluate(() => { EM.SK.m10.facts.forEach(k => { const r = EM.factRec(k, true); r.box = 3; r.peak = 3; }); EM.save(); EM.go('home'); });
+    await page.waitForSelector('[data-v=market]', { timeout: 30000 }); await page.waitForTimeout(800);
+    check(true, 'once partners of 10 are hers, a Help Mr. Pip button appears');
+    await page.click('[data-v=market]'); await page.waitForSelector('.market', { timeout: 30000 });
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'hello', null, { timeout: 8000 }); await page.click('#vstage');
+    await oAsk(); await page.waitForTimeout(300); await shot('07f-market');
+    const m1 = await page.evaluate(() => { const O = EM.village._job(); return { a: O.f.a, b: O.f.b, ans: O.f.ans, coins: EM.village.state().coins, sign: document.getElementById('jsign').textContent, bub: document.getElementById('jbub').textContent }; });
+    check(m1.sign.includes(`${m1.a} − ${m1.b}`) && /coins back/.test(m1.bub), `Mr. Pip asks for his coins back: ${m1.a} − ${m1.b}`);
+    await page.waitForTimeout(900);
+    for (const d of String(m1.ans)) await page.click(`.jpad [data-fd="${d}"]`); await page.click('.jpad [data-v=fok]'); await page.waitForTimeout(300);
+    check((await page.evaluate(() => EM.village.state().coins)) === m1.coins + 1, 'a right answer earns a coin from Mr. Pip');
+    await oAsk(); await page.click('[data-v=jidk]'); await page.waitForTimeout(700);
+    const mh = await page.evaluate(() => ({ trays: !!EM.village._job().crates, bub: document.getElementById('jbub').textContent }));
+    check(mh.trays && !/frame|dots/.test(mh.bub), `help counts his coins in trays of ten: "${mh.bub.slice(0, 60)}"`);
+    await shot('07g-market-help');
+    await page.click('[data-v=leavejob]'); await page.waitForSelector('.village:not(.market)', { timeout: 6000 }); await page.waitForTimeout(1500);
+
+    // ---- the morning orders: the board lists them; when all are done the village says thank you ----
+    await page.evaluate(() => EM.village.openBoard()); await page.waitForSelector('.vorders');
+    check(await page.$('[data-b=lesson]') !== null && (await page.$$('.vorders li')).length === 3, "the board lists today's three orders and Dot's lesson");
+    await shot('07h-board-orders'); await page.click('[data-b=close]');
+    const c0 = await page.evaluate(() => { const o = EM.village.orders(), c = EM.village.state().coins; o.list.forEach(x => { x.got = x.need; }); EM.save(); EM.go('home'); return c; });
+    await page.waitForFunction(() => /orders are done/.test((document.querySelector('.vover') || {}).textContent || ''), null, { timeout: 15000 });
+    check((await page.evaluate(() => EM.village.state().coins)) === c0 + 5, 'all three orders done: a thank-you and 5 bonus coins');
+    await shot('07i-day-done'); await page.click('.vover [data-ov]');
+    check((await page.evaluate(() => EM.todayDone())), 'and the day counts as done');
     await page.evaluate(() => { EM.S.placement.done = false; EM.save(); });
 
     // ---- the notice board ----

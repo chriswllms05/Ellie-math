@@ -538,6 +538,17 @@ input, textarea { caret-color:var(--accent); }
 .vactions .big-btn span { color:#6f6557; }
 .vactions .big-btn.primary { background:#a84a28; color:#fff; box-shadow:0 5px 0 #6e2f18; }
 .vactions .big-btn.primary span { color:#fde8dc; }
+/* the market's chalkboard, Mr. Pip's pies, today's orders, a villager's gift */
+.jsign.chalk { color:#fdfbf2; text-shadow:0 2px 0 rgba(0,0,0,.25); } .jsign.chalk .slot { border-color:#e2c86a; }
+.jmarks.pie i.on { background:#e2ae52; box-shadow:inset -3px -3px 0 #b07a2a, inset 3px 3px 0 #f8dc8a; }
+.vorders { list-style:none; margin:8px 0 12px; padding:0; display:grid; gap:6px; }
+.vorders li { display:flex; align-items:center; gap:10px; font-size:19px; font-weight:700; color:#2b2433; }
+.vorders li i { flex:none; width:28px; height:28px; border-radius:8px; border:3px solid #a07d62; display:grid; place-items:center; font-style:normal; color:#fff; font-size:18px; }
+.vorders li.done i { background:#2e7d4f; border-color:#2e7d4f; } .vorders li.done { color:#6f6557; }
+.vorders li small { font-size:15px; color:#6f6557; font-weight:600; }
+.vgift { width:96px; height:96px; image-rendering:pixelated; }
+.jmarks.fish i.on { background:#f2a33a; box-shadow:inset -3px -3px 0 #b8701c, inset 3px 3px 0 #ffd08a; }
+.jbub .jvis { margin-top:8px; zoom:.62; pointer-events:none; }
 @keyframes floatup { from { margin-top:-10px; opacity:0 } 15% { opacity:1 } to { margin-top:-70px; opacity:0 } }
 .vfade { position:fixed; inset:0; z-index:40; background:#fffbf0; opacity:0; pointer-events:none; transition:opacity .26s ease; }
 .vfade.black { background:#14101e; transition:opacity 1.1s ease; }
@@ -609,18 +620,18 @@ input, textarea { caret-color:var(--accent); }
 <body>
 <div id="app"></div>
 <div id="turn" aria-live="polite"></div>
-<script src="engine.js?v=20"></script>
-<script src="content.js?v=20"></script>
-<script src="voice.js?v=20"></script>
-<script src="audio.js?v=20"></script>
-<script src="manip.js?v=20"></script>
-<script src="theme.js?v=20"></script>
-<script src="world.js?v=20"></script>
-<script src="avatar.js?v=20"></script>
-<script src="pixel.js?v=20"></script>
-<script src="village.js?v=20"></script>
-<script src="teach.js?v=20"></script>
-<script src="parent.js?v=20"></script>
-<script src="app.js?v=20"></script>
+<script src="engine.js?v=21"></script>
+<script src="content.js?v=21"></script>
+<script src="voice.js?v=21"></script>
+<script src="audio.js?v=21"></script>
+<script src="manip.js?v=21"></script>
+<script src="theme.js?v=21"></script>
+<script src="world.js?v=21"></script>
+<script src="avatar.js?v=21"></script>
+<script src="pixel.js?v=21"></script>
+<script src="village.js?v=21"></script>
+<script src="teach.js?v=21"></script>
+<script src="parent.js?v=21"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>

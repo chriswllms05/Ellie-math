@@ -35,7 +35,8 @@
   EM.todayDone = () => todayDone(); EM.dueTonight = () => dueTonight();
 
   // ---------- home ----------
-  function todayDone() { const d = dayStr(Date.now()), need = (S.settings.minutes || 15) / 2; return S.sessions.some(s => dayStr(s.date) === d && s.kind === 'daily' && (s.items >= 15 || (s.minutes || 0) >= need)); }
+  // the day is done when the village's morning orders are (or, from before the orders, a full daily session)
+  function todayDone() { if (EM.village && EM.village.ordersDone && EM.village.ordersDone()) return true; const d = dayStr(Date.now()), need = (S.settings.minutes || 15) / 2; return S.sessions.some(s => dayStr(s.date) === d && s.kind === 'daily' && (s.items >= 15 || (s.minutes || 0) >= need)); }
   const GROW = { garden: ['sprout', 'sprouts'], ocean: ['egg', 'eggs'], space: ['baby star', 'baby stars'], classroom: ['outline', 'outlines'] };
   const HI = () => T().id === 'classroom' ? 'Good morning' : 'Hi';
   // Her world, full width, with Dot and a speech bubble perched in the sky.
@@ -167,14 +168,26 @@
     if (teachItems.length) blocks.push({ name: 'Teach Dot', cap: 2 * k, build: () => ({ items: teachItems, spare: [] }) });
     return blocks;
   }
+  // Dot's lesson, the morning order on the notice board: the parts of the day that aren't village jobs yet (big numbers,
+  // school work, times facts, Teach Dot, and the open fact skills no job covers today, like Quick Look). Shorter than a
+  // full daily session, since the jobs carry the core facts.
+  function planLesson() {
+    const covered = new Set(EM.village && EM.village.jobSkills ? EM.village.jobSkills() : []);
+    const rest = openIds('A').filter(id => !covered.has(id)), k = (S.settings.minutes || 15) / 15;
+    const blocks = planDaily().filter(b => b.name !== 'Foundations' && b.name !== 'Quick facts');
+    blocks.forEach(b => { b.cap *= .6; });
+    if (rest.length) blocks.unshift({ name: 'Quick facts', cap: 2 * k, build: () => factQueueItems(rest, 12) });
+    return blocks;
+  }
   function startSession(kind, opt = {}) {
     EM.speech.prime();
     let blocks = [];
     if (kind === 'placement') blocks = [{ name: 'Looking', cap: 10, build: () => ({ items: EM.placementItems(), spare: [] }) }];
     else if (kind === 'skill') { const sk = EM.SK[opt.id]; blocks = [{ name: sk.name, cap: 5, build: () => sk.kind === 'fact' ? factQueueItems([sk.id], 20) : { items: procQueueItems([sk.id], 12), spare: [] } }]; }
     else if (kind === 'evening') blocks = [{ name: 'Review', cap: 5, build: () => factQueueItems(openIds('A'), 20, { dueOnly: true }) }];
+    else if (kind === 'lesson') blocks = planLesson();
     else blocks = planDaily();
-    R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : "Today's practice", blocks, bi: -1, started: Date.now(),
+    R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : kind === 'lesson' ? "Dot's lesson" : "Today's practice", blocks, bi: -1, started: Date.now(),
       stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {}, how: { knew: 0, trick: 0, counted: 0 },
         byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 }, slips: 0, slipKeys: [], compChecks: [], colFacts: [], column: { items: 0, clean: 0, factSlip: 0, regroupMiss: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlayed: false, idkCount: 0, missStreak: 0, knownBefore: EM.countCollected() };
     screen = 'practice';
@@ -561,6 +574,7 @@
     delete S.inflight;
     if (answered) EM.logSession(sessionRecord()); else EM.save();
     if (R.kind === 'placement' && (answered >= 15 || R.idx >= R.queue.length)) { seedLevels(); S.placement.done = true; S.placement.at = Date.now(); EM.save(); }
+    if (R.kind === 'lesson' && (answered >= 8 || (R.bi >= R.blocks.length - 1 && R.idx >= R.queue.length)) && EM.village) EM.village.orderProgress('lesson');
     R.newSkills = answered ? EM.newlyOpened() : [];
     if (answered && R.kind !== 'skill') { S.card = { date: Date.now(), html: EM.parent.grownupCard(R), seen: false }; EM.save(); }
     screen = answered ? 'summary' : 'home';

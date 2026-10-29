@@ -28,15 +28,16 @@
   const MEADOW = { x: 222, y: 10, cols: 4, rows: 2 };          // across the bridge
   const DOCK = [106, 137, 30, 9];
   const BOARD = [178, 110];                                     // notice board (left post x, base y)
-  const PATHS = [[118, 112, 116, 9], [134, 112, 9, 34], [244, 52, 9, 62], [94, 112, 26, 9]];
+  const PATHS = [[118, 112, 116, 9], [134, 112, 9, 34], [244, 52, 9, 62], [94, 112, 26, 9], [244, 121, 9, 56]];
   const ORCHARD = [14, 44, 80, 62], ROSA = [82, 110];             // Rosa's orchard on the map, and where she stands
+  const STALL = [258, 166], PIP = [272, 186];                     // Mr. Pip's pie stall, and where he waits
   const inRect = (x, y, [rx, ry, rw, rh]) => x >= rx && x < rx + rw && y >= ry && y < ry + rh;
   const area = id => id === 'meadow' ? MEADOW : YARD;
   const cellAt = (x, y) => { for (const id of ['plot', 'meadow']) { const a = area(id); if (id === 'meadow' && !V().open.meadow) continue; const cx = Math.floor((x - a.x) / 16), cy = Math.floor((y - a.y) / 16); if (cx >= 0 && cy >= 0 && cx < a.cols && cy < a.rows) return { area: id, cx, cy }; } return null; };
   const placedAt = c => V().placed.find(p => p.area === c.area && p.cx === c.cx && p.cy === c.cy);
   // where she can walk: stops joined by paths (she takes the shortest way), plus free walking on grass
-  const NODES = { dock: [114, 144], bend: [138, 141], cross: [138, 118], yard: [166, 118], board: [190, 118], home: [244, 118], hill: [248, 98], bridge: [248, 82], orchard: [98, 116] };
-  const EDGES = [['dock', 'bend'], ['bend', 'cross'], ['cross', 'yard'], ['yard', 'board'], ['board', 'home'], ['home', 'hill'], ['hill', 'bridge'], ['cross', 'orchard']];
+  const NODES = { dock: [114, 144], bend: [138, 141], cross: [138, 118], yard: [166, 118], board: [190, 118], home: [244, 118], hill: [248, 98], bridge: [248, 82], orchard: [98, 116], market: [250, 176] };
+  const EDGES = [['dock', 'bend'], ['bend', 'cross'], ['cross', 'yard'], ['yard', 'board'], ['board', 'home'], ['home', 'hill'], ['hill', 'bridge'], ['cross', 'orchard'], ['home', 'market']];
   const CAM_FULL = { x: 0, y: 0, w: W, h: H };
   const camAround = (cx, cy, w) => ({ x: Math.max(0, Math.min(W - w, cx - w / 2)), y: Math.max(0, Math.min(H - w * H / W, cy - w * H / W / 2)), w, h: w * H / W });
 
@@ -178,8 +179,14 @@
     // Rosa's orchard: two rows of apple trees, and her crate by the path
     [[24, 66], [48, 62], [72, 66], [34, 92], [58, 90]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 2), apples: true }));
     k.crate(90, 112, '#e8473f'); k.crate(70, 106, '#f7c531');
-    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [126, 26], [150, 20], [168, 30], [8, 108], [290, 100], [284, 140], [292, 196], [116, 206], [20, 206], [196, 204], [262, 206], [160, 74], [140, 64]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
-    [[106, 86], [206, 128], [276, 172], [130, 190], [222, 196]].forEach(([x, y]) => k.bush(x, y));
+    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [126, 26], [150, 20], [168, 30], [8, 108], [290, 100], [290, 140], [116, 206], [20, 206], [196, 204], [262, 206], [160, 74], [140, 64]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
+    [[106, 86], [206, 128], [130, 190], [222, 196]].forEach(([x, y]) => k.bush(x, y));
+    // Mr. Pip's pie stall: striped awning, a counter, pies when it's open
+    k.add(STALL[1] + 4, () => { const [x, y] = STALL, open = jobOpen('market');
+      k.R(x, y - 18, 2, 20, C.k1); k.R(x + 30, y - 18, 2, 20, C.k1);
+      for (let j = 0; j < 6; j++) for (let i = -2 + (j >> 1); i < 34 - (j >> 1); i++) k.P(x + i, y - 24 + j, j === 0 ? '#6e3a3a' : Math.floor((i + 8) / 4) % 2 ? '#efe8dc' : '#c06456');
+      k.R(x - 1, y - 6, 34, 9, C.k1); k.R(x, y - 5, 32, 7, C.k2); k.R(x, y - 5, 32, 1, C.k4);
+      if (open) { k.pie(x + 3, y - 10); k.pie(x + 17, y - 10); } else { k.R(x + 8, y - 4, 16, 5, '#2f4a3a'); k.R(x + 10, y - 2, 12, 1, '#cfe8d6'); } });
     [[270, 120], [40, 196], [110, 198]].forEach(([x, y]) => k.rock(x, y));
     [[18, 140], [21, 142], [112, 176], [115, 178], [100, 120]].forEach(([x, y]) => k.reeds(x, y));
     [[36, 142], [76, 168], [48, 178]].forEach(([x, y], i) => k.lily(x, y, i % 2 === 0));
@@ -213,7 +220,7 @@
 
   function renderMap() {
     const v = V(), build = mode === 'build';
-    const items = px.ITEMS.filter(i => !i.area || v.open[i.area]);
+    const items = buyable(v);
     const sel = B.sel && placedAt(B.sel);
     ui.primaryJob = undefined;
     $root.innerHTML = `<main class="village full ${build ? 'building' : ''} ${ui.story ? 'story' : ''}">
@@ -223,7 +230,7 @@
       </div>
       <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${v.coins}</b></span><button class="vguide vpanel" id="vguide" data-v="guide"></button></div>
       <div class="vhud vbr"><button class="vpill vgrown grownup" data-hold="parent"><span class="fillbar"></span>Grown-ups: hold</button></div>
-      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="orchard">🍎 Help Rosa<span>Pick apples, earn coins</span></button><button class="big-btn" data-v="fish">🎣 Go fishing<span>Sell fish for coins</span></button><button class="big-btn alt" data-v="build">🔨 Fix up your yard<span>Spend your coins</span></button></div>`}
+      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="orchard">🍎 Help Rosa<span>Pick apples, earn coins</span></button>${jobOpen('market') ? '<button class="big-btn" data-v="market">🥧 Help Mr. Pip<span>Count his coins back</span></button>' : ''}<button class="big-btn" data-v="fish">🎣 Go fishing<span>Sell fish for coins</span></button><button class="big-btn alt" data-v="build">🔨 Fix up your yard<span>Spend your coins</span></button></div>`}
       <div class="vfade" id="vfade"></div>
     </main>`;
     fit();
@@ -233,26 +240,59 @@
     startLoop(drawMap);
     if (!ui.arrived) { ui.arrived = true; arrive(); }
   }
+  // ---------- morning orders: three requests a day; when they're done, the rest of the day is hers ----------
+  // Rosa's apples (adding), Mr. Pip's pies (taking away; until his stall opens, fish for make 10), and Dot's lesson on
+  // the notice board (big numbers, school work, Teach Dot). Only right, unrushed answers move an order forward.
+  function orders() {
+    const v = V(), s = S(); if (!s || !s.placement.done) return null;
+    const day = EM.dayStr(Date.now());
+    if (!v.orders || v.orders.day !== day) {
+      v.orders = { day, list: [
+        { id: 'orchard', text: 'Pick 5 apples with Rosa', short: "Rosa's apples", need: 5, got: 0 },
+        jobOpen('market') ? { id: 'market', text: 'Sell 5 pies to Mr. Pip', short: "Mr. Pip's pies", need: 5, got: 0 } : { id: 'fish', text: 'Catch 5 fish', short: '5 fish', need: 5, got: 0 },
+        { id: 'lesson', text: "Do Dot's lesson on the board", short: "Dot's lesson", need: 1, got: 0 },
+      ] };
+      EM.save();
+    }
+    return v.orders;
+  }
+  const ordersDone = () => { const o = orders(); return !!o && o.list.every(x => x.got >= x.need); };
+  const ordersCount = () => { const o = orders(); return o ? o.list.filter(x => x.got >= x.need).length : 0; };
+  function orderProgress(id) { const o = orders(); if (!o) return false; const x = o.list.find(q => q.id === id); if (!x || x.got >= x.need) return false; x.got++; EM.save(); return x.got >= x.need; }
+  // the fact skills today's job orders cover (Dot's lesson does the rest)
+  const jobSkills = () => { const o = orders(); return o ? o.list.flatMap(x => x.id === 'fish' ? ['m10'] : JOBS[x.id] ? JOBS[x.id].skills : []) : []; };
+
   // ---------- Dot's guide: the one next thing to do, pinned at the top and marked on the map ----------
   function mission() {
-    const v = V(), s = S(), done = EM.todayDone && EM.todayDone(), cheap = Math.min(...px.ITEMS.filter(i => !i.area || v.open[i.area]).map(i => i.cost));
+    const v = V(), s = S(), done = EM.todayDone && EM.todayDone(), cheap = Math.min(...px.ITEMS.filter(i => !i.gift && (!i.area || v.open[i.area])).map(i => i.cost));
     const pond = { job: 'fish', text: 'Catch fish at the pond', say: 'Tap the pond to catch some fish!', mark: [POND[0] + 30, POND[1] - 24], go: () => walkTo('dock', toFishing) };
     const yard = { job: 'build', text: 'Buy something for your yard', say: `You have ${v.coins} coins. Tap your yard to spend them!`, mark: [YARD.x + 48, YARD.y - 8], go: () => walkTo('yard', () => enterBuild(null)) };
     const rosa = { job: 'orchard', text: 'Help Rosa pick apples', say: 'Rosa needs help in the orchard. Tap her!', mark: [ROSA[0] + 4, ROSA[1] - 22], go: () => walkTo('orchard', toOrchard) };
+    const pip = { job: 'market', text: 'Sell pies to Mr. Pip', say: 'Mr. Pip needs help with his coins. Tap him!', mark: [PIP[0] + 4, PIP[1] - 20], go: () => walkTo('market', marketTap) };
     const board = (text, say) => ({ text, say, mark: [BOARD[0] + 9, BOARD[1] - 26], go: () => walkTo('board', openBoard) });
     if (!v.rounds && !v.placed.length) return pond;
     if (!v.placed.length) return v.coins >= cheap ? yard : pond;
     if (!s.placement.done) return board("Read Dot's note on the board", 'I pinned a note on the board for you. Tap it!');
-    if (!v.orchardRounds) return rosa;
-    if (!done) return board("Do today's practice", "Today's practice is on the board.");
-    return v.coins >= 6 ? yard : rosa;
+    // the morning orders, in order
+    const o = orders(), next = o && o.list.find(x => x.got < x.need);
+    if (next) {
+      const tag = { label: `Today's orders · ${ordersCount()} of ${o.list.length} done` }, count = next.need > 1 ? ` (${next.got} of ${next.need})` : '';
+      if (next.id === 'orchard') return { ...rosa, ...tag, text: next.text + count };
+      if (next.id === 'market') return { ...pip, ...tag, text: next.text + count };
+      if (next.id === 'fish') return { ...pond, ...tag, text: next.text + count };
+      return { ...board(next.text, "Dot's lesson is on the board."), ...tag };
+    }
+    // the day is hers: build, or keep helping (newest friend first)
+    if (v.coins >= 6) return { ...yard, label: 'Free time' };
+    if (jobOpen('market') && !v.marketRounds) return { ...pip, label: 'Free time' };
+    return { ...(jobOpen('market') && (v.marketRounds || 0) < (v.orchardRounds || 0) ? pip : rosa), label: 'Free time' };
   }
   function mapOverlays() {
     place(document.getElementById('vbubble'), dot.x, dot.y - 9);
     const m = mission(), show = m && !ui.story && mode !== 'build';
     const mk = document.getElementById('vmark'); if (mk) { mk.classList.toggle('on', !!show); if (m) place(mk, m.mark[0], m.mark[1] - Math.round(Math.sin(now() / 300) * 1.5)); }
     const job = show ? m.job : null; if (ui.primaryJob !== job) { ui.primaryJob = job; document.querySelectorAll('.vactions .big-btn').forEach(b => b.classList.toggle('primary', b.dataset.v === job)); }
-    const g = document.getElementById('vguide'); if (g) { g.classList.toggle('on', !!show); const t = m ? m.text : ''; if (g.dataset.t !== t) { g.dataset.t = t; g.innerHTML = `${EM.theme.dot('happy', 40)}<span><small>Next job</small>${esc(t)}</span><b>›</b>`; } }
+    const g = document.getElementById('vguide'); if (g) { g.classList.toggle('on', !!show); const t = m ? m.text : ''; if (g.dataset.t !== t + (m && m.label)) { g.dataset.t = t + (m && m.label); g.innerHTML = `${EM.theme.dot('happy', 40)}<span><small>${esc(m.label || 'Next job')}</small>${esc(t)}</span><b>›</b>`; } }
   }
   function drawMap(sc, k, t) {
     const dt = Math.min(.06, (t - (sc.lastT || t)) / 1000); sc.lastT = t;
@@ -273,6 +313,8 @@
     // Rosa by her orchard, in her straw hat; she waves when helping her is the next job
     items.push({ y: ROSA[1], box: [ROSA[0] - 2, ROSA[1] - 19, 13, 20], draw: () => { const [x, y] = ROSA; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, ROSA_LOOK, { blink: (t % 3900) < 120, wave: (t % 5200) < 1100 && (mission() || {}).text === 'Help Rosa pick apples' });
       k.R(x + 2, y - 18, 5, 2, '#e2ae52'); k.R(x + 2, y - 18, 3, 1, '#f8dc8a'); k.R(x, y - 16, 9, 1, '#c08636'); k.R(x + 2, y - 17, 5, 1, '#b84a3e'); } });
+    items.push({ y: PIP[1], box: [PIP[0] - 2, PIP[1] - 17, 13, 18], draw: () => { const [x, y] = PIP; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, PIP_LOOK, { flip: true, blink: ((t + 1700) % 4300) < 120, wave: (t % 5600) < 1100 && (mission() || {}).job === 'market' });
+      k.R(x + 2, y - 10, 5, 2, '#e8e8f0'); k.P(x + 4, y - 8, '#e8e8f0'); } });
     // things she just built pop in
     (ui.popping || []).forEach(pp => { const a = Math.min(1, (t - pp.t0) / 380), s = a < .7 ? a / .7 * 1.15 : 1.15 - (a - .7) / .3 * .15, ar = area(pp.p.area), x = ar.x + pp.p.cx * 16, y = ar.y + pp.p.cy * 16;
       items.push({ y: y + 15, draw: () => { const c = pp.c || (pp.c = itemCanvas(pp.p.item, pp.p.paint)); const w = Math.max(1, Math.round(16 * s)); sc.frame.getContext('2d').drawImage(c, Math.round(x + 8 - w / 2), Math.round(y + 16 - w), w, w); } }); });
@@ -286,6 +328,7 @@
     k.drawDot(Math.round(dot.x), Math.round(dot.y) + dy, t, blinkDot);
     clouds(k, t);
   }
+  const buyable = v => px.ITEMS.filter(i => (!i.area || v.open[i.area]) && (!i.gift || ((v.gifts || {})[i.id] || 0) > 0));
   function itemCanvas(id, paint) { const c = document.createElement('canvas'); c.width = 16; c.height = 16; px.drawItem(px.kit(c.getContext('2d')), id, 0, 0, paint); return c; }
   const iconCache = {}; const itemIcon = (id, paint) => iconCache[id + (paint || '')] || (iconCache[id + (paint || '')] = itemCanvas(id, paint || px.ITEM[id].paint).toDataURL());
 
@@ -293,9 +336,12 @@
   function arrive() {
     const v = V();
     if (!v.introDone) return story();
-    if (ui.from) { [her.x, her.y] = NODES[ui.from === 'fish' ? 'dock' : 'orchard']; ui.from = null; }
+    if (ui.from) { [her.x, her.y] = NODES[ui.from === 'fish' ? 'dock' : ui.from]; ui.from = null; }
     layPlanks(() => {
       if (ui.next) { const f = ui.next; ui.next = null; return f(); }
+      const o = orders();
+      if (o && ordersDone() && !o.cheered) { o.cheered = true; v.coins += 5; EM.save(); return dayDone(); }
+      if (jobOpen('market') && !(v.announced || {}).market) { (v.announced = v.announced || {}).market = Date.now(); EM.save(); her.wave = now() + 1200; return say("Mr. Pip's pie stall is open! He needs help counting his coins.", { ms: 4200 }); }
       const m = mission(); if (m) say(m.say);
     });
   }
@@ -370,6 +416,7 @@
     if (Math.hypot(x - dot.x, y - dot.y) < 9) return say(dotHint());
     if (px.inEll(x, y, ...POND) || inRect(x, y, DOCK)) { ui.pulsePond = false; return walkTo('dock', () => toFishing()); }
     if (inRect(x, y, ORCHARD) || Math.hypot(x - ROSA[0] - 4, y - ROSA[1] + 8) < 10) return walkTo('orchard', toOrchard);
+    if (inRect(x, y, [STALL[0] - 4, STALL[1] - 26, 42, 30]) || Math.hypot(x - PIP[0] - 4, y - PIP[1] + 8) < 10) return walkTo('market', marketTap);
     if (c && c.area === 'plot') { ui.pulseYard = false; return walkTo('yard', () => enterBuild(placedAt(c) ? c : null)); }
     if (inRect(x, y, [BOARD[0] - 4, BOARD[1] - 24, 28, 26])) return walkTo('board', openBoard);
     if (inRect(x, y, [232, 40, 40, 34])) return walkTo('bridge', () => { const p = meadowProgress(); say(V().open.meadow ? 'The bridge is fixed! Tap the meadow to build there.' : `${p.have} of ${PLANKS} planks fixed. Every make 10 fact you really know fixes one more.`); });
@@ -380,23 +427,35 @@
   // tapping Dot: the next job first, then other ideas
   function dotHint() { const p = meadowProgress(), m = mission(); const hints = [m ? m.say : 'Tap your yard to put things in it.', 'Help Rosa or go fishing to earn coins.', `${p.have} of ${PLANKS} bridge planks fixed. Make 10 facts fix them!`]; ui.hintI = ((ui.hintI || 0) + 1) % hints.length; return hints[ui.hintI === 1 ? 0 : ui.hintI]; }
 
+  // all three orders done: the village says thank you, and the rest of the day is hers
+  function dayDone() {
+    const ov = document.createElement('div'); ov.className = 'vover';
+    ov.innerHTML = `<div class="vcard"><div class="vcard-art">${EM.theme.dot('cheer', 72)}</div><h2>Today's orders are done!</h2><p>Rosa, Mr. Pip and I all say thank you. Here are 5 bonus coins. The rest of the day is yours: build, explore, or keep helping.</p><div class="vrow"><button class="big-btn" data-ov="ok">Yay!</button></div></div>`;
+    document.body.appendChild(ov); EM.speech && EM.speech.say("Today's orders are done!"); sfx('yours'); showCoins();
+    burst(her.x + 4, her.y - 20, 24, ['#fff7c2', '#ffe27a', '#ff9ac6', '#ffffff'], { up: true, spread: 2.4, speed: 60, life: 1100 });
+    ov.addEventListener('click', e => { if (!e.target.closest('[data-ov]')) return; ov.remove(); const m = mission(); if (m) say(m.say); });
+  }
+
   // ---------- notice board ----------
   function openBoard() {
-    const s = S(), done = EM.todayDone && EM.todayDone(), evening = done && EM.dueTonight && EM.dueTonight();
+    const s = S(), o = orders(), lesson = o && o.list.find(x => x.id === 'lesson'), done = EM.todayDone && EM.todayDone(), evening = done && EM.dueTonight && EM.dueTonight();
+    const list = o ? `<ul class="vorders">${o.list.map(x => `<li class="${x.got >= x.need ? 'done' : ''}"><i>${x.got >= x.need ? '✓' : ''}</i>${esc(x.short)}${x.need > 1 && x.got < x.need ? ` <small>${x.got} of ${x.need}</small>` : ''}</li>`).join('')}</ul>` : '';
     const card = document.createElement('div'); card.className = 'vover'; card.innerHTML = `<div class="vcard vboard"><h2>📋 Notice board</h2>
       ${!s.placement.done ? `<div class="vnote"><b>A note from Dot</b><p>Before we start, show me what you already know. Then I'll know how to help you. About 10 minutes.</p><button class="big-btn" data-b="placement">Show Dot what I know</button></div>`
-      : `<div class="vnote"><b>${done ? "You did today's practice! ⭐" : "Today's practice"}</b><p>${done ? 'Extra practice is always welcome.' : `About ${s.settings.minutes || 15} minutes, in short parts.`}</p><button class="big-btn" data-b="today">${done ? 'Practice again' : "Start today's practice"}</button></div>
+      : `<div class="vnote"><b>${ordersDone() ? "Today's orders are done! ⭐" : "Today's orders"}</b>${list}
+          <button class="big-btn" data-b="lesson">${lesson && lesson.got >= lesson.need ? "Do Dot's lesson again" : "Start Dot's lesson"}</button></div>
         ${evening ? '<button class="btn secondary" data-b="evening">🌙 Evening review · 5 minutes</button>' : ''}
+        <button class="btn secondary" data-b="today">📚 Practice everything</button>
         <button class="btn secondary" data-b="skills">🎯 Pick a skill to practice</button>`}
       <button class="btn secondary" data-b="close">Back to the village</button></div>`;
     document.body.appendChild(card);
     card.addEventListener('click', e => { const b = e.target.closest('[data-b]'); if (!b) { if (e.target === card) card.remove(); return; } card.remove(); stopLoop();
-      ({ placement: () => EM.startSession('placement'), today: () => EM.startSession('daily'), evening: () => EM.startSession('evening'), skills: () => EM.go('skills'), close: () => startLoop(drawMap) })[b.dataset.b](); });
+      ({ placement: () => EM.startSession('placement'), lesson: () => EM.startSession('lesson'), today: () => EM.startSession('daily'), evening: () => EM.startSession('evening'), skills: () => EM.go('skills'), close: () => startLoop(drawMap) })[b.dataset.b](); });
   }
 
   // ---------- build mode ----------
   function enterBuild(sel) { mode = 'build'; B = { item: null, sel }; renderMap(); if (!V().placed.length) say(V().coins >= 2 ? 'Flowers cost 2 coins. Pick them, then tap a spot in your yard.' : "You need coins to buy things. Let's go earn some!"); }
-  function renderTray() { const old = document.querySelector('.vtray'), v = V(); if (!old) return; const items = px.ITEMS.filter(i => !i.area || v.open[i.area]); old.outerHTML = buildTray(items, B.sel && placedAt(B.sel)); showCoins(); }
+  function renderTray() { const old = document.querySelector('.vtray'), v = V(); if (!old) return; const items = buyable(v); old.outerHTML = buildTray(items, B.sel && placedAt(B.sel)); showCoins(); }
   function buildTray(items, sel) {
     if (sel) {
       const it = px.ITEM[sel.item];
@@ -406,7 +465,7 @@
     }
     const v = V();
     return `<div class="vtray vpanel"><div class="vtray-h"><b>Your yard</b><button class="btn secondary small" data-v="done">Done</button></div><div class="vhint">Pick something, then tap a spot. Drag things to move them.</div>
-      <div class="vitems">${items.map(i => `<button class="vitem ${B.item === i.id ? 'on' : ''} ${v.coins < i.cost ? 'poor' : ''}" data-item="${i.id}"><img src="${itemIcon(i.id)}" alt=""><span>${esc(i.name)}</span><b>${i.cost} ${COIN()}</b></button>`).join('')}</div></div>`;
+      <div class="vitems">${items.map(i => `<button class="vitem ${B.item === i.id ? 'on' : ''} ${v.coins < i.cost ? 'poor' : ''}" data-item="${i.id}"><img src="${itemIcon(i.id)}" alt=""><span>${esc(i.name)}</span><b>${i.gift ? '🎁 Gift' : `${i.cost} ${COIN()}`}</b></button>`).join('')}</div></div>`;
   }
   function popIn(p) { (ui.popping = ui.popping || []).push({ p, t0: now() }); scene.buildStill = (g, k) => buildMapStill(g, k, { skip: ui.popping.map(q => q.p) }); scene.rebake(); const a = area(p.area); burst(a.x + p.cx * 16 + 8, a.y + p.cy * 16 + 14, 12, ['#efd3a2', '#d9b17c', '#ffffff'], { up: true, spread: 2.4, speed: 34, life: 520 }); }
   function buildTap(c) {
@@ -418,9 +477,9 @@
       if (there) { B.sel = c; B.item = null; return renderTray(); }
       const it = px.ITEM[B.item];
       if (v.coins < it.cost) { say(`That costs ${it.cost} coins. You have ${v.coins}. Let's earn more!`); return; }
-      v.coins -= it.cost; const p = { item: it.id, paint: it.paint, ...c }; v.placed.push(p); EM.save(); sfx('right'); popIn(p);
+      v.coins -= it.cost; if (it.gift) v.gifts[it.id]--; const p = { item: it.id, paint: it.paint, ...c }; v.placed.push(p); EM.save(); sfx('right'); popIn(p);
       const first = v.placed.length === 1;
-      if (v.coins < it.cost) B.item = null;
+      if (v.coins < it.cost || (it.gift && !v.gifts[it.id])) B.item = null;
       B.sel = null; renderTray();
       if (first) setTimeout(() => say(S().placement.done ? 'Your yard is starting to look like home!' : 'Your yard is starting to look like home! One more thing: I pinned a note on the board for you.', { ms: 4200 }), 500);
       return;
@@ -441,6 +500,7 @@
     k.house(236, 76, 38, 'red', { chimney: true, lit: true, shutter: ['#2f5a3b', '#4f8a5b'], extra: (x, y, w, top) => { k.R(x - 13, top + 4, 6, 1, C.k1); k.R(x - 9, top + 5, 1, 2, C.k1); k.R(x - 14, top + 7, 12, 8, C.k2); k.R(x - 14, top + 7, 12, 1, C.k3); k.R(x - 14, top + 14, 12, 1, C.k1); k.sprite(x - 12, top + 9, ['..ccc.t', '.ccccctt', 'cecccc.t', '..ccc..t'], { c: '#7fb8e8', t: '#7fb8e8', e: '#2b2433' }); } });
     k.add(96, () => { k.R(156, 101, 70, 10, C.k2); for (let x = 156; x < 226; x += 5) { k.R(x, 101, 1, 10, C.k1); k.P(x + 2, 102 + (x % 6), C.k3); k.P(x + 3, 107 - (x % 4), C.k1); } k.R(156, 101, 70, 1, C.k4); k.R(156, 110, 70, 1, C.k1); [[158, 111], [184, 111], [210, 111]].forEach(([x, y]) => { k.R(x, y, 3, 7, C.k1); k.R(x, y, 1, 7, C.k2); k.R(x - 1, y + 6, 5, 1, C.w3); }); }, false);
     k.barrel(214, 100);
+    k.add(72, () => k.sign(12, 72, 72, 24));
     [[40, 150], [84, 112], [150, 170], [190, 150], [24, 132]].forEach(([x, y], i) => k.lily(x, y, i % 2 === 0));
     [[16, 104], [19, 106], [22, 103], [212, 160], [215, 162], [218, 158], [100, 74], [103, 76]].forEach(([x, y]) => k.reeds(x, y));
     for (let i = 0; i < 8; i++) k.tree(8 + i * 18 + (i % 2) * 6, 22 + (i % 3) * 5, { r: 9 + (i % 2), far: true });
@@ -474,44 +534,61 @@
     F.i++; if (F.i >= F.queue.length) refill();
     const e = F.queue[F.i];
     F.key = e.key; F.mode = e.mode; F.item = EM.factItem(e.key, e.mode); F.f = EM.FACTS[e.key];
-    F.input = ''; F.help = null; F.t0 = null; F.tLast = null; F.msg = '';
+    F.input = ''; F.help = null; F.t0 = null; F.tLast = null; F.msg = ''; F.said = ''; F.waitSpeech = false;
     // cast, then a fish swims up to the bobber; the question (and its clock) starts when the fish arrives
     F.phase = 'cast'; F.anim = { kind: 'cast', t0: now() }; F.splashed = false; F.fled = false; F.leap = null;
     const edge = [[20, 150], [60, 186], [24, 118], [96, 186]][Math.floor(Math.random() * 4)]; F.fishPos = [...edge];
     renderFishWork();
   }
   function fishArrived() {
-    F.phase = 'ask'; F.t0 = performance.now();
+    F.phase = 'ask'; F.said = F.caught === 0 && !V().rounds ? `This fish has ${F.f.a}. How many more make 10? Tap the number, then the check.` : `This fish has ${F.f.a}. How many more make 10?`;
     renderFishWork();
-    say(F.caught === 0 && !V().rounds ? `This fish has ${F.f.a}. How many more make 10? Tap the number, then the check.` : `This fish has ${F.f.a}. How many more make 10?`, { stay: true, voice: F.caught === 0 && F.i === 0 });
+    // her first fish each round is read aloud; the clock waits until Dot has finished talking
+    if (F.caught === 0 && F.i === 0 && EM.speech && EM.speech.enabled()) fishHear(); else F.t0 = performance.now();
   }
+  function fishHear() {
+    if (!F || (F.phase !== 'ask' && F.phase !== 'help')) return;
+    const text = F.phase === 'help' ? `${F.msg || ''} ${F.help.say}` : F.said, key = F.key, i = F.i;
+    if (F.phase === 'help' || F.input) { EM.speech && EM.speech.say(text); return; }
+    F.waitSpeech = true; renderFishWork();
+    const release = () => { if (F && F.key === key && F.i === i && F.waitSpeech) { F.waitSpeech = false; F.t0 = performance.now(); renderFishWork(); } };
+    (EM.speech ? EM.speech.say(text) : Promise.resolve()).then(release);
+    setTimeout(release, (EM.speech ? EM.speech.estimateMs(text) : 0) + 300);
+  }
+  // fishing's sign stands on the shore, top left; Dot floats over the water
+  const FSIGN = [13, 33, 70, 22], FDOT = [136, 84];
+  // practice's help says "dots" and "boxes"; at the pond they are fish and spots
+  const fishWords = t => String(t).replace(/\bdots\b/g, 'fish').replace(/\bdot\b/g, 'fish').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot').replace(/\bboxes\b/g, 'spots');
   function renderFishing() {
-    $root.innerHTML = `<main class="village full fishing">
+    const goalN = F ? F.goal : goal(), marks = Array.from({ length: goalN }, (_, i) => `<i class="${F && i < F.caught ? 'on' : ''}"></i>`).join('');
+    $root.innerHTML = `<main class="village full fishing job">
       <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze mid"></div>
-        <div class="vtag" id="vtag"></div><div class="vbubble" id="vbubble"></div>
+        <div class="jsign" id="jsign"></div><div class="vtag" id="vtag"></div><div class="jbub bydot" id="jbub"></div>
       </div>
-      <div class="vhud vtl"><button class="vpill" data-v="stopfish">‹ Back to the village</button><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span></div>
-      <div class="vq vpanel" id="vq"></div>
-      <div class="vpadwrap vpanel" id="vpad"><div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-fd="${d}">${d}</button>`).join('')}<button data-v="fback" aria-label="Delete">⌫</button><button data-fd="0">0</button><button class="ok" data-v="fok" aria-label="Check">✓</button></div>
-        <button class="idk" data-v="fidk">🙋 I don't know</button></div>
+      <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span><div class="jorder vpanel"><b>Make 10: catch fish</b><div class="jmarks fish" id="jmarks">${marks}</div></div></div>
+      <div class="vhud vtr"><button class="jhome vpanel" data-v="stopfish">🏠 Village</button></div>
+      <div class="jpad vpanel" id="jpad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-fd="${d}">${d}</button>`).join('')}<button data-v="fback" aria-label="Delete">⌫</button><button data-fd="0">0</button><button class="ok" data-v="fok" aria-label="Check">✓</button></div>
+      <div class="jleft"><button class="jround" data-v="jhear" aria-label="Hear it again">🔊</button><button class="jidk" data-v="jidk">I don't know</button></div>
       <div class="vfade on" id="vfade"></div>
     </main>`;
     fit();
   }
-  // the question panel and pad state (no full re-render, so the scene keeps moving)
+  // the sign, Dot's bubble and the pad (no full re-render, so the scene keeps moving)
   function renderFishWork() {
-    const q = document.getElementById('vq'), pad = document.getElementById('vpad'); if (!q) return;
-    const f = F.f, help = F.help, asking = F.phase === 'ask' || F.phase === 'help';
-    q.className = `vq vpanel ${help ? 'helping' : ''} ${asking ? '' : 'waiting'}`;
-    q.innerHTML = help ? `<div class="vhelp">${F.msg ? `<div class="vhelp-lead">${esc(F.msg)}</div>` : ''}${help.vis ? `<div class="visual">${help.vis}</div>` : ''}<div class="vhelp-t">${help.html}</div></div><div class="eq">${f.a} + <span class="slot">${F.input || '&nbsp;'}</span> = 10</div>`
-      : asking ? `<div class="ask">Make 10 <span class="vcaught">· ${Math.min(F.caught, F.goal)} of ${F.goal} caught</span></div><div class="eq">${f.a} + <span class="slot">${F.input || '&nbsp;'}</span> = 10</div>`
-      : `<div class="ask">${F.msg ? esc(F.msg) : 'Casting...'} <span class="vcaught">· ${Math.min(F.caught, F.goal)} of ${F.goal} caught</span></div>`;
-    pad.classList.toggle('busy', !asking);
-    const idk = pad.querySelector('.idk'); if (idk) idk.style.visibility = help || !asking ? 'hidden' : 'visible';
+    const sign = document.getElementById('jsign'), pad = document.getElementById('jpad'); if (!sign || !F) return;
+    const f = F.f, help = F.help, asking = F.phase === 'ask' || F.phase === 'help', shown = asking || F.phase === 'caught' || F.phase === 'reel';
+    sign.innerHTML = shown ? `<span>${f.a} +</span><span class="slot ${asking && !F.waitSpeech ? 'cursor' : ''}">${F.phase === 'caught' || F.phase === 'reel' ? f.ans : esc(F.input)}</span><span>= 10</span>` : '<span>Make 10</span>';
+    sign.classList.toggle('right', F.phase === 'caught' || F.phase === 'reel');
+    const bub = document.getElementById('jbub');
+    const words = help ? `${F.msg ? `<b>${esc(F.msg)}</b> ` : ''}${help.html}${help.vis ? `<div class="jvis">${help.vis}</div>` : ''}` : F.phase === 'ask' ? esc(F.said) : F.msg ? esc(F.msg) : '';
+    bub.innerHTML = words ? `<small>Dot</small>${words}` : ''; bub.classList.toggle('on', !!words);
+    pad.classList.toggle('busy', !asking || F.waitSpeech);
+    document.querySelector('.jidk').style.visibility = help || !asking || F.waitSpeech ? 'hidden' : 'visible';
+    const m = document.getElementById('jmarks'); if (m) { if (m.children.length !== F.goal) m.innerHTML = Array.from({ length: F.goal }, () => '<i></i>').join(''); [...m.children].forEach((el, i) => el.classList.toggle('on', i < F.caught)); }
     const tag = document.getElementById('vtag'); tag.textContent = f.a; tag.classList.toggle('on', F.phase === 'ask' || F.phase === 'help');
     showCoins();
   }
-  function fishOverlays() { place(document.getElementById('vtag'), BOB[0], BOB[1] - 6); place(document.getElementById('vbubble'), 136, 76 + Math.round(Math.sin(now() / 420) * 1.5)); }
+  function fishOverlays() { if (!F) return; place(document.getElementById('vtag'), BOB[0], BOB[1] - 6); const r = placeSign(FSIGN); placeBubble(FDOT[0], FDOT[1] - 8 + Math.round(Math.sin(now() / 420) * 1.5), r); }
   function drawFishing(sc, k, t) {
     const a = F && F.anim, at = a ? t - a.t0 : 0;
     ambient(sc, k, t, { chimneys: [[267, 29]], fish: [[70, 150, 30, 12, .3, 0], [150, 168, 26, 8, -.4, 1], [60, 120, 20, 8, .45, 3]], butterflies: [[220, 140, 16, 8, .6, '#ffe066'], [40, 70, 20, 6, .5, '#ff9ac6']] });
@@ -544,8 +621,8 @@
     clouds(k, t);
   }
   // keys act the moment a finger lands (see app.js): a dropped tap feels like the game ignoring her
-  function fType(d) { if (F.phase !== 'ask' && F.phase !== 'help') return nudge(); if (F.input.length >= 2) return; F.input = F.input === '0' ? d : F.input + d; F.tLast = performance.now(); const s = document.querySelector('.vq .slot'); if (s) s.textContent = F.input; }
-  function fBack() { F.input = F.input.slice(0, -1); F.tLast = F.input ? performance.now() : null; const s = document.querySelector('.vq .slot'); if (s) s.innerHTML = F.input || '&nbsp;'; }
+  function fType(d) { if ((F.phase !== 'ask' && F.phase !== 'help') || F.waitSpeech) return nudge(); if (F.input.length >= 2) return; F.input = F.input === '0' ? d : F.input + d; F.tLast = performance.now(); renderFishWork(); }
+  function fBack() { F.input = F.input.slice(0, -1); F.tLast = F.input ? performance.now() : null; renderFishWork(); }
   function nudge() { const p = document.querySelector('.vpadwrap .pad, .jpad'); if (!p) return; p.classList.remove('nudge'); void p.offsetWidth; p.classList.add('nudge'); }
   const graded = () => F.mode !== 'rehearse' && F.mode !== 'reask';
   function grade(outcome, ms) {
@@ -556,20 +633,20 @@
     return EM.gradeFact(F.key, outcome, ms);
   }
   function fOk() {
-    if ((F.phase !== 'ask' && F.phase !== 'help') || !F.input) return F.input ? nudge() : null;
+    if ((F.phase !== 'ask' && F.phase !== 'help') || F.waitSpeech || !F.input) return F.input ? nudge() : null;
     const typed = Number(F.input), ok = typed === F.f.ans, tn = performance.now();
     if (F.help) { // in help: the right answer moves on, but this fish already got away
-      if (ok) { F.phase = 'reel'; F.anim = { kind: 'reel', t0: now() }; F.help = null; F.msg = `Yes! ${F.f.a} and ${F.f.ans} make 10.`; renderFishWork(); say(F.msg, { ms: 1800 }); return setTimeout(nextFish, 1700); }
+      if (ok) { F.phase = 'reel'; F.anim = { kind: 'reel', t0: now() }; F.help = null; F.msg = `Yes! ${F.f.a} and ${F.f.ans} make 10.`; renderFishWork(); EM.speech && EM.speech.say(F.msg); return setTimeout(nextFish, 1700); }
       if (F.help.stage === 1) return enterHelp(2); F.input = ''; renderFishWork(); return;
     }
     const ms = (F.tLast || tn) - (F.t0 || tn), gap = tn - (F.tLast || tn);
     if (ok) {
       const fast = ms <= EM.fastMs(F.item, 0) && gap <= CONFIRM_MS, g = grade(fast ? 'fast' : 'slow', ms);
-      F.caught++; V().coins++; floatText('+1', BASKET[0], BASKET[1] - 14, 'coin'); V().caught = (V().caught || 0) + 1; EM.save();
+      F.caught++; V().coins++; orderProgress('fish'); floatText('+1', BASKET[0], BASKET[1] - 14, 'coin'); V().caught = (V().caught || 0) + 1; EM.save();
       F.phase = 'caught'; F.anim = { kind: 'caught', t0: now() }; F.leap = { t0: now() + 120, fast };
       burst(BOB[0], BOB[1], 16, [C.w4, '#ffffff', C.w3], { up: true, spread: 1.8, speed: 52, life: 650 });
       F.msg = fast ? '⚡ Got it! You just knew that one.' : 'Got one! Nice thinking.';
-      renderFishWork(); say(F.msg, { voice: false, ms: 1600 }); sfx(fast ? 'fast' : 'right');
+      renderFishWork(); sfx(fast ? 'fast' : 'right');
       if (g.becameYours) checkUnlocks();
       return setTimeout(() => {
         if (g.becameYours) return celebrate(`${F.f.a} + ${F.f.ans} = 10 is yours now!`, meadowProgress().have <= PLANKS ? 'That fixes a plank on the bridge. Go see!' : 'You knew it fast on two different days.', afterCatch);
@@ -582,15 +659,14 @@
     F.fled = true; burst(F.fishPos[0] + 4, F.fishPos[1], 6, [C.w4, '#ffffff'], { up: true, spread: 2, speed: 26, life: 400 });
     enterHelp(1, rushed ? 'Whoa, too fast! It slipped away. Think first, then tap.' : "Oops, it got away. Let's figure it out together.");
   }
-  function fIdk() { if (F.help || F.phase !== 'ask') return; grade('idk', 0); F.fled = true; enterHelp(1, "Good idea to ask. Let's look together."); }
+  function fIdk() { if (!F || F.help || F.phase !== 'ask' || F.waitSpeech) return; grade('idk', 0); F.fled = true; enterHelp(1, "Good idea to ask. Let's look together."); }
   function enterHelp(stage, lead) {
     // a fact she missed comes back a few fish later, like in practice (at most twice per fact)
     if (stage === 1) { const n = (F.reasks = F.reasks || {})[F.key] || 0; if (n < 2) { F.reasks[F.key] = n + 1; F.queue.splice(Math.min(F.queue.length, F.i + 3), 0, { key: F.key, mode: 'reask' }); } }
     const h = F.item.help(0, stage);
-    F.help = { stage, vis: h.vis, html: h.html }; F.input = ''; F.phase = 'help';
-    if (lead) F.msg = lead;
-    renderFishWork(); EM.speech && EM.speech.say(`${lead || ''} ${h.say}`);
-    const b = document.getElementById('vbubble'); if (b) b.classList.remove('on');
+    F.help = { stage, vis: h.vis, html: fishWords(h.html), say: fishWords(h.say) }; F.input = ''; F.phase = 'help';
+    if (lead) F.msg = lead; else if (stage === 2) F.msg = '';
+    renderFishWork(); EM.speech && EM.speech.say(`${F.msg || ''} ${F.help.say}`);
   }
   function afterCatch() {
     if (F.caught === F.goal) {
@@ -599,10 +675,10 @@
     }
     nextFish();
   }
-  function celebrate(title, text, then, buttons) {
+  function celebrate(title, text, then, buttons, spoken) {
     const ov = document.createElement('div'); ov.className = 'vover';
     ov.innerHTML = `<div class="vcard"><div class="vcard-art">${EM.theme.dot('cheer', 72)}</div><h2>${esc(title)}</h2><p>${esc(text)}</p><div class="vrow">${(buttons || [['Yay!', 'keep']]).map(([t, a]) => `<button class="big-btn" data-ov="${a}">${esc(t)}</button>`).join('')}</div></div>`;
-    document.body.appendChild(ov); EM.speech && EM.speech.say(title);
+    document.body.appendChild(ov); EM.speech && EM.speech.say(spoken || title);
     ov.addEventListener('click', e => { const b = e.target.closest('[data-ov]'); if (!b) return; ov.remove(); if (b.dataset.ov === 'tobuild') return leaveJob(() => enterBuild(null)); then(); });
   }
   function finishFishing() {
@@ -615,175 +691,279 @@
   }
   // back to the village from a job: fade, then the camera pulls out from where she was
   function leaveJob(next) {
-    const from = O ? 'orchard' : 'fish';
-    finishFishing(); finishOrchard(); EM.speech && EM.speech.stop();
+    const from = O ? O.id : 'fish', cam = O ? O.J.mapCam : [112, 150, 96];
+    finishFishing(); finishJob(); EM.speech && EM.speech.stop();
     const f = document.getElementById('vfade'); if (f) f.classList.add('on');
-    setTimeout(() => { mode = 'map'; scene = null; ui.from = from; ui.arrived = false; ui.next = next || null; renderMap(); scene.cam = from === 'orchard' ? camAround(60, 80, 96) : camAround(112, 150, 96); tweenCam({ ...CAM_FULL }, 900); const f2 = document.getElementById('vfade'); if (f2) { f2.classList.add('on'); setTimeout(() => f2.classList.remove('on'), 40); } }, 260);
+    setTimeout(() => { mode = 'map'; scene = null; ui.from = from; ui.arrived = false; ui.next = next || null; renderMap(); scene.cam = camAround(...cam); tweenCam({ ...CAM_FULL }, 900); const f2 = document.getElementById('vfade'); if (f2) { f2.classList.add('on'); setTimeout(() => f2.classList.remove('on'), 40); } }, 260);
   }
   function stopLoop() { loopId++; }
 
   // =====================================================================
-  // the orchard: she and Rosa each pick apples, and she works out how many in all.
-  // The addition facts she has open, on the real fact engine. Help turns the baskets into crates of ten
-  // (the orchard's ten-frames) and uses the same strategies and class words as practice.
+  // jobs: a villager needs help, and the math is how she helps. Each job is a close-up scene running on the real
+  // fact engine with the honesty rules: only right, unrushed answers pay (a coin each); "I don't know" is safe and opens
+  // help, which is drawn in the scene (crates or trays of ten) with practice's own strategies and class words.
+  // The screen is built for a landscape iPad: the question is on a thing in the world, numbers under her right thumb,
+  // hear-it and "I don't know" under her left.
   // =====================================================================
-  const ORCH_SKILLS = ['plus12', 'doubles', 'teens', 'to10', 'near', 'bridge'], ORCH_GOAL = 5;
-  const OCAM = { x: 0, y: 0, w: 236, h: 236 * H / W };              // the close-up: 236 scene pixels across
-  // placed to stay clear of the sides that a 4:3 iPad crops
-  const OHER = [16, 134], OROSA = [134, 136], OBASKET = [[38, 138], [102, 138]], SIGN = [39, 73, 78, 28];
+  const JCAM = { x: 0, y: 0, w: 236, h: 236 * H / W };              // the close-up: 236 scene pixels across
   const ROSA_LOOK = { hair: '#a84a2a', skin: '#f2c49c', skinD: '#d9997a', shirt: '#4f8a5b', shirtD: '#2f5a3b', long: true };
+  const PIP_LOOK = { hair: '#e8e8f0', skin: '#f2c49c', skinD: '#d9997a', shirt: '#7a4a2a', shirtD: '#5a3420', long: false };
+  const fillN = (n, c) => Array(Math.max(0, n)).fill(c), ten = (...parts) => [...parts.flat(), ...fillN(10 - parts.flat().length, 'e')];
   let O = null;
-  // help says "frame" and "dots" in practice; in the orchard they are crates and apples
-  const orchWords = t => String(t).replace(/\bframes\b/g, 'crates').replace(/\bframe\b/g, 'crate').replace(/\bdots\b/g, 'apples').replace(/\bdot\b/g, 'apple').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot');
-  // the crates help draws: her apples red ('a'), Rosa's yellow ('b'); an apple moved over to make 10 is uppercase
-  function helpCrates(f) {
-    const { a, b } = f, A = a + b, fill = (n, c) => Array(Math.max(0, n)).fill(c), crate = (...parts) => [...parts.flat(), ...fill(10 - parts.flat().length, 'e')];
-    if (a === b || Math.abs(a - b) === 1) return [crate(fill(a, 'a')), crate(fill(b, 'b'))];
-    if (A > 10) { const herBig = a >= b, big = Math.max(a, b), small = Math.min(a, b), mine = herBig ? 'a' : 'b', other = herBig ? 'b' : 'a';
-      if (big === 10) return [crate(fill(10, mine)), crate(fill(small, other))];
-      return [crate(fill(big, mine), fill(10 - big, other.toUpperCase())), crate(fill(small - (10 - big), other))]; }
-    return [crate(fill(a, 'a'), fill(b, 'b'))];
-  }
-  function buildOrchStill(g, k) {
-    const path = (x, y) => y > 146 && y < 160 + Math.sin(x / 30) * 2;
-    px.ground(g, W, H, { path, tall: (x, y) => y < 50 });
-    for (let i = 0; i < 7; i++) k.tree(10 + i * 44 + (i % 2) * 5, 52 + (i % 2) * 5, { r: 17 + (i % 3), far: true });
-    k.add(70, () => [[8, 18], [30, 30], [20, 6], [60, 24], [76, 10], [100, 34], [112, 16], [150, 28], [140, 10], [180, 30], [196, 14], [228, 24], [250, 30], [274, 14], [290, 26]].forEach(([a, b]) => k.apple(a, b, 'red', true)), false);
-    k.add(140, () => [[160, 142], [4, 160], [150, 64], [64, 66], [210, 120]].forEach(([a, b]) => k.apple(a, b, 'red', b < 80)), false);
-    for (let n = 0; n < 34; n++) { const x = Math.floor(px.hash(n, 3, 9) * W), y = 70 + Math.floor(px.hash(n, 4, 9) * 136); if (!path(x, y)) k.flowersGround(x, y, ['#ffffff', '#ffe066', '#ff9ac6', '#c7a6ff'][n % 4]); }
-    [[262, 120], [286, 150], [250, 196], [20, 200]].forEach(([x, y], i) => k.tree(x, y, { r: 12 + (i % 2) }));
-    [[200, 104], [178, 196], [120, 190]].forEach(([x, y]) => k.bush(x, y));
-    k.crate(170, 132, '#e8473f'); k.crate(179, 134, '#f7c531');
-    k.add(118, () => k.sign(38, 118, 80, 30));
-    return [];
-  }
-  function toOrchard() {
+  const JOBS = {
+    // the orchard: she and Rosa each pick apples; how many in all? (positions stay clear of the sides a 4:3 iPad crops)
+    orchard: {
+      npc: 'Rosa', chibi: 'rosa', order: 'Rosa needs apples', marks: 'apple', node: 'orchard', mapCam: [60, 80, 96], rounds: 'orchardRounds', log: 'Picking apples with Rosa',
+      skills: ['plus12', 'doubles', 'teens', 'to10', 'near', 'bridge'], fact: f => f.type === 'add' && f.a > 0 && f.b > 0,
+      her: [16, 134], npcAt: [134, 136], head: [142, 113], sign: [39, 73, 78, 28], dotHome: [30, 100], dotHelp: n => [n === 1 ? 126 : 150, 104],
+      boxes: [[38, 138], [102, 138]],
+      eq: (a, b) => `${a} + ${b} =`,
+      ask: (f, i) => i % 2 ? `Your basket has ${f.a}. Mine has ${f.b}. How many apples altogether?` : `You picked ${f.a}. I picked ${f.b}. How many apples in all?`,
+      solved: f => `Yes! ${f.a} and ${f.b} make ${f.ans}.`,
+      // practice says "frame" and "dots"; here they are crates and apples
+      words: t => String(t).replace(/\bframes\b/g, 'crates').replace(/\bframe\b/g, 'crate').replace(/\bdots\b/g, 'apples').replace(/\bdot\b/g, 'apple').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot'),
+      // her apples red ('a'), Rosa's yellow ('b'); an apple moved over to make 10 is uppercase
+      cells(f) {
+        const { a, b } = f, A = a + b;
+        if (a === b || Math.abs(a - b) === 1) return [ten(fillN(a, 'a')), ten(fillN(b, 'b'))];
+        if (A > 10) { const herBig = a >= b, big = Math.max(a, b), small = Math.min(a, b), mine = herBig ? 'a' : 'b', other = herBig ? 'b' : 'a';
+          if (big === 10) return [ten(fillN(10, mine)), ten(fillN(small, other))];
+          return [ten(fillN(big, mine), fillN(10 - big, other.toUpperCase())), ten(fillN(small - (10 - big), other))]; }
+        return [ten(fillN(a, 'a'), fillN(b, 'b'))];
+      },
+      // apples drop from the trees into the two baskets, one at a time
+      deal(f, i) { const t = now(), d = [];
+        for (let n = 0; n < f.a; n++) d.push({ who: 0, t0: t + 250 + n * 110, x: 24 + Math.floor(px.hash(n, i, 5) * 40), y: 18 + Math.floor(px.hash(i, n, 6) * 22) });
+        for (let n = 0; n < f.b; n++) d.push({ who: 1, t0: t + 330 + n * 110, x: 100 + Math.floor(px.hash(n, i, 7) * 40), y: 18 + Math.floor(px.hash(i, n, 8) * 22) });
+        return d; },
+      land(who, n) { const [bx, by] = this.boxes[who]; return [bx + 3 + (n % 4) * 4 + (Math.floor(n / 4) % 2) * 2, by - 14 - Math.floor(n / 4) * 3]; },
+      falling: (k, x, y, who) => k.apple(x, y, who ? 'yellow' : 'red'),
+      tags(O) { return this.boxes.map(([bx, by], i) => ({ x: bx + 11, y: by - 20 - Math.ceil(O.shown[i] / 4) * 3, text: O.shown[i], on: O.shown[i] > 0 })); },
+      still(g, k) {
+        const path = (x, y) => y > 146 && y < 160 + Math.sin(x / 30) * 2;
+        px.ground(g, W, H, { path, tall: (x, y) => y < 50 });
+        for (let i = 0; i < 7; i++) k.tree(10 + i * 44 + (i % 2) * 5, 52 + (i % 2) * 5, { r: 17 + (i % 3), far: true });
+        k.add(70, () => [[8, 18], [30, 30], [20, 6], [60, 24], [76, 10], [100, 34], [112, 16], [150, 28], [140, 10], [180, 30], [196, 14], [228, 24], [250, 30], [274, 14], [290, 26]].forEach(([a, b]) => k.apple(a, b, 'red', true)), false);
+        k.add(140, () => [[160, 142], [4, 160], [150, 64], [64, 66], [210, 120]].forEach(([a, b]) => k.apple(a, b, 'red', b < 80)), false);
+        for (let n = 0; n < 34; n++) { const x = Math.floor(px.hash(n, 3, 9) * W), y = 70 + Math.floor(px.hash(n, 4, 9) * 136); if (!path(x, y)) k.flowersGround(x, y, ['#ffffff', '#ffe066', '#ff9ac6', '#c7a6ff'][n % 4]); }
+        [[262, 120], [286, 150], [250, 196], [20, 200]].forEach(([x, y], i) => k.tree(x, y, { r: 12 + (i % 2) }));
+        [[200, 104], [178, 196], [120, 190]].forEach(([x, y]) => k.bush(x, y));
+        k.crate(170, 132, '#e8473f'); k.crate(179, 134, '#f7c531');
+        k.add(118, () => k.sign(38, 118, 80, 30));
+        return [];
+      },
+      draw(k, t, O, hop) {
+        if (O.crates) { const xs = O.crates.length === 1 ? [78] : [58, 100]; O.crates.forEach((c, i) => k.crate10(xs[i], 141, c, Math.floor(t / 350) % 2 === 0)); }
+        else this.boxes.forEach(([bx, by], i) => k.basket(bx, by - hop, O.shown[i], i ? 'yellow' : 'red'));
+        drawHer(k, t, this.her, O, hop); drawNpc(k, t, this, O, hop);
+      },
+    },
+    // the market: Mr. Pip buys a pie and pays with a handful of coins; how many coins back? (take-away facts)
+    market: {
+      npc: 'Mr. Pip', chibi: 'pip', order: 'Mr. Pip wants pies', marks: 'pie', node: 'market', mapCam: [262, 168, 96], rounds: 'marketRounds', log: 'Selling pies to Mr. Pip',
+      skills: ['tenminus', 'sub10', 'subteen'], fact: f => f.type === 'sub' && f.b > 0 && f.a > f.b,
+      her: [100, 120], npcAt: [138, 150], head: [146, 127], sign: [30, 121, 88, 16], dotHome: [14, 96], dotHelp: () => [158, 100], chalk: true,
+      eq: (a, b) => `${a} − ${b} =`,
+      ask: (f, i) => i % 2 ? `I have ${f.a} coins. One pie is ${f.b}. How many coins do I get back?` : `Here are ${f.a} coins. The pie costs ${f.b}. How many coins back?`,
+      solved: f => `Yes! ${f.a} take away ${f.b} is ${f.ans}.`,
+      words: t => String(t).replace(/\bframes\b/g, 'trays').replace(/\bframe\b/g, 'tray').replace(/\bdots\b/g, 'coins').replace(/\bdot\b/g, 'coin').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot'),
+      // his coins in trays of ten; the ones that pay for the pie ('x') go in her money box, the way practice's help takes them
+      cells(f) {
+        const { a, b } = f, ones = a - 10, A = a - b;
+        if (a <= 10) return [ten(fillN(a - b, 'a'), fillN(b, 'x'))];
+        if (b <= 2) return [ten(fillN(10, 'a')), ten(fillN(ones - b, 'a'), fillN(b, 'x'))];
+        if (b === 10) return [ten(fillN(10, 'x')), ten(fillN(ones, 'a'))];
+        if (b === ones) return [ten(fillN(10, 'a')), ten(fillN(ones, 'x'))];
+        if (A <= 4 || b >= 6) return [ten(fillN(10 - b, 'a'), fillN(b, 'x')), ten(fillN(ones, 'a'))];
+        return [ten(fillN(10 - (b - ones), 'a'), fillN(b - ones, 'x')), ten(fillN(ones, 'x'))];
+      },
+      // he counts his coins onto the counter, one at a time
+      deal(f, i) { const t = now(), d = []; for (let n = 0; n < f.a; n++) d.push({ who: 0, t0: t + 300 + n * 95, x: 140, y: 128 }); return d; },
+      pile: n => [52 + (n % 7) * 6 + (Math.floor(n / 7) % 2) * 3, 112 - Math.floor(n / 7) * 3],
+      land(who, n) { return this.pile(n); },
+      falling: (k, x, y) => k.coin(x, y),
+      tags(O) { return [{ x: 72, y: 100 - Math.ceil(O.shown[0] / 7) * 3, text: O.shown[0], on: O.shown[0] > 0 && !O.crates }, { x: 36, y: 100, text: `${O.f.b} coin${O.f.b === 1 ? "" : "s"}`, on: O.phase !== 'pick' }]; },
+      still(g, k) {
+        px.ground(g, W, H, { path: (x, y) => y > 56 && !(x < 6 && y > 150) });
+        k.house(-6, 52, 44, 'blue', { chimney: true, far: true }); k.house(118, 48, 36, 'gold', { far: true }); k.house(176, 52, 48, 'red', { chimney: true, lit: true, far: true });
+        k.barrel(44, 66); k.barrel(52, 68); k.crate(104, 64, '#e8473f'); k.crate(160, 68, '#f7c531'); k.barrel(220, 120); k.crate(206, 150, '#f7c531');
+        [[250, 96], [280, 140], [262, 190]].forEach(([x, y], i) => k.tree(x, y, { r: 11 + (i % 2) }));
+        // the stall's awning and posts (the counter is drawn in front of her each frame)
+        const sx = 22, sw = 104;
+        k.add(60, () => { k.R(sx + 2, 66, 3, 54, C.k1); k.R(sx + sw - 5, 66, 3, 54, C.k1); k.R(sx + 2, 66, 1, 54, C.k3); k.R(sx + sw - 5, 66, 1, 54, C.k3);
+          for (let j = 0; j < 14; j++) for (let i = -4 + Math.floor(j / 3); i < sw + 4 - Math.floor(j / 3); i++) { const st = Math.floor((i + 40) / 9) % 2; k.P(sx + i, 56 + j, j === 0 ? '#6e3a3a' : st ? (j < 3 ? '#fbf6ec' : '#efe8dc') : (j < 3 ? '#d8786a' : '#c06456')); }
+          for (let i = -2; i < sw + 2; i += 9) k.ell(sx + i + 4, 71, 4, 2, Math.floor((i + 42) / 9) % 2 ? '#efe8dc' : '#c06456'); }, false);
+        return [];
+      },
+      draw(k, t, O, hop) {
+        drawHer(k, t, this.her, O, hop);
+        // the counter in front of her, the pie with its price, his coins (or the trays while helping)
+        const sx = 22, sw = 104, ct = 118;
+        k.R(sx, ct, sw, 24, C.k1); for (let j = 1; j < 23; j++) k.R(sx + 1, ct + j, sw - 2, 1, j % 7 === 0 ? C.k1 : j % 7 === 1 ? C.k3 : C.k2);
+        k.R(sx - 2, ct - 3, sw + 4, 4, C.k3); k.R(sx - 2, ct - 3, sw + 4, 1, C.k4); k.R(sx - 2, ct, sw + 4, 1, C.k1);
+        k.R(sx + 6, ct + 2, sw - 12, 20, C.k3); k.R(sx + 8, ct + 4, sw - 16, 16, '#2f4a3a'); k.R(sx + 8, ct + 4, sw - 16, 1, '#24392c');
+        k.pie(24, ct - 8); k.pie(37, ct - 9);
+        if (O.crates) { const xs = O.crates.length === 1 ? [44] : [22, 61]; O.crates.forEach((c, i) => k.tray10(xs[i], ct - 3, c, Math.floor(t / 350) % 2 === 0)); }
+        else for (let n = 0; n < O.shown[0]; n++) { const [x, y] = this.pile(n); k.coin(x, y - (O.phase === 'right' ? hop : 0)); }
+        drawNpc(k, t, this, O, hop);
+      },
+    },
+  };
+  const jobOpen = id => JOBS[id].skills.some(s => EM.isOpen(s));
+  function drawHer(k, t, [x, y], O, hop) { const l = look(), c = px.CHIBI.her(l, l.long); k.chibi(x, y, c.rows, c.mat, { blink: (t % 3600) < 120, bob: O.phase === 'right' ? hop : 0 }); }
+  function drawNpc(k, t, J, O, hop) { const c = px.CHIBI[J.chibi](); k.chibi(J.npcAt[0], J.npcAt[1], c.rows, c.mat, { flip: true, blink: ((t + 900) % 4100) < 120, bob: O.phase === 'right' ? hop : 0 }); }
+
+  function toJob(id) {
+    const J = JOBS[id];
     ui.busy = true; her.path = [];
-    tweenCam(camAround(60, 80, 96), 800, () => { const f = document.getElementById('vfade'); if (f) f.classList.add('on'); setTimeout(() => { ui.busy = false; startOrchard(); }, 260); });
+    tweenCam(camAround(...J.mapCam), 800, () => { const f = document.getElementById('vfade'); if (f) f.classList.add('on'); setTimeout(() => { ui.busy = false; startJob(id); }, 260); });
   }
-  function startOrchard() {
-    mode = 'orchard';
-    O = { queue: [], i: -1, picked: 0, goal: ORCH_GOAL, started: Date.now(), stats: { items: 0, fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, times: [], fastKeys: [], learned: [] }, input: '', phase: 'pick', drops: [], shown: [0, 0], said: '' };
-    renderOrchard();
-    scene = makeScene('orchard', buildOrchStill); scene.cam = { ...CAM_FULL }; tweenCam({ ...OCAM }, 800);
-    scene.after = orchOverlays;
+  const toOrchard = () => toJob('orchard'), toMarket = () => toJob('market');
+  // Mr. Pip's stall opens with the take-away facts (Ten Take Away needs Partners of 10)
+  function marketTap() { if (jobOpen('market')) return toMarket(); say("Mr. Pip's stall opens once your partners of 10 get strong. Keep fishing!"); }
+  // What each villager says the first time, and the surprise they promise for three full rounds
+  const MEET = {
+    orchard: "Hi! I'm Rosa. Apples are falling everywhere! Help me count them, and I'll pay you a coin for each one. Fill my baskets three times and I'll have a surprise for you.",
+    market: "Hello! I'm Mr. Pip. I buy a pie every day, but I always mix up my coins. Help me count my coins back, and there's a coin in it for you. Help me three times and I'll have a surprise.",
+  };
+  const GIFT = { orchard: { item: 'appletree', title: 'Rosa gave you an apple tree!', text: 'Grown from her very best apples. It\'s waiting in your yard tray.' },
+    market: { item: 'kitten', title: 'Mr. Pip gave you a kitten!', text: 'One of his cat\'s kittens needs a home. It\'s waiting in your yard tray.' } };
+  const giftDue = id => (V()[JOBS[id].rounds] || 0) >= 3 && !(V().gifted || {})[id] ? GIFT[id] : null;
+  function giveGift(g, next) {
+    const v = V(); (v.gifted = v.gifted || {})[O.id] = Date.now(); (v.gifts = v.gifts || {})[g.item] = (v.gifts[g.item] || 0) + 1; EM.save(); sfx('unlock');
+    const ov = document.createElement('div'); ov.className = 'vover';
+    ov.innerHTML = `<div class="vcard"><div class="vcard-art"><img class="vgift" src="${itemIcon(g.item)}" alt=""></div><h2>${esc(g.title)}</h2><p>${esc(g.text)}</p><div class="vrow"><button class="big-btn" data-ov="tobuild">Put it in my yard</button><button class="big-btn alt" data-ov="keep">Keep going</button></div></div>`;
+    document.body.appendChild(ov); EM.speech && EM.speech.say(g.title);
+    ov.addEventListener('click', e => { const b = e.target.closest('[data-ov]'); if (!b) return; ov.remove(); if (b.dataset.ov === 'tobuild') return leaveJob(() => enterBuild(null)); next(); });
+  }
+  const untilGift = id => { const left = 3 - (V()[JOBS[id].rounds] || 0); return left > 0 && !(V().gifted || {})[id] ? ` ${left} more until ${JOBS[id].npc}'s surprise!` : ''; };
+  function startJob(id) {
+    mode = 'job';
+    O = { id, J: JOBS[id], queue: [], i: -1, picked: 0, goal: 5, started: Date.now(), stats: { items: 0, fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, times: [], fastKeys: [], learned: [] }, input: '', phase: 'pick', drops: [], shown: [0, 0], said: '' };
+    renderJob();
+    scene = makeScene('job', (g, k) => O.J.still(g, k)); scene.cam = { ...CAM_FULL }; tweenCam({ ...JCAM }, 800);
+    scene.after = jobOverlays;
     const fd = document.getElementById('vfade'); if (fd) requestAnimationFrame(() => setTimeout(() => fd.classList.remove('on'), 30));
-    startLoop(drawOrch);
-    nextApple();
+    startLoop(drawJob);
+    // the first time, the villager says hello and what they'll give her; then the work starts
+    const met = V().met = V().met || {};
+    if (!met[id]) { met[id] = Date.now(); EM.save(); O.phase = 'hello'; O.said = MEET[id]; renderJobWork(); EM.speech && EM.speech.say(MEET[id]); O.helloT = setTimeout(() => { if (O && O.phase === 'hello') nextQ(); }, Math.max(5500, (EM.speech ? EM.speech.estimateMs(MEET[id]) : 0) + 600)); return; }
+    nextQ();
   }
-  function startOrchScene() { scene = makeScene('orchard', buildOrchStill); scene.cam = { ...OCAM }; scene.after = orchOverlays; startLoop(drawOrch); renderOrchWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
-  function orchRefill() {
-    const open = ORCH_SKILLS.filter(id => EM.isOpen(id));
-    O.queue.push(...EM.buildFactQueue(open.length ? open : ['doubles'], 14).queue.filter(e => { const f = EM.FACTS[e.key]; return f.type === 'add' && f.a > 0 && f.b > 0; }));
+  function startJobScene() { scene = makeScene('job', (g, k) => O.J.still(g, k)); scene.cam = { ...JCAM }; scene.after = jobOverlays; startLoop(drawJob); renderJobWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
+  function jobRefill() {
+    const open = O.J.skills.filter(id => EM.isOpen(id));
+    O.queue.push(...EM.buildFactQueue(open.length ? open : [O.J.skills[0]], 14).queue.filter(e => O.J.fact(EM.FACTS[e.key])));
   }
-  function nextApple() {
-    O.i++; if (O.i >= O.queue.length) orchRefill();
-    if (!O.queue[O.i]) O.queue.push(...EM.buildFactQueue(['doubles'], 6).queue);
+  function nextQ() {
+    clearTimeout(O.helloT); O.i++; if (O.i >= O.queue.length) jobRefill();
+    if (!O.queue[O.i]) { const keys = O.J.skills.flatMap(id => EM.SK[id].facts).filter(k => O.J.fact(EM.FACTS[k])); O.queue.push({ key: keys[Math.floor(Math.random() * keys.length)], mode: 'normal' }); }
     const e = O.queue[O.i];
     O.key = e.key; O.mode = e.mode; O.item = EM.factItem(e.key, e.mode); O.f = EM.FACTS[e.key];
     O.input = ''; O.help = null; O.crates = null; O.t0 = null; O.tLast = null; O.waitSpeech = false; O.cheer = 0;
-    // apples drop from the trees into the two baskets, one at a time; the question starts when they've landed
-    O.phase = 'pick'; O.shown = [0, 0]; O.drops = [];
-    const t = now(), { a, b } = O.f;
-    for (let n = 0; n < a; n++) O.drops.push({ who: 0, t0: t + 250 + n * 110, x: 24 + Math.floor(px.hash(n, O.i, 5) * 40), y: 18 + Math.floor(px.hash(O.i, n, 6) * 22) });
-    for (let n = 0; n < b; n++) O.drops.push({ who: 1, t0: t + 330 + n * 110, x: 100 + Math.floor(px.hash(n, O.i, 7) * 40), y: 18 + Math.floor(px.hash(O.i, n, 8) * 22) });
+    // the things arrive (apples fall, coins are counted out); the question starts when they've landed
+    O.phase = 'pick'; O.shown = [0, 0]; O.drops = O.J.deal(O.f, O.i);
     O.lead = ''; O.said = '';
-    renderOrchWork();
+    renderJobWork();
   }
-  function orchAsk() {
-    const { a, b } = O.f;
-    O.phase = 'ask';
-    O.said = O.i % 2 ? `Your basket has ${a}. Mine has ${b}. How many apples altogether?` : `You picked ${a}. I picked ${b}. How many apples in all?`;
-    renderOrchWork();
-    // her first question each round is read aloud; the clock waits until Rosa has finished talking
-    if (O.picked === 0 && EM.speech && EM.speech.enabled()) orchHear(); else O.t0 = performance.now();
+  function jobAsk() {
+    O.phase = 'ask'; O.said = O.J.ask(O.f, O.i);
+    renderJobWork();
+    // her first question each round is read aloud; the clock waits until the villager has finished talking
+    if (O.picked === 0 && EM.speech && EM.speech.enabled()) jobHear(); else O.t0 = performance.now();
   }
-  function orchHear() {
+  function jobHear() {
     if (!O || (O.phase !== 'ask' && O.phase !== 'help')) return;
     const text = O.phase === 'help' ? `${O.lead} ${O.help.say}` : O.said, key = O.key;
     if (O.phase === 'help' || O.input) { EM.speech && EM.speech.say(text); return; }
-    O.waitSpeech = true; renderOrchWork();
-    const release = () => { if (O && O.key === key && O.waitSpeech) { O.waitSpeech = false; O.t0 = performance.now(); renderOrchWork(); } };
+    O.waitSpeech = true; renderJobWork();
+    const release = () => { if (O && O.key === key && O.waitSpeech) { O.waitSpeech = false; O.t0 = performance.now(); renderJobWork(); } };
     (EM.speech ? EM.speech.say(text) : Promise.resolve()).then(release);
     setTimeout(release, (EM.speech ? EM.speech.estimateMs(text) : 0) + 300);
   }
-  function renderOrchard() {
-    const marks = Array.from({ length: ORCH_GOAL }, (_, i) => `<i class="${i < (O ? O.picked : 0) ? 'on' : ''}"></i>`).join('');
-    $root.innerHTML = `<main class="village full job orchard">
+  function renderJob() {
+    const J = O.J, marks = Array.from({ length: O.goal }, (_, i) => `<i class="${i < O.picked ? 'on' : ''}"></i>`).join('');
+    $root.innerHTML = `<main class="village full job ${O.id}">
       <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze deep"></div>
-        <div class="jsign" id="jsign"></div><div class="jbub" id="jbub"></div>
+        <div class="jsign ${J.chalk ? 'chalk' : ''}" id="jsign"></div><div class="jbub" id="jbub"></div>
         <div class="jtag" id="jtag0"></div><div class="jtag" id="jtag1"></div>
       </div>
-      <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span><div class="jorder vpanel"><b>Rosa needs apples</b><div class="jmarks" id="jmarks">${marks}</div></div></div>
+      <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span><div class="jorder vpanel"><b>${esc(J.order)}</b><div class="jmarks ${J.marks}" id="jmarks">${marks}</div></div></div>
       <div class="vhud vtr"><button class="jhome vpanel" data-v="leavejob">🏠 Village</button></div>
       <div class="jpad vpanel" id="jpad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-fd="${d}">${d}</button>`).join('')}<button data-v="fback" aria-label="Delete">⌫</button><button data-fd="0">0</button><button class="ok" data-v="fok" aria-label="Check">✓</button></div>
       <div class="jleft"><button class="jround" data-v="jhear" aria-label="Hear it again">🔊</button><button class="jidk" data-v="jidk">I don't know</button></div>
       <div class="vfade on" id="vfade"></div>
     </main>`;
     fit();
+    document.getElementById('vstage').onclick = () => { if (O && O.phase === 'hello') { EM.speech && EM.speech.stop(); nextQ(); } };
   }
   // the sign, the speech bubble and the pad, without a full re-render (the scene keeps moving)
-  function renderOrchWork() {
+  function renderJobWork() {
     const sign = document.getElementById('jsign'); if (!sign || !O) return;
-    const { a, b } = O.f, asking = O.phase === 'ask' || O.phase === 'help';
-    const sa = O.phase === 'pick' ? O.shown[0] : a, sb = O.phase === 'pick' ? O.shown[1] : b;
-    sign.innerHTML = `<span>${sa} + ${sb} =</span><span class="slot ${asking && !O.waitSpeech ? 'cursor' : ''}">${O.phase === 'right' || O.phase === 'solved' ? O.f.ans : esc(O.input)}</span>`;
+    const asking = O.phase === 'ask' || O.phase === 'help', J = O.J, f = O.f || { a: 0, b: 0 }, { a, b } = f;
+    const sa = O.phase === 'pick' ? (J.boxes ? O.shown[0] : O.shown[0]) : a, sb = O.phase === 'pick' && J.boxes ? O.shown[1] : b;
+    sign.innerHTML = `<span>${J.eq(sa, O.phase === 'pick' && !J.boxes ? '?' : sb)}</span><span class="slot ${asking && !O.waitSpeech ? 'cursor' : ''}">${O.phase === 'right' || O.phase === 'solved' ? f.ans : esc(O.input)}</span>`;
     sign.classList.toggle('right', O.phase === 'right' || O.phase === 'solved');
     const bub = document.getElementById('jbub'), dotTalks = !!O.help || O.phase === 'solved';
     const words = O.phase === 'help' ? `${O.lead ? `<b>${esc(O.lead)}</b> ` : ''}${O.help.html}` : O.phase === 'pick' ? '' : esc(O.said);
-    bub.innerHTML = words ? `<small>${dotTalks ? 'Dot' : 'Rosa'}</small>${words}` : ''; bub.classList.toggle('on', !!words); bub.classList.toggle('bydot', dotTalks);
+    if (O.phase === 'hello') { sign.innerHTML = '<span>Hello!</span>'; }
+    bub.innerHTML = words ? `<small>${dotTalks ? 'Dot' : esc(J.npc)}</small>${words}` : ''; bub.classList.toggle('on', !!words); bub.classList.toggle('bydot', dotTalks);
     const busy = !asking || O.waitSpeech;
     document.getElementById('jpad').classList.toggle('busy', busy);
     document.querySelector('.jidk').style.visibility = O.help || busy ? 'hidden' : 'visible';
-    ['jtag0', 'jtag1'].forEach((id, i) => { const el = document.getElementById(id); el.textContent = O.shown[i]; el.classList.toggle('on', !O.crates && O.shown[i] > 0); });
+    (O.f ? J.tags(O) : [{}, {}]).forEach((tg, i) => { const el = document.getElementById(`jtag${i}`); el.textContent = tg.text || ''; el.classList.toggle('on', !!O.f && !O.crates && !!tg.on); });
     const m = document.getElementById('jmarks'); if (m) [...m.children].forEach((el, i) => el.classList.toggle('on', i < O.picked));
     showCoins();
   }
-  function orchOverlays() {
-    const st = document.getElementById('vstage'); if (!st || !O) return;
-    // the sign's words sit on its face, at whatever size the camera shows it
+  // the sign's words sit on its face, at whatever size the camera shows it; returns the face in stage pixels
+  function placeSign(SIGN) {
     const sign = document.getElementById('jsign'), [x0, y0] = toStage(SIGN[0], SIGN[1]), [x1, y1] = toStage(SIGN[0] + SIGN[2], SIGN[1] + SIGN[3]);
     Object.assign(sign.style, { transform: `translate(${x0.toFixed(1)}px, ${y0.toFixed(1)}px)`, width: `${(x1 - x0).toFixed(1)}px`, height: `${(y1 - y0).toFixed(1)}px` });
     // the words fit the sign: as big as its height allows, smaller when a long sum needs the room
     const fitKey = `${sign.textContent}|${Math.round(x1 - x0)}`;
     if (sign.dataset.fit !== fitKey) { sign.dataset.fit = fitKey; let fs = (y1 - y0) * .56; sign.style.fontSize = `${fs}px`; const need = sign.scrollWidth, room = (x1 - x0) * .94; if (need > room) sign.style.fontSize = `${(fs * room / need).toFixed(1)}px`; }
-    // the bubble opens above whoever is talking, kept clear of the number pad
-    const bub = document.getElementById('jbub'), dotTalks = bub.classList.contains('bydot');
-    const [sx, sy] = dotTalks ? toStage(O.dotAt[0], O.dotAt[1] - 8) : toStage(OROSA[0] + 8, OROSA[1] - 23);
-    // and never over the sign's answer box: beside it if there's room, otherwise above it
-    const r = st.getBoundingClientRect(), padL = document.getElementById('jpad').getBoundingClientRect().left - r.left;
+    return [x0, y0, x1, y1];
+  }
+  // the bubble opens above whoever is talking (scene point x, y), clear of the number pad, and never over the sign's
+  // answer box: beside it if there's room, otherwise above it
+  function placeBubble(x, y, [x0, y0, x1, y1]) {
+    const st = document.getElementById('vstage'), bub = document.getElementById('jbub'); if (!st || !bub) return;
+    const [sx, sy] = toStage(x, y), r = st.getBoundingClientRect(), padL = document.getElementById('jpad').getBoundingClientRect().left - r.left;
     bub.style.width = ''; let w = bub.offsetWidth, left = Math.max(-r.left + 12, Math.min(sx - w * .55, padL - w - 14)), top = sy - bub.offsetHeight - 14;
     if (left < x1 + 8 && left + w > x0 && top < y1 && top + bub.offsetHeight > y0) {
       const room = padL - 14 - (x1 + 10);
       if (room >= 230) { left = x1 + 10; if (room < w) { bub.style.width = `${room}px`; w = room; } top = sy - bub.offsetHeight - 14; }
       else top = Math.min(top, y0 - bub.offsetHeight - 10);
     }
+    top = Math.max(top, -r.top + 72);
     bub.style.transform = `translate(${left.toFixed(1)}px, ${top.toFixed(1)}px)`; bub.style.setProperty('--tx', `${Math.max(18, Math.min(w - 36, sx - left - 11)).toFixed(0)}px`);
-    OBASKET.forEach(([bx, by], i) => place(document.getElementById(`jtag${i}`), bx + 11, by - 20 - Math.ceil(O.shown[i] / 4) * 3));
   }
-  function drawOrch(sc, k, t) {
-    ambient(sc, k, t, { butterflies: [[60, 120, 20, 8, .6, '#ffe066'], [190, 90, 16, 10, .5, '#ff9ac6']] });
+  function jobOverlays() {
+    if (!document.getElementById('vstage') || !O) return;
+    const J = O.J, rect = placeSign(J.sign), dotTalks = document.getElementById('jbub').classList.contains('bydot');
+    if (dotTalks) placeBubble(O.dotAt[0], O.dotAt[1] - 8, rect); else placeBubble(J.head[0], J.head[1], rect);
+    if (O.f) J.tags(O).forEach((tg, i) => place(document.getElementById(`jtag${i}`), tg.x, tg.y));
+  }
+  function drawJob(sc, k, t) {
+    ambient(sc, k, t, { butterflies: [[60, 140, 20, 8, .6, '#ffe066'], [190, 90, 16, 10, .5, '#ff9ac6']] });
     if (!O) return;
-    // apples falling into the baskets
-    O.drops = O.drops.filter(d => { const e = (t - d.t0) / 420; if (e < 0) return true; const [bx, by] = OBASKET[d.who], n = O.shown[d.who], tx = bx + 3 + (n % 4) * 4 + (Math.floor(n / 4) % 2) * 2, ty = by - 14 - Math.floor(n / 4) * 3;
-      if (e >= 1) { O.shown[d.who]++; renderOrchWork(); return false; } k.apple(Math.round(lerp(d.x, tx, e)), Math.round(lerp(d.y, ty, e * e)), d.who ? 'yellow' : 'red'); return true; });
-    if (O.phase === 'pick' && !O.drops.length) orchAsk();
-    // baskets, or the crates of ten while helping
+    const J = O.J;
+    // things arriving: apples falling into baskets, coins counted onto the counter
+    O.drops = O.drops.filter(d => { const e = (t - d.t0) / 420; if (e < 0) return true; const [tx, ty] = J.land(d.who, O.shown[d.who]);
+      if (e >= 1) { O.shown[d.who]++; if (O.id === 'market') sfx('tick'); renderJobWork(); return false; }
+      J.falling(k, Math.round(lerp(d.x, tx, e)), Math.round(lerp(d.y, ty, e) - (O.id === 'market' ? Math.sin(e * Math.PI) * 10 : 0) + (O.id === 'market' ? 0 : (ty - d.y) * (e * e - e))), d.who); return true; });
+    if (O.phase === 'pick' && !O.drops.length) jobAsk();
     const hop = O.cheer && t - O.cheer < 500 ? Math.round(Math.sin((t - O.cheer) / 500 * Math.PI) * 3) : 0;
-    if (O.crates) { const xs = O.crates.length === 1 ? [78] : [58, 100]; O.crates.forEach((c, i) => k.crate10(xs[i], 141, c, Math.floor(t / 350) % 2 === 0)); }
-    else OBASKET.forEach(([bx, by], i) => k.basket(bx, by - hop, O.shown[i], i ? 'yellow' : 'red'));
-    const look2 = look(), herC = px.CHIBI.her(look2, look2.long), rosa = px.CHIBI.rosa(), blink = (t % 3600) < 120;
-    k.chibi(OHER[0], OHER[1], herC.rows, herC.mat, { blink, bob: O.phase === 'right' ? hop : 0 });
-    k.chibi(OROSA[0], OROSA[1], rosa.rows, rosa.mat, { flip: true, blink: ((t + 900) % 4100) < 120, bob: O.phase === 'right' ? hop : 0 });
-    // Dot: beside her, or over the crates while helping
-    const to = O.crates || O.phase === 'solved' ? [O.crates && O.crates.length === 1 ? 126 : 150, 104] : [30, 100];
+    J.draw(k, t, O, hop);
+    // Dot: by her, or over the help while helping
+    const to = O.crates || O.phase === 'solved' ? J.dotHelp(O.crates ? O.crates.length : 2) : J.dotHome;
     O.dotPos = O.dotPos || [...to]; O.dotPos[0] = lerp(O.dotPos[0], to[0], .12); O.dotPos[1] = lerp(O.dotPos[1], to[1], .12);
     const dy = Math.round(Math.sin(t / 420) * 1.5); O.dotAt = [Math.round(O.dotPos[0]), Math.round(O.dotPos[1]) + dy]; sc.dotAt = O.dotAt;
     k.drawDot(O.dotAt[0], O.dotAt[1], t, (t % 4200) < 130);
     clouds(k, t);
   }
-  function oType(d) { if ((O.phase !== 'ask' && O.phase !== 'help') || O.waitSpeech) return nudge(); if (O.input.length >= 2) return; O.input = O.input === '0' ? d : O.input + d; O.tLast = performance.now(); renderOrchWork(); }
-  function oBack() { O.input = O.input.slice(0, -1); O.tLast = O.input ? performance.now() : null; renderOrchWork(); }
+  function oType(d) { if ((O.phase !== 'ask' && O.phase !== 'help') || O.waitSpeech) return nudge(); if (O.input.length >= 2) return; O.input = O.input === '0' ? d : O.input + d; O.tLast = performance.now(); renderJobWork(); }
+  function oBack() { O.input = O.input.slice(0, -1); O.tLast = O.input ? performance.now() : null; renderJobWork(); }
   const oGraded = () => O.mode !== 'rehearse' && O.mode !== 'reask';
   function oGrade(outcome, ms) {
     const st = O.stats; st.items++; st[outcome]++;
@@ -793,48 +973,53 @@
   }
   function oOk() {
     if ((O.phase !== 'ask' && O.phase !== 'help') || O.waitSpeech || !O.input) return O.input ? nudge() : null;
-    const typed = Number(O.input), ok = typed === O.f.ans, tn = performance.now(), { a, b, ans } = O.f;
+    const typed = Number(O.input), ok = typed === O.f.ans, tn = performance.now(), { a, b, ans } = O.f, J = O.J;
     if (O.help) { // in help: the right answer moves on, but pays nothing
-      if (ok) { O.phase = 'solved'; O.help = null; O.crates = null; O.said = `Yes! ${a} and ${b} make ${ans}.`; O.cheer = now(); renderOrchWork(); EM.speech && EM.speech.say(O.said); sfx('right'); return setTimeout(nextApple, 1900); }
-      if (O.help.stage === 1) return enterOrchHelp(2); O.input = ''; renderOrchWork(); return;
+      if (ok) { O.phase = 'solved'; O.help = null; O.crates = null; O.said = J.solved(O.f); O.cheer = now(); renderJobWork(); EM.speech && EM.speech.say(O.said); sfx('right'); return setTimeout(nextQ, 1900); }
+      if (O.help.stage === 1) return enterJobHelp(2); O.input = ''; renderJobWork(); return;
     }
     const ms = (O.tLast || tn) - (O.t0 || tn), gap = tn - (O.tLast || tn);
     if (ok) {
       const fast = ms <= EM.fastMs(O.item, 0) && gap <= CONFIRM_MS, g = oGrade(fast ? 'fast' : 'slow', ms);
-      O.picked++; V().coins++; V().apples = (V().apples || 0) + 1; EM.save();
+      O.picked++; V().coins++; if (O.id === 'orchard') V().apples = (V().apples || 0) + 1; else V().pies = (V().pies || 0) + 1;
+      orderProgress(O.id); EM.save();
       O.phase = 'right'; O.cheer = now(); O.said = fast ? 'Wow, you just knew that! Here, a coin.' : 'Thank you! Here, a coin.';
-      burst(OBASKET[0][0] + 11, OBASKET[0][1] - 16, 10, ['#fff7c2', '#ffe27a', '#ffffff'], { up: true, spread: 2, speed: 40, life: 600 }); burst(OBASKET[1][0] + 11, OBASKET[1][1] - 16, 10, ['#fff7c2', '#ffe27a', '#ffffff'], { up: true, spread: 2, speed: 40, life: 600 });
-      floatText('+1', OROSA[0] + 8, OROSA[1] - 26, 'coin'); renderOrchWork(); sfx(fast ? 'fast' : 'right');
+      J.tags(O).forEach(tg => burst(tg.x, tg.y + 4, 8, ['#fff7c2', '#ffe27a', '#ffffff'], { up: true, spread: 2, speed: 40, life: 600 }));
+      floatText('+1', J.head[0], J.head[1] - 4, 'coin'); renderJobWork(); sfx(fast ? 'fast' : 'right');
       return setTimeout(() => {
-        if (g.becameYours) return celebrate(`${a} + ${b} = ${ans} is yours now!`, 'You knew it fast on two different days.', afterApple);
-        afterApple();
+        if (g.becameYours) return celebrate(`${J.eq(a, b)} ${ans} is yours now!`, 'You knew it fast on two different days.', afterQ, null, O.id === 'market' ? `${a} take away ${b} is ${ans}. That one is yours now!` : `${a} + ${b} = ${ans} is yours now!`);
+        afterQ();
       }, 1400);
     }
     const rushed = ms < EM.rushMs(O.item);
     if (rushed) O.stats.rushed++;
     oGrade('wrong', ms);
-    enterOrchHelp(1, rushed ? 'Whoa, too fast! Think first, then tap.' : "Not quite. Let's count them together.");
+    enterJobHelp(1, rushed ? 'Whoa, too fast! Think first, then tap.' : "Not quite. Let's count them together.");
   }
-  function oIdk() { if (!O || O.help || O.phase !== 'ask' || O.waitSpeech) return; oGrade('idk', 0); enterOrchHelp(1, "Good idea to ask. Let's look together."); }
-  function enterOrchHelp(stage, lead) {
-    // a fact she missed comes back a few apples later, like in practice (at most twice per fact)
+  function oIdk() { if (!O || O.help || O.phase !== 'ask' || O.waitSpeech) return; oGrade('idk', 0); enterJobHelp(1, "Good idea to ask. Let's look together."); }
+  function enterJobHelp(stage, lead) {
+    // a fact she missed comes back a few questions later, like in practice (at most twice per fact)
     if (stage === 1) { const n = (O.reasks = O.reasks || {})[O.key] || 0; if (n < 2) { O.reasks[O.key] = n + 1; O.queue.splice(Math.min(O.queue.length, O.i + 3), 0, { key: O.key, mode: 'reask' }); } }
     const h = O.item.help(0, stage);
-    O.help = { stage, html: orchWords(h.html), say: orchWords(h.say) }; O.input = ''; O.phase = 'help'; O.crates = helpCrates(O.f);
+    O.help = { stage, html: O.J.words(h.html), say: O.J.words(h.say) }; O.input = ''; O.phase = 'help'; O.crates = O.J.cells(O.f);
     if (lead) O.lead = lead; else if (stage === 2) O.lead = '';
-    renderOrchWork(); EM.speech && EM.speech.say(`${O.lead} ${O.help.say}`);
+    renderJobWork(); EM.speech && EM.speech.say(`${O.lead} ${O.help.say}`);
   }
-  function afterApple() {
+  function afterQ() {
     if (O.picked >= O.goal) {
-      V().orchardRounds = (V().orchardRounds || 0) + 1; EM.save();
-      return celebrate("Rosa's baskets are full!", `Rosa paid you ${O.goal} coins. You have ${V().coins} coins.`, () => { O.picked = 0; renderOrchWork(); nextApple(); }, [['Keep picking', 'keep'], ['Spend them', 'tobuild']]);
+      const J = O.J; V()[J.rounds] = (V()[J.rounds] || 0) + 1; EM.save();
+      const gift = giftDue(O.id);
+      const title = O.id === 'orchard' ? "Rosa's baskets are full!" : 'Mr. Pip has his pies!';
+      const next = () => { O.picked = 0; renderJobWork(); nextQ(); };
+      if (gift) return celebrate(title, `${J.npc} paid you ${O.goal} coins.`, () => giveGift(gift, next));
+      return celebrate(title, `${J.npc} paid you ${O.goal} coins. You have ${V().coins} coins.${untilGift(O.id)}`, next, [['Keep going', 'keep'], ['Spend them', 'tobuild']]);
     }
-    nextApple();
+    nextQ();
   }
-  function finishOrchard() {
+  function finishJob() {
     if (!O) return;
     const st = O.stats;
-    if (st.items) EM.logSession({ date: Date.now(), kind: 'orchard', title: 'Picking apples with Rosa', items: st.items, fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk, rushed: st.rushed, relooks: 0,
+    if (st.items) EM.logSession({ date: Date.now(), kind: O.id, title: O.J.log, items: st.items, fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk, rushed: st.rushed, relooks: 0,
       minutes: Math.round((Date.now() - O.started) / 6000) / 10, avg: st.times.length ? Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length) : 0,
       learned: [], fastKeys: st.fastKeys.slice(0, 40), byKind: { fact: { fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } } });
     O = null;
@@ -844,7 +1029,7 @@
   function render($app) {
     $root = $app;
     if (mode === 'fish' && F) { renderFishing(); scene = null; startFishingScene(); return; }
-    if (mode === 'orchard' && O) { renderOrchard(); scene = null; startOrchScene(); return; }
+    if (mode === 'job' && O) { renderJob(); scene = null; startJobScene(); return; }
     // a story or cinematic cut short (say, by opening the grown-up area) must not leave the village ignoring taps
     mode = mode === 'build' ? 'build' : 'map'; scene = null; ui.arrived = false; ui.popping = []; ui.story = false; ui.busy = false; ui.dotTarget = null; ui.plankFly = null;
     renderMap();
@@ -854,7 +1039,7 @@
   // ---------- taps ----------
   // Pad keys act on pointerdown (see app.js); the click that follows is ignored. Both jobs share the pad's buttons.
   let padDownAt = -1e9;
-  const padJob = () => mode === 'fish' && F && document.querySelector('.village.fishing') ? { type: fType, ok: fOk, back: fBack } : mode === 'orchard' && O && document.querySelector('.village.orchard') ? { type: oType, ok: oOk, back: oBack } : null;
+  const padJob = () => mode === 'fish' && F && document.querySelector('.village.fishing') ? { type: fType, ok: fOk, back: fBack } : mode === 'job' && O && document.querySelector('.village.job') ? { type: oType, ok: oOk, back: oBack } : null;
   const padKey = (j, a) => a.dataset.fd ? j.type(a.dataset.fd) : a.dataset.v === 'fok' ? j.ok() : j.back();
   const PADKEYS = ['.vpadwrap', '.jpad'].map(w => `${w} [data-fd], ${w} [data-v=fok], ${w} [data-v=fback]`).join(', ');
   document.addEventListener('pointerdown', e => {
@@ -878,17 +1063,18 @@
       case 'done': mode = 'map'; B = { item: null, sel: null }; return renderMap();
       case 'deselect': B.sel = null; return renderTray();
       case 'move': { const p = B.sel && placedAt(B.sel); if (p) { B.moving = p; say('Tap an empty spot.'); } return; }
-      case 'putaway': { const p = B.sel && placedAt(B.sel); if (p) { v.placed.splice(v.placed.indexOf(p), 1); v.coins += px.ITEM[p.item].cost; EM.save(); const ar = area(p.area); burst(ar.x + p.cx * 16 + 8, ar.y + p.cy * 16 + 10, 10, ['#ffffff', '#efd3a2'], { speed: 30, life: 450 }); scene.buildStill = (g, k) => buildMapStill(g, k); scene.rebake(); } B.sel = null; return renderTray(); }
+      case 'putaway': { const p = B.sel && placedAt(B.sel); if (p) { v.placed.splice(v.placed.indexOf(p), 1); v.coins += px.ITEM[p.item].cost; if (px.ITEM[p.item].gift) (v.gifts = v.gifts || {})[p.item] = (v.gifts[p.item] || 0) + 1; EM.save(); const ar = area(p.area); burst(ar.x + p.cx * 16 + 8, ar.y + p.cy * 16 + 10, 10, ['#ffffff', '#efd3a2'], { speed: 30, life: 450 }); scene.buildStill = (g, k) => buildMapStill(g, k); scene.rebake(); } B.sel = null; return renderTray(); }
       case 'stopfish': case 'leavejob': return leaveJob();
       case 'orchard': return walkTo('orchard', toOrchard);
       case 'guide': { const m = mission(); if (m && !ui.story && !ui.busy) m.go(); return; }
-      case 'jhear': return orchHear();
-      case 'jidk': return oIdk();
+      case 'market': return walkTo('market', marketTap);
+      case 'jhear': return mode === 'fish' ? fishHear() : jobHear();
+      case 'jidk': return mode === 'fish' ? fIdk() : oIdk();
       case 'fidk': return fIdk();
     }
   });
   document.addEventListener('keydown', e => { const j = padJob(); if (!j) return; if (/^[0-9]$/.test(e.key)) j.type(e.key); else if (e.key === 'Backspace') j.back(); else if (e.key === 'Enter') j.ok(); });
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && document.getElementById('vcanvas') && scene) startLoop({ fish: drawFishing, orchard: drawOrch }[scene.kind] || drawMap); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && document.getElementById('vcanvas') && scene) startLoop({ fish: drawFishing, job: drawJob }[scene.kind] || drawMap); });
 
-  EM.village = { render, openBoard, checkUnlocks, meadowProgress, mission: () => mission(), state: V, _fish: () => F, _orch: () => O, _mode: () => mode, _her: () => her, _ui: () => ui, _scene: () => scene };
+  EM.village = { render, openBoard, checkUnlocks, meadowProgress, mission: () => mission(), orders: () => orders(), ordersDone, orderProgress, jobSkills, state: V, _fish: () => F, _orch: () => O, _job: () => O, _mode: () => mode, _her: () => her, _ui: () => ui, _scene: () => scene };
 })();

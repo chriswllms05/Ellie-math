@@ -62,7 +62,24 @@ const server = http.createServer((req, res) => { let p = decodeURIComponent(req.
     const leads = ['Whoa, too fast! Think first, then tap.', "Not quite. Let's count them together.", "Good idea to ask. Let's look together."];
     for (const k of Object.keys(EM.FACTS)) { const f = EM.FACTS[k]; if (f.type !== 'add' || !f.a || !f.b) continue;
       add(`You picked ${f.a}. I picked ${f.b}. How many apples in all?`); add(`Your basket has ${f.a}. Mine has ${f.b}. How many apples altogether?`); add(`Yes! ${f.a} and ${f.b} make ${f.ans}.`);
-      const it = EM.factItem(k, 'normal'); for (const stage of [1, 2]) { const say = orchWords(it.help(0, stage).say); add(say); leads.forEach(l => add(`${l} ${say}`)); } }
+      const it = EM.factItem(k, 'normal'); for (const stage of [1, 2]) { const say = orchWords(it.help(0, stage).say); add(say); leads.forEach(l => add(`${l} ${say}`)); }
+      add(`${f.a} + ${f.b} = ${f.ans} is yours now!`); }
+    // the market: Mr. Pip's coins, with practice's help said as trays and coins
+    const trayWords = t => String(t).replace(/\bframes\b/g, 'trays').replace(/\bframe\b/g, 'tray').replace(/\bdots\b/g, 'coins').replace(/\bdot\b/g, 'coin').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot');
+    for (const id of ['tenminus', 'sub10', 'subteen']) for (const k of EM.SK[id].facts) { const f = EM.FACTS[k]; if (f.type !== 'sub' || !f.b || f.a <= f.b) continue;
+      add(`Here are ${f.a} coins. The pie costs ${f.b}. How many coins back?`); add(`I have ${f.a} coins. One pie is ${f.b}. How many coins do I get back?`);
+      add(`Yes! ${f.a} take away ${f.b} is ${f.ans}.`); add(`${f.a} take away ${f.b} is ${f.ans}. That one is yours now!`);
+      const it = EM.factItem(k, 'normal'); for (const stage of [1, 2]) { const say = trayWords(it.help(0, stage).say); add(say); leads.forEach(l => add(`${l} ${say}`)); } }
+    // fishing's help, said as fish and spots
+    const fishWords = t => String(t).replace(/\bdots\b/g, 'fish').replace(/\bdot\b/g, 'fish').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot').replace(/\bboxes\b/g, 'spots');
+    const fleads = ['Whoa, too fast! It slipped away. Think first, then tap.', "Oops, it got away. Let's figure it out together.", "Good idea to ask. Let's look together."];
+    for (const k of EM.SK.m10.facts) { const it = EM.factItem(k, 'normal'); for (const stage of [1, 2]) { const say = fishWords(it.help(0, stage).say); add(say); fleads.forEach(l => add(`${l} ${say}`)); } }
+    // villagers, gifts and the morning orders
+    ["Hi! I'm Rosa. Apples are falling everywhere! Help me count them, and I'll pay you a coin for each one. Fill my baskets three times and I'll have a surprise for you.",
+      "Hello! I'm Mr. Pip. I buy a pie every day, but I always mix up my coins. Help me count my coins back, and there's a coin in it for you. Help me three times and I'll have a surprise.",
+      'Rosa gave you an apple tree!', 'Mr. Pip gave you a kitten!', 'Mr. Pip has his pies!', "Today's orders are done!",
+      "Mr. Pip's pie stall is open! He needs help counting his coins.", 'Mr. Pip needs help with his coins. Tap him!', "Dot's lesson is on the board.",
+      "Mr. Pip's stall opens once your partners of 10 get strong. Keep fishing!"].forEach(add);
     for (let a = 0; a <= 10; a++) { add(`Yes! ${a} and ${10 - a} make 10.`); add(`${a} + ${10 - a} = 10 is yours now!`); add(`This fish has ${a}. How many more make 10?`); add(`This fish has ${a}. How many more make 10? Tap the number, then the check.`); }
     const GROW = { garden: ['sprout', 'sprouts'], ocean: ['egg', 'eggs'], space: ['baby star', 'baby stars'], classroom: ['outline', 'outlines'] };
     const was = EM.S && EM.S.theme;

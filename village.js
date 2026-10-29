@@ -256,7 +256,10 @@
     }
     return v.orders;
   }
-  const ordersDone = () => { const o = orders(); return !!o && o.list.every(x => x.got >= x.need); };
+  // a hard day still ends: after about 12 minutes on the orders, the day counts as done (time on jobs and the lesson)
+  const ORDER_LIMIT_MS = 12 * 60000;
+  const ordersDone = () => { const o = orders(); return !!o && (o.list.every(x => x.got >= x.need) || (o.ms || 0) >= ORDER_LIMIT_MS); };
+  function addOrderTime(ms) { const o = orders(); if (!o || ordersDone() || !(ms > 0)) return; o.ms = (o.ms || 0) + Math.min(ms, 30 * 60000); EM.save(); }
   const ordersCount = () => { const o = orders(); return o ? o.list.filter(x => x.got >= x.need).length : 0; };
   function orderProgress(id) { const o = orders(); if (!o) return false; const x = o.list.find(q => q.id === id); if (!x || x.got >= x.need) return false; x.got++; EM.save(); return x.got >= x.need; }
   // the fact skills today's job orders cover (Dot's lesson does the rest)
@@ -327,6 +330,15 @@
     if (B.drag && B.drag.at) px.drawItem(k, B.drag.p.item, Math.round(B.drag.at[0] - 8), Math.round(B.drag.at[1] - 12), B.drag.p.paint);
     k.drawDot(Math.round(dot.x), Math.round(dot.y) + dy, t, blinkDot);
     clouds(k, t);
+  }
+  let backdropKey = '', backdropUrl = '';
+  function backdrop() {
+    const v = V(), key = `${v.placed.map(p => p.item + p.cx + p.cy + p.paint).join()}|${v.planks}|${!!v.open.meadow}`;
+    if (key === backdropKey && backdropUrl) return backdropUrl;
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const k = px.kit(c.getContext('2d'));
+    buildMapStill(c.getContext('2d'), k, { planks: v.planks }); k.bake(W, H);
+    const big = document.createElement('canvas'); big.width = W * 4; big.height = H * 4; const g = big.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(c, 0, 0, big.width, big.height);
+    backdropKey = key; backdropUrl = big.toDataURL('image/jpeg', .82); return backdropUrl;
   }
   const buyable = v => px.ITEMS.filter(i => (!i.area || v.open[i.area]) && (!i.gift || ((v.gifts || {})[i.id] || 0) > 0));
   function itemCanvas(id, paint) { const c = document.createElement('canvas'); c.width = 16; c.height = 16; px.drawItem(px.kit(c.getContext('2d')), id, 0, 0, paint); return c; }
@@ -430,8 +442,10 @@
   // all three orders done: the village says thank you, and the rest of the day is hers
   function dayDone() {
     const ov = document.createElement('div'); ov.className = 'vover';
-    ov.innerHTML = `<div class="vcard"><div class="vcard-art">${EM.theme.dot('cheer', 72)}</div><h2>Today's orders are done!</h2><p>Rosa, Mr. Pip and I all say thank you. Here are 5 bonus coins. The rest of the day is yours: build, explore, or keep helping.</p><div class="vrow"><button class="big-btn" data-ov="ok">Yay!</button></div></div>`;
-    document.body.appendChild(ov); EM.speech && EM.speech.say("Today's orders are done!"); sfx('yours'); showCoins();
+    const o = orders(), all = o.list.every(x => x.got >= x.need);
+    const title = all ? "Today's orders are done!" : 'You worked hard today!', text = all ? 'Rosa, Mr. Pip and I all say thank you. Here are 5 bonus coins. The rest of the day is yours: build, explore, or keep helping.' : "That's plenty of orders for one day. Here are 5 bonus coins. The rest of the day is yours: build, explore, or keep helping.";
+    ov.innerHTML = `<div class="vcard"><div class="vcard-art">${EM.theme.dot('cheer', 72)}</div><h2>${title}</h2><p>${text}</p><div class="vrow"><button class="big-btn" data-ov="ok">Yay!</button></div></div>`;
+    document.body.appendChild(ov); EM.speech && EM.speech.say(title); sfx('yours'); showCoins();
     burst(her.x + 4, her.y - 20, 24, ['#fff7c2', '#ffe27a', '#ff9ac6', '#ffffff'], { up: true, spread: 2.4, speed: 60, life: 1100 });
     ov.addEventListener('click', e => { if (!e.target.closest('[data-ov]')) return; ov.remove(); const m = mission(); if (m) say(m.say); });
   }
@@ -683,6 +697,7 @@
   }
   function finishFishing() {
     if (!F) return;
+    addOrderTime(Date.now() - F.started);
     const st = F.stats;
     if (st.items) EM.logSession({ date: Date.now(), kind: 'fishing', title: 'Fishing in her village', items: st.items, fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk, rushed: st.rushed, relooks: 0,
       minutes: Math.round((Date.now() - F.started) / 6000) / 10, avg: st.times.length ? Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length) : 0,
@@ -1018,6 +1033,7 @@
   }
   function finishJob() {
     if (!O) return;
+    addOrderTime(Date.now() - O.started);
     const st = O.stats;
     if (st.items) EM.logSession({ date: Date.now(), kind: O.id, title: O.J.log, items: st.items, fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk, rushed: st.rushed, relooks: 0,
       minutes: Math.round((Date.now() - O.started) / 6000) / 10, avg: st.times.length ? Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length) : 0,
@@ -1076,5 +1092,5 @@
   document.addEventListener('keydown', e => { const j = padJob(); if (!j) return; if (/^[0-9]$/.test(e.key)) j.type(e.key); else if (e.key === 'Backspace') j.back(); else if (e.key === 'Enter') j.ok(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && document.getElementById('vcanvas') && scene) startLoop({ fish: drawFishing, job: drawJob }[scene.kind] || drawMap); });
 
-  EM.village = { render, openBoard, checkUnlocks, meadowProgress, mission: () => mission(), orders: () => orders(), ordersDone, orderProgress, jobSkills, state: V, _fish: () => F, _orch: () => O, _job: () => O, _mode: () => mode, _her: () => her, _ui: () => ui, _scene: () => scene };
+  EM.village = { render, openBoard, checkUnlocks, meadowProgress, mission: () => mission(), orders: () => orders(), ordersDone, orderProgress, addOrderTime, jobSkills, backdrop, state: V, _fish: () => F, _orch: () => O, _job: () => O, _mode: () => mode, _her: () => her, _ui: () => ui, _scene: () => scene };
 })();

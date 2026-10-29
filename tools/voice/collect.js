@@ -77,7 +77,7 @@ const server = http.createServer((req, res) => { let p = decodeURIComponent(req.
     // villagers, gifts and the morning orders
     ["Hi! I'm Rosa. Apples are falling everywhere! Help me count them, and I'll pay you a coin for each one. Fill my baskets three times and I'll have a surprise for you.",
       "Hello! I'm Mr. Pip. I buy a pie every day, but I always mix up my coins. Help me count my coins back, and there's a coin in it for you. Help me three times and I'll have a surprise.",
-      'Rosa gave you an apple tree!', 'Mr. Pip gave you a kitten!', 'Mr. Pip has his pies!', "Today's orders are done!",
+      'Rosa gave you an apple tree!', 'Mr. Pip gave you a kitten!', 'Mr. Pip has his pies!', "Today's orders are done!", 'You worked hard today!',
       "Mr. Pip's pie stall is open! He needs help counting his coins.", 'Mr. Pip needs help with his coins. Tap him!', "Dot's lesson is on the board.",
       "Mr. Pip's stall opens once your partners of 10 get strong. Keep fishing!"].forEach(add);
     for (let a = 0; a <= 10; a++) { add(`Yes! ${a} and ${10 - a} make 10.`); add(`${a} + ${10 - a} = 10 is yours now!`); add(`This fish has ${a}. How many more make 10?`); add(`This fish has ${a}. How many more make 10? Tap the number, then the check.`); }

@@ -86,7 +86,16 @@ Dot now speaks with a recorded child voice (Azure neural voice "Ana", slightly f
 - Grown-up area → Voice: **Dot (recorded)** is the default and the first option; the iPad voices are still there.
 - To change lines or the voice: `node tools/voice/collect.js lines.json && node tools/voice/build.js lines.json` (needs the Azure key on the environment; only new lines are recorded). `tools/voice/coverage.js` checks nothing is missing.
 
-## Coins, Rosa's orchard, and Dot's guide (built, not live yet)
+## Morning orders, Mr. Pip's market, and every job on one screen (built, not live yet)
+
+- **Morning orders.** Each day the village has three requests, shown on Dot's note ("Today's orders · 1 of 3 done") and on the notice board with checkboxes: **Rosa's apples** (5 right answers), **Mr. Pip's pies** (5; until his stall opens, **5 fish** instead), and **Dot's lesson** on the board. All three done: a thank-you, 5 bonus coins, and Dot's note switches to "Free time". A hard day still ends: after about 12 minutes on the orders, the day counts as done.
+- **Dot's lesson** (`startSession('lesson')`): the parts of the day that aren't village jobs yet: big numbers, school work, times facts, Teach Dot, and any open fact skills no job covers today (Quick Look, Number Bonds). About 60% of a full session's length. It shows the grown-up card at the end and plays your recorded reply at the start. **Practice everything** (the old full daily session), the evening review and pick-a-skill stay on the board.
+- **Mr. Pip's market (taking away).** His pie stall is on the map, bottom right; it opens with Ten Take Away (when partners of 10 are strong), and Dot announces it. Mr. Pip counts his coins onto the counter: "Here are 13 coins. The pie costs 8. How many coins back?" The sum is on a chalkboard on the counter. Help lays his coins in trays of ten and takes the pie's coins out the way practice's strategy says (take from the 10, ones first, or think addition).
+- **One job screen for everything.** Fishing moved onto the same layout as the orchard and the market: the question on a sign on the shore, numbers under her right thumb, "hear it" and "I don't know" under her left, coins and the goal top left, Dot's words in a bubble (help shows the ten-frame there, said as fish and spots).
+- **Villagers with wants.** The first time she meets Rosa or Mr. Pip, they say hello and promise a surprise for helping three times. Rosa gives her an apple tree; Mr. Pip, one of his cat's kittens. Gifts wait free in the yard tray (and come back if she puts them away).
+- **Never leaving the world.** Dot's lesson, placement, the summary and the skill list sit over a soft, blurred view of her own village.
+
+## Coins, Rosa's orchard, and Dot's guide (live)
 
 - **Coins are the one kind of money.** Her fish became coins, one for one. Fishing now sells each fish for a coin; Rosa pays a coin for each apple job. Prices in the yard are in coins.
 - **The orchard (adding):** Rosa stands by her apple trees on the map. Tap her (or **🍎 Help Rosa**) and the camera moves in close. Apples drop into two baskets, hers and Rosa's, and Rosa asks "You picked 8. I picked 5. How many apples in all?" The sum is on a wooden sign in the orchard, and the number she types appears on it. Five right answers fill Rosa's baskets.

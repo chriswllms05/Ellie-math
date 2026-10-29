@@ -194,6 +194,8 @@ If she fishes on her own, the rest of this holds. If she only builds, the jobs n
 
 ### Slice 1.5: coins and the first villager
 
+**Status: built and live.**
+
 - Coins replace fish as money (her fish become coins, one for one; fishing now pays a coin a fish).
 - The job screen layout above, built first for the orchard.
 - **Orchard:** Rosa, a villager on the map. She and Ellie each pick apples; Ellie works out how many in all. Runs on the addition facts she has open, with help drawn as crates of ten.
@@ -201,7 +203,9 @@ If she fishes on her own, the rest of this holds. If she only builds, the jobs n
 
 ### Slice 2
 
-Morning orders: three villager requests a day (orchard, fishing, post office), and the first character with a want. Practice from the notice board moves into the jobs, so the plain practice screen retires. Story problems move to the notice board and column math to the workshop, with the scratchpad.
+**Status: built.** Morning orders: three requests a day (Rosa's apples, Mr. Pip's pies or 5 fish until his stall opens, and Dot's lesson on the notice board), a 12-minute limit for hard days, Mr. Pip's market (take-away facts), fishing on the shared job screen, and Rosa's and Mr. Pip's surprises. Dot's lesson still uses the plain practice screen (over a soft view of her village) for big numbers, school work and Teach Dot.
+
+Still to come from the original slice 2 plan: the post office (place value) and the bakery. Story problems move to the notice board and column math to the workshop, with the scratchpad, and then the plain practice screen retires.
 
 ### Slice 3
 

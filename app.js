@@ -20,6 +20,10 @@
   function render() {
     const views = { avatar: () => { $app.innerHTML = EM.avatar.builder(!S.avatar); }, world: renderWorld, home: renderHome, skills: renderSkills, practice: renderPractice, summary: renderSummary, parent: () => EM.parent.render($app, { go, startSession }), break: renderBreak, village: () => EM.village.render($app) };
     (views[screen] || renderHome)();
+    // screens that aren't in the village yet sit over a soft view of it, so she never leaves her world
+    const inworld = ['practice', 'summary', 'skills', 'break'].includes(screen) && EM.village && S.avatar;
+    document.body.classList.toggle('inworld', !!inworld);
+    if (inworld) { try { document.body.style.setProperty('--world', `url(${EM.village.backdrop()})`); } catch (e) {} }
     fitEqs();
   }
   // a long equation (400 + 600 = ___) shrinks to fit its column instead of pushing the answer box off the edge
@@ -191,7 +195,7 @@
       stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {}, how: { knew: 0, trick: 0, counted: 0 },
         byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 }, slips: 0, slipKeys: [], compChecks: [], colFacts: [], column: { items: 0, clean: 0, factSlip: 0, regroupMiss: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlayed: false, idkCount: 0, missStreak: 0, knownBefore: EM.countCollected() };
     screen = 'practice';
-    if (kind === 'daily' && S.reply && !S.reply.played) {
+    if ((kind === 'daily' || kind === 'lesson') && S.reply && !S.reply.played) {
       S.reply.played = true; EM.save(); screen = 'home';
       overlay(`<div class="celebrate-row">${D('wow', 80)}<span class="milestone-big">📬</span></div><h2>A message from your grown-up!</h2><button class="big-btn" data-close="1">Let's go!</button>`, () => { screen = 'practice'; nextBlock(); });
       EM.clips.play('clip:reply');
@@ -574,7 +578,7 @@
     delete S.inflight;
     if (answered) EM.logSession(sessionRecord()); else EM.save();
     if (R.kind === 'placement' && (answered >= 15 || R.idx >= R.queue.length)) { seedLevels(); S.placement.done = true; S.placement.at = Date.now(); EM.save(); }
-    if (R.kind === 'lesson' && (answered >= 8 || (R.bi >= R.blocks.length - 1 && R.idx >= R.queue.length)) && EM.village) EM.village.orderProgress('lesson');
+    if (R.kind === 'lesson' && EM.village) { EM.village.addOrderTime(Date.now() - R.started); if (answered >= 8 || (R.bi >= R.blocks.length - 1 && R.idx >= R.queue.length)) EM.village.orderProgress('lesson'); }
     R.newSkills = answered ? EM.newlyOpened() : [];
     if (answered && R.kind !== 'skill') { S.card = { date: Date.now(), html: EM.parent.grownupCard(R), seen: false }; EM.save(); }
     screen = answered ? 'summary' : 'home';

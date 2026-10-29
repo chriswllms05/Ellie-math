@@ -193,6 +193,11 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     check((await page.evaluate(() => EM.village.state().coins)) === c0 + 5, 'all three orders done: a thank-you and 5 bonus coins');
     await shot('07i-day-done'); await page.click('.vover [data-ov]');
     check((await page.evaluate(() => EM.todayDone())), 'and the day counts as done');
+    // a hard day still ends: 12 minutes on the orders counts as done
+    await page.evaluate(() => { const v = EM.village.state(); v.orders.day = 'yesterday'; const o = EM.village.orders(); o.ms = 12 * 60000 + 1; EM.save(); EM.go('home'); });
+    await page.waitForFunction(() => /worked hard/.test((document.querySelector('.vover') || {}).textContent || ''), null, { timeout: 15000 });
+    check(await page.evaluate(() => EM.todayDone() && EM.village.orders().list.some(x => x.got < x.need)), 'after 12 minutes of orders the day is done, even with orders left');
+    await page.click('.vover [data-ov]');
     await page.evaluate(() => { EM.S.placement.done = false; EM.save(); });
 
     // ---- the notice board ----

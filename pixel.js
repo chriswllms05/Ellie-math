@@ -49,19 +49,22 @@
     const k = { R, P, sprite, ell, line, shadowEll, add, shadow, flush, C, get g() { return g; } };
     k.setCtx = c => { g = c; };
     // Draw everything onto the current canvas, and also cut each tall thing out as its own sprite (with its base y).
-    k.bake = (W, H) => {
+    k.bake = (LW, LH) => {
+      // hi-res scenes draw through a scale transform: logical coords in, Z fine pixels per logical pixel out
+      const Z = g.getTransform().a || 1, W = LW * Z, H = LH * Z;
       shadows.forEach(f => f());
-      const base = g, sc = document.createElement('canvas'); sc.width = W; sc.height = H; const sx = sc.getContext('2d', { willReadFrequently: true });
+      const base = g, sc = document.createElement('canvas'); sc.width = W; sc.height = H; const sx = sc.getContext('2d', { willReadFrequently: true }); sx.setTransform(Z, 0, 0, Z, 0, 0);
       const sprites = [];
       list.sort((a, b) => a.y - b.y).forEach(t => {
         t.f();
         if (!t.tall) return;
-        sx.clearRect(0, 0, W, H); g = sx; t.f(); g = base;
+        sx.clearRect(0, 0, LW, LH); g = sx; t.f(); g = base;
         const d = sx.getImageData(0, 0, W, H).data; let x0 = W, y0 = H, x1 = -1, y1 = -1;
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
         if (x1 < 0) return;
         const c = document.createElement('canvas'); c.width = x1 - x0 + 1; c.height = y1 - y0 + 1; c.getContext('2d').drawImage(sc, x0, y0, c.width, c.height, 0, 0, c.width, c.height);
-        sprites.push({ y: t.y, x: x0, top: y0, w: c.width, h: c.height, c });
+        // position and size in logical pixels, so the scene code never needs to know about Z
+        sprites.push({ y: t.y, x: x0 / Z, top: y0 / Z, w: c.width / Z, h: c.height / Z, c });
       });
       list.length = 0; shadows.length = 0;
       return sprites;
@@ -383,5 +386,5 @@
     }
   }
 
-  EM.px = { C, PAINT, ROOF, ITEMS, ITEM, hash, inEll, kit, ground, present, herLook, drawItem, CHIBI, ramp };
+  EM.px = { C, PAINT, ROOF, ITEMS, ITEM, hash, inEll, kit, ground, present, herLook, drawItem, CHIBI, ramp, mix, APPLES, FAR_APPLES, FAR_LEAF };
 })();

@@ -10,6 +10,7 @@
 (function () {
   const EM = window.EM, px = EM.px, C = px.C;
   const W = 300, H = 210;
+  const Z = 2;   // fine pixels per scene pixel: the art is drawn on a grid twice as fine as the layout
   const S = () => EM.S;
   const V = () => { const s = S(); if (!s.village) s.village = { coins: 0, placed: [], open: {}, caught: 0, rounds: 0 }; const v = s.village; if (v.coins === undefined) { v.coins = v.fish || 0; delete v.fish; } if (v.planks === undefined) v.planks = Math.min(8, meadowProgress().have); return v; };
   const esc = EM.esc, PAINTS = Object.keys(px.PAINT);
@@ -59,8 +60,9 @@
   // crisp pixel art at any zoom. While it moves, it glides.
   function viewCam(sc, DW, DH) {
     const c = sc.cam; if (sc.camTween) return c;
-    const ppx = Math.max(Math.round(DW / c.w), Math.ceil(DW / W), Math.ceil(DH / H)), w = DW / ppx, h = DH / ppx;
-    const x = Math.round(Math.max(0, Math.min(W - w, c.x + (c.w - w) / 2)) * ppx) / ppx, y = Math.round(Math.max(0, Math.min(H - h, c.y + (c.h - h) / 2)) * ppx) / ppx;
+    // screen pixels per FINE pixel, a whole number
+    const ppx = Math.max(Math.round(DW / (c.w * Z)), Math.ceil(DW / (W * Z)), Math.ceil(DH / (H * Z))), w = DW / ppx / Z, h = DH / ppx / Z, q = ppx * Z;
+    const x = Math.round(Math.max(0, Math.min(W - w, c.x + (c.w - w) / 2)) * q) / q, y = Math.round(Math.max(0, Math.min(H - h, c.y + (c.h - h) / 2)) * q) / q;
     return { x, y, w, h };
   }
   // scene point -> stage pixels, through the camera
@@ -84,10 +86,11 @@
   // ---------- the living scene: baked still layer + things that move ----------
   function makeScene(kind, buildStill) {
     const sc = { kind, S: scaleFor(), cam: { ...CAM_FULL }, camTween: null, particles: [], dyn: [], t0: now() };
-    const base = document.createElement('canvas'); base.width = W; base.height = H;
-    sc.base = base; sc.buildStill = buildStill; sc.rebake = () => { const g = base.getContext('2d'); g.clearRect(0, 0, W, H); const k = px.kit(g); sc.waterPts = sc.buildStill(g, k); sc.sprites = k.bake(W, H); };
+    const fine = () => { const c = document.createElement('canvas'); c.width = W * Z; c.height = H * Z; c.getContext('2d').setTransform(Z, 0, 0, Z, 0, 0); return c; };
+    const base = fine();
+    sc.base = base; sc.buildStill = buildStill; sc.rebake = () => { const g = base.getContext('2d'); g.clearRect(0, 0, W, H); const k = px.kit(g, { hi: true }); sc.waterPts = sc.buildStill(g, k); sc.sprites = k.bake(W, H); };
     sc.rebake();
-    sc.frame = document.createElement('canvas'); sc.frame.width = W; sc.frame.height = H; sc.fk = px.kit(sc.frame.getContext('2d'));
+    sc.frame = fine(); sc.fk = px.kit(sc.frame.getContext('2d'), { hi: true });
     // soft light: warm wash and window glows, made once at full size; vignette is fixed to the screen
     const DW = W * sc.S, DH = H * sc.S;
     sc.light = document.createElement('canvas'); sc.light.width = DW; sc.light.height = DH;
@@ -109,17 +112,17 @@
       if (t - last < 30) return; last = t;
       const sc = scene; if (!sc) return;
       if (sc.camTween) { const tw = sc.camTween, k = Math.min(1, (now() - tw.t0) / tw.ms), e = ease(k); for (const key of ['x', 'y', 'w', 'h']) sc.cam[key] = lerp(tw.from[key], tw.to[key], e); if (k >= 1) { sc.camTween = null; tw.then && tw.then(); } }
-      const fc = sc.frame.getContext('2d'); fc.clearRect(0, 0, W, H); fc.drawImage(sc.base, 0, 0);
+      const fc = sc.frame.getContext('2d'); fc.clearRect(0, 0, W, H); fc.drawImage(sc.base, 0, 0, W, H);
       draw(sc, sc.fk, now());
       // particles
       const k = sc.fk, tn = now();
-      sc.particles = sc.particles.filter(p => { const a = (tn - p.t0) / 1000; if (a * 1000 > p.life) return false; const x = p.x + p.vx * a, y = p.y + p.vy * a + .5 * p.g * a * a; k.R(Math.round(x), Math.round(y), p.s, p.s, p.c); return true; });
+      sc.particles = sc.particles.filter(p => { const a = (tn - p.t0) / 1000; if (a * 1000 > p.life) return false; const x = p.x + p.vx * a, y = p.y + p.vy * a + .5 * p.g * a * a; k.F(Math.round(x * Z), Math.round(y * Z), p.s * 2, p.s * 2, p.c); return true; });
       // to the screen, through the camera
       const cv = document.getElementById('vcanvas'), [DW, DH] = bufSize();
       if (cv.width !== DW || cv.height !== DH) { cv.width = DW; cv.height = DH; }
       const dc = cv.getContext('2d'), cam = sc.view = viewCam(sc, DW, DH), s = sc.S;
       dc.imageSmoothingEnabled = false; dc.globalCompositeOperation = 'source-over';
-      dc.drawImage(sc.frame, cam.x, cam.y, cam.w, cam.h, 0, 0, DW, DH);
+      dc.drawImage(sc.frame, cam.x * Z, cam.y * Z, cam.w * Z, cam.h * Z, 0, 0, DW, DH);
       dc.globalCompositeOperation = 'soft-light'; dc.drawImage(sc.light, cam.x * s, cam.y * s, cam.w * s, cam.h * s, 0, 0, DW, DH);
       dc.globalCompositeOperation = 'lighter'; dc.drawImage(sc.glow, cam.x * s, cam.y * s, cam.w * s, cam.h * s, 0, 0, DW, DH);
       if (sc.dotAt) { const [x, y] = sc.dotAt, gx = (x - cam.x) / cam.w * DW, gy = (y - cam.y) / cam.h * DH, r = 16 * DW / cam.w, q = dc.createRadialGradient(gx, gy, 0, gx, gy, r); q.addColorStop(0, 'rgba(255,190,110,.32)'); q.addColorStop(1, 'rgba(0,0,0,0)'); dc.fillStyle = q; dc.fillRect(gx - r, gy - r, 2 * r, 2 * r); }
@@ -136,7 +139,7 @@
     items.sort((a, b) => a.y - b.y).forEach(it => {
       it.draw();
       if (!it.box) return; const [bx, by, bw, bh] = it.box;
-      for (const s of sc.sprites) if (s.y > it.y && s.x < bx + bw && s.x + s.w > bx && s.top < by + bh && s.top + s.h > by) fc.drawImage(s.c, s.x, s.top);
+      for (const s of sc.sprites) if (s.y > it.y && s.x < bx + bw && s.x + s.w > bx && s.top < by + bh && s.top + s.h > by) fc.drawImage(s.c, s.x, s.top, s.w, s.h);
     });
   }
 
@@ -145,14 +148,14 @@
     // drifting smoke
     for (const [x, y] of chimneys) for (let i = 0; i < 5; i++) { const a = ((t / 2600 + i / 5) % 1), r = 1 + Math.floor(a * 3.5), sx = Math.round(x + Math.sin(a * 6 + i) * 2 + a * 6), sy = Math.round(y - a * 22); k.ell(sx, sy, r, Math.max(1, r - 1), a > .6 ? 'rgba(255,255,255,.45)' : '#f3f1f6'); }
     // water sparkles
-    (sc.waterPts || []).forEach(([x, y], i) => { const v = Math.sin(t / 380 + i * 2.3); if (v > .82) { k.P(x, y, C.w4); if (v > .95) { k.P(x + 1, y, C.w4); k.P(x - 1, y, C.w3); } } });
+    (sc.waterPts || []).forEach(([x, y], i) => { const v = Math.sin(t / 380 + i * 2.3), X = x * Z, Y = y * Z; if (v > .82) { k.F(X, Y, 2, 1, C.w4); if (v > .95) { k.F(X - 2, Y + 1, 6, 1, C.w4); k.F(X - 3, Y + 1, 1, 1, C.w3); k.F(X + 4, Y + 1, 1, 1, C.w3); k.FP(X, Y - 1, '#ffffff'); } } });
     // fish shadows gliding under the water
     fish.forEach(([cx, cy, rx, ry, sp, ph], i) => { const a = t / 1000 * sp + ph, x = cx + Math.cos(a) * rx, y = cy + Math.sin(a) * ry; k.drawFish(Math.round(x - 4), Math.round(y - 2), 'rgba(18,48,92,.42)', Math.sin(a) * sp > 0); });
     // ripples now and then
     if (!sc.nextRipple || t > sc.nextRipple) { const pts = sc.waterPts || []; if (pts.length) { const [x, y] = pts[Math.floor(Math.random() * pts.length)]; (sc.ripples = sc.ripples || []).push({ x, y, t0: t }); } sc.nextRipple = t + 1800 + Math.random() * 2200; }
-    sc.ripples = (sc.ripples || []).filter(r => { const a = (t - r.t0) / 1100; if (a > 1) return false; const rad = 1 + a * 7; for (let i = 0; i < 18; i++) { const an = i / 18 * Math.PI * 2; if ((i + Math.floor(a * 4)) % 3) k.P(Math.round(r.x + Math.cos(an) * rad), Math.round(r.y + Math.sin(an) * rad * .45), a > .6 ? C.w2 : C.w3); } return true; });
+    sc.ripples = (sc.ripples || []).filter(r => { const a = (t - r.t0) / 1100; if (a > 1) return false; const rad = (1 + a * 7) * Z; for (let i = 0; i < 36; i++) { const an = i / 36 * Math.PI * 2; if ((i + Math.floor(a * 6)) % 4) k.FP(Math.round(r.x * Z + Math.cos(an) * rad), Math.round(r.y * Z + Math.sin(an) * rad * .45), a > .6 ? C.w2 : i < 18 ? C.w3 : C.w4); } return true; });
     // butterflies
-    butterflies.forEach(([cx, cy, rx, ry, sp, col], i) => { const a = t / 1000 * sp + i * 2, x = Math.round(cx + Math.sin(a) * rx), y = Math.round(cy + Math.sin(a * 2.1) * ry), up = Math.floor(t / 140 + i) % 2; k.P(x, y, '#2b2433'); k.P(x, y + 1, '#2b2433'); if (up) { k.P(x - 1, y - 1, col); k.P(x + 1, y - 1, col); k.P(x - 2, y - 1, col); k.P(x + 2, y - 1, col); } else { k.P(x - 1, y, col); k.P(x + 1, y, col); k.P(x - 1, y + 1, col); k.P(x + 1, y + 1, col); } });
+    butterflies.forEach(([cx, cy, rx, ry, sp, col], i) => { const a = t / 1000 * sp + i * 2, x = Math.round(cx + Math.sin(a) * rx), y = Math.round(cy + Math.sin(a * 2.1) * ry), up = Math.floor(t / 140 + i) % 2; k.butterfly(x, y, col, up); });
   }
   function clouds(k, t) { [[0, 40, 46, 16], [260, 150, 54, 18]].forEach(([off, y, rx, ry]) => { const x = Math.round(((t * .006 + off) % (W + 2 * rx + 60)) - rx - 30); k.ell(x, y, rx, ry, 'rgba(20,30,60,.07)'); k.ell(x + rx * .5, y - 4, rx * .6, ry * .7, 'rgba(20,30,60,.05)'); }); }
 
@@ -168,13 +171,13 @@
     px.ground(g, W, H, { water, path, plot: (x, y) => inPlot(YARD)(x, y) || (open && inPlot(MEADOW)(x, y)), tall });
     for (let n = 0; n < 40; n++) { const x = Math.floor(px.hash(n, 1, 21) * W), y = Math.floor(px.hash(n, 2, 21) * H); if (water(x, y) || path(x, y) || inPlot(YARD)(x, y) || inPlot(MEADOW)(x, y) || px.inEll(x, y, POND[0], POND[1], POND[2] + 4, POND[3] + 4)) continue; k.flowersGround(x, y, ['#ffffff', '#ffe066', '#ff9ac6', '#c7a6ff'][n % 4]); }
     k.house(226, 112, 40, 'blue', { chimney: true, lit: true, shutter: ['#b04774', '#e86f9a'] });
-    k.add(DOCK[1] - 2, () => { const [x, y, w, h] = DOCK; k.R(x, y, w, h, C.k2); for (let a = x; a < x + w; a += 5) { k.R(a, y, 1, h, C.k1); k.P(a + 2, y + 1 + (a % 6), C.k3); } k.R(x, y, w, 1, C.k4); k.R(x, y + h - 1, w, 1, C.k1); [[x + 2, y + h], [x + 16, y + h]].forEach(([a, b]) => { k.R(a, b, 3, 6, C.k1); k.R(a, b, 1, 6, C.k2); k.R(a - 1, b + 5, 5, 1, C.w3); }); }, false);
+    k.add(DOCK[1] - 2, () => k.dock(...DOCK), false);
     k.barrel(128, 136); k.crate(116, 137, '#f2a33a');
     k.board(...BOARD);
     // the bridge: one plank for each make-10 fact that is hers
     const laid = Math.min(PLANKS, opt.planks === undefined ? v.planks : opt.planks);
     k.add(66, () => { const x = 241, y = 50; k.R(x - 1, y + 1, 2, 18, C.k1); k.R(x + 14, y + 1, 2, 18, C.k1); k.R(x - 1, y + 1, 1, 18, C.k2); k.R(x + 14, y + 1, 1, 18, C.k2);
-      for (let j = 0; j < PLANKS; j++) { if (j >= laid) continue; const yy = y + 2 + j * 2; k.R(x + 1, yy, 13, 2, j % 2 ? C.k2 : C.k3); k.P(x + 1 + (j * 5) % 11, yy, C.k4); k.R(x + 1, yy + 1, 13, 1, C.k1); }
+      for (let j = 0; j < PLANKS; j++) { if (j >= laid) continue; k.plank(x + 1, y + 2 + j * 2, 13, j); }
       if (laid < PLANKS) { k.R(x + 18, y + 6, 1, 10, C.k1); k.R(x + 15, y + 3, 9, 5, C.k3); k.R(x + 15, y + 3, 9, 1, C.k4); k.R(x + 16, y + 5, 7, 1, C.k1); } }, false);
     if (open) { const a = MEADOW, x0 = a.x - 4, y0 = a.y - 3, x1 = a.x + a.cols * 16 + 2, y1 = a.y + a.rows * 16 + 4; k.fence(x0, y0, x1, y0); k.fence(x0, y1, x1, y1); k.fence(x0, y0, x0, y1); k.fence(x1, y0, x1, y1); }
     { const a = YARD, x0 = a.x - 4, y0 = a.y - 3, x1 = a.x + a.cols * 16 + 2, y1 = a.y + a.rows * 16 + 4; k.fence(x0, y0, x1, y0); k.fence(x0, y1, x1, y1); k.fence(x1, y0, x1, y1); k.fence(x0, y0, x0, y0 + 14); k.fence(x0, y0 + 34, x0, y1); }
@@ -328,13 +331,13 @@
     items.push({ y: her.y, box: [Math.round(her.x) - 1, Math.round(her.y) - 20, 11, 21], draw: () => { k.shadowEll(Math.round(her.x) + 4, Math.round(her.y), 4, 1); k.drawPerson(Math.round(her.x), Math.round(her.y), look(), { walk: wf, flip: her.flip, blink: !walking && (t % 3600) < 120, bob: hop, wave: her.wave > t }); } });
     // Rosa by her orchard, in her straw hat; she waves when helping her is the next job
     items.push({ y: ROSA[1], box: [ROSA[0] - 2, ROSA[1] - 19, 13, 20], draw: () => { const [x, y] = ROSA; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, ROSA_LOOK, { blink: (t % 3900) < 120, wave: (t % 5200) < 1100 && (mission() || {}).text === 'Help Rosa pick apples' });
-      k.R(x + 2, y - 18, 5, 2, '#e2ae52'); k.R(x + 2, y - 18, 3, 1, '#f8dc8a'); k.R(x, y - 16, 9, 1, '#c08636'); k.R(x + 2, y - 17, 5, 1, '#b84a3e'); } });
+      k.strawHat(x, y); } });
     items.push({ y: BEA[1], box: [BEA[0] - 2, BEA[1] - 19, 13, 20], draw: () => { const [x, y] = BEA; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, BEA_LOOK, { flip: true, blink: ((t + 3300) % 4500) < 120, wave: (t % 5900) < 1100 && (mission() || {}).job === 'bakery' });
-      k.R(x + 1, y - 19, 7, 4, '#f4efe2'); k.R(x + 1, y - 19, 7, 1, '#ffffff'); k.R(x + 1, y - 15, 7, 1, '#cfc6b4'); } });
+      k.chefHat(x, y); } });
     items.push({ y: MO[1], box: [MO[0] - 2, MO[1] - 17, 13, 18], draw: () => { const [x, y] = MO; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, MO_LOOK, { flip: true, blink: ((t + 2600) % 4700) < 120, wave: (t % 6100) < 1100 && (mission() || {}).job === 'post' });
-      k.R(x + 1, y - 16, 7, 2, '#3a5aa8'); k.R(x, y - 14, 9, 1, '#2b2b3a'); } });
+      k.mailCap(x, y); } });
     items.push({ y: PIP[1], box: [PIP[0] - 2, PIP[1] - 17, 13, 18], draw: () => { const [x, y] = PIP; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, PIP_LOOK, { flip: true, blink: ((t + 1700) % 4300) < 120, wave: (t % 5600) < 1100 && (mission() || {}).job === 'market' });
-      k.R(x + 2, y - 10, 5, 2, '#e8e8f0'); k.P(x + 4, y - 8, '#e8e8f0'); } });
+      k.beard(x, y); } });
     // things she just built pop in
     (ui.popping || []).forEach(pp => { const a = Math.min(1, (t - pp.t0) / 380), s = a < .7 ? a / .7 * 1.15 : 1.15 - (a - .7) / .3 * .15, ar = area(pp.p.area), x = ar.x + pp.p.cx * 16, y = ar.y + pp.p.cy * 16;
       items.push({ y: y + 15, draw: () => { const c = pp.c || (pp.c = itemCanvas(pp.p.item, pp.p.paint)); const w = Math.max(1, Math.round(16 * s)); sc.frame.getContext('2d').drawImage(c, Math.round(x + 8 - w / 2), Math.round(y + 16 - w), w, w); } }); });

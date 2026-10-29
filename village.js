@@ -702,7 +702,7 @@
   }
   function celebrate(title, text, then, buttons, spoken) {
     const ov = document.createElement('div'); ov.className = 'vover';
-    ov.innerHTML = `<div class="vcard"><div class="vcard-art">${EM.theme.dot('cheer', 72)}</div><h2>${esc(title)}</h2><p>${esc(text)}</p><div class="vrow">${(buttons || [['Yay!', 'keep']]).map(([t, a]) => `<button class="big-btn" data-ov="${a}">${esc(t)}</button>`).join('')}</div></div>`;
+    ov.innerHTML = `<div class="vcard"><div class="vcard-art">${EM.theme.dot('cheer', 72)}</div><h2>${esc(title)}</h2><p>${esc(text)}</p><div class="vrow">${(buttons || [['Yay!', 'keep']]).map(([t, a], i) => `<button class="big-btn ${i ? 'alt' : ''}" data-ov="${a}">${esc(t)}</button>`).join('')}</div></div>`;
     document.body.appendChild(ov); EM.speech && EM.speech.say(spoken || title);
     ov.addEventListener('click', e => { const b = e.target.closest('[data-ov]'); if (!b) return; ov.remove(); if (b.dataset.ov === 'tobuild') return leaveJob(() => enterBuild(null)); then(); });
   }

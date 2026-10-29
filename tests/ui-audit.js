@@ -77,7 +77,7 @@ function audit() {
     await page.click('[data-v=deselect]'); await page.click('[data-v=done]');
     await page.evaluate(() => EM.village.openBoard()); await check('06-board');
     await page.click('[data-b=close]');
-    await tapScene(60, 160); await page.waitForSelector('.fishing', { timeout: 8000 });
+    await tapScene(92, 140); await page.waitForSelector('.fishing', { timeout: 8000 });
     await page.waitForFunction(() => EM.village._fish() && EM.village._fish().phase === 'ask', null, { timeout: 8000 }); await check('07-fishing', 400);
     await page.click('[data-v=jidk]'); await check('08-fishing-help');
     await page.evaluate(() => { const ans = EM.village._fish().f.ans; });

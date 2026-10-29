@@ -37,7 +37,7 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
 
     // ---- the pond: she walks there, the camera zooms in ----
     await page.waitForTimeout(300);
-    await tapScene(60, 160);
+    await tapScene(92, 140);
     await page.waitForTimeout(700);
     check(await page.evaluate(() => EM.village._her().path.length > 0 || EM.village._mode() === 'fish'), 'tapping the pond makes her walk there');
     await page.waitForSelector('.fishing', { timeout: 8000 }); await page.waitForFunction(() => EM.village._fish() && EM.village._fish().phase === 'ask', null, { timeout: 8000 });

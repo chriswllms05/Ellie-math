@@ -228,7 +228,7 @@
         if (v === 'a') k.coin(cx, cy + 1);
         else if (v === 'x') sprite(cx, cy + 1, ['.oooo.', 'o....o', 'o....o', 'o....o', '.oooo.'], { o: '#a08a6a' }); }
     };
-    // a parcel-post package (tied with string) and the mail cart
+    // a package (tied with string) and the mail cart
     k.package = (x, y, w = 14, h = 10) => { R(x, y, w, h, '#c89a64'); R(x, y, w, 1, '#e2bc88'); R(x + w - 1, y, 1, h, '#9a6e40'); R(x, y + h - 1, w, 1, '#9a6e40'); R(x + Math.floor(w / 2), y, 2, h, '#b84a3e'); R(x, y + Math.floor(h / 2), w, 1, '#b84a3e'); };
     k.cart = (x, y) => { shadowEll(x + 30, y + 8, 30, 3); R(x, y - 16, 60, 16, C.k1); R(x + 1, y - 15, 58, 14, C.k2); R(x + 1, y - 15, 58, 1, C.k3); for (let i = x + 8; i < x + 60; i += 12) R(i, y - 15, 1, 14, C.k1);
       for (const wx of [x + 10, x + 50]) { k.ell(wx, y + 2, 6, 6, C.k1); k.ell(wx, y + 2, 5, 5, C.k3); k.ell(wx, y + 2, 2, 2, C.k1); R(wx - 5, y + 2, 10, 1, C.k2); R(wx, y - 3, 1, 10, C.k2); }

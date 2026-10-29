@@ -1,20 +1,25 @@
 /* Ellie Math — pixel-art kit for her village: palette, ground, props, people, and the things she can build.
    Every pixel is placed on purpose: no anti-aliasing, no blur. Light comes from the top left, and outlines are
-   darker shades of each material, never black. Scenes are drawn small and scaled up with nearest-neighbor. */
+   darker shades of each material, never black. Scenes are drawn small and scaled up with nearest-neighbor.
+   Depth and hierarchy decide how loud anything is: the world is a calm, warm middle ground; far things (opt.far)
+   are lighter, cooler and lower in contrast; the things she's working with (people, the apples she counts, what she
+   builds) keep full color. */
 'use strict';
 (function () {
   const EM = window.EM;
   const C = {
-    g0: '#24493a', g1: '#356b3c', g2: '#4f9142', g3: '#74b34c', g4: '#a9d468', gf: '#c5e27e',
-    d0: '#5a3b33', d1: '#8a5c42', d2: '#b98a5c', d3: '#d9b17c', d4: '#efd3a2',
-    s0: '#34324a', s1: '#56546d', s2: '#82819a', s3: '#adacbd', s4: '#d8d7e0',
-    w0: '#22508a', w1: '#2a62a6', w2: '#327cc0', w3: '#58a7e0', w4: '#a8dcff',
-    k0: '#3a2430', k1: '#613a30', k2: '#8a573a', k3: '#b47f4c', k4: '#d9a96e',
-    p0: '#a08a74', p1: '#cdb592', p2: '#e6d4ae', p3: '#f7ecd0',
-    r0: '#4f1f30', r1: '#83303a', r2: '#b84a3e', r3: '#da7350', r4: '#f0a175',
-    b0: '#1f2652', b1: '#2f4386', b2: '#4566b6', b3: '#6b97db', b4: '#a3c8f0',
-    y0: '#5a3622', y1: '#8c5a28', y2: '#c08636', y3: '#e2ae52', y4: '#f4d688',
-    l0: '#173628', l1: '#245535', l2: '#367e3e', l3: '#5aa548', l4: '#94cf62',
+    // the middle ground: warm, sunlit and calm; grass tufts sit close to the grass so the ground stays quiet
+    g0: '#4f7f55', g1: '#7aa863', g2: '#87b46c', g3: '#9bc27a', g4: '#b9d698', gf: '#d6e8b2',
+    d0: '#8a6a55', d1: '#ad8b6c', d2: '#c9a985', d3: '#dcc4a0', d4: '#eedcbc',
+    s0: '#56536a', s1: '#75738a', s2: '#9896aa', s3: '#bcbaca', s4: '#dcdae4',
+    w0: '#4c76a2', w1: '#5a86b2', w2: '#7099c2', w3: '#94b8da', w4: '#c4dcf0',
+    k0: '#5e4640', k1: '#84624f', k2: '#a07d62', k3: '#bf9c7c', k4: '#d9bc98',
+    p0: '#a8978a', p1: '#c9b9a0', p2: '#e2d6be', p3: '#f4ecdc',
+    r0: '#5a2a34', r1: '#8e4040', r2: '#b85a4a', r3: '#d47e60', r4: '#e8a888',
+    b0: '#2f3f66', b1: '#435888', b2: '#5a72a6', b3: '#7c94c2', b4: '#a8bcde',
+    y0: '#6a4a30', y1: '#9a6e3a', y2: '#c4964a', y3: '#ddb468', y4: '#f0d696',
+    // trees: a cooler, deeper green than the grass so they stand apart from it
+    l0: '#2e5a4a', l1: '#427656', l2: '#5a9062', l3: '#77aa72', l4: '#a2c98e',
     sk: '#f2c49c', sk2: '#c98a6c', glass: '#28405e', glass2: '#4e7ea8', lit: '#ffd27a', lit2: '#ffb453',
   };
   const ROOF = { red: ['r0', 'r1', 'r2', 'r3', 'r4'], blue: ['b0', 'b1', 'b2', 'b3', 'b4'], gold: ['y0', 'y1', 'y2', 'y3', 'y4'] };
@@ -64,7 +69,7 @@
 
     // ---- tree: shaded canopy from discs, selective outline ----
     k.tree = (x, y, opt = {}) => {
-      const r = opt.r || 9, leaf = opt.leaf || [C.l0, C.l1, C.l2, C.l3, C.l4];
+      const r = opt.r || 9, leaf = opt.leaf || (opt.far ? FAR_LEAF : [C.l0, C.l1, C.l2, C.l3, C.l4]);
       shadow(() => shadowEll(x + 2, y + 1, r + 2, 3));
       add(y, () => {
         R(x - 1, y - 7, 3, 7, C.k2); P(x - 1, y - 7, C.k3); R(x + 1, y - 7, 1, 7, C.k1); P(x - 2, y - 1, C.k1); P(x + 2, y - 1, C.k1);
@@ -134,7 +139,8 @@
     const FISH = ['..ccc.t', '.ccccctt', 'cecccc.t', '.ccccctt', '..ccc..t'], FISHR = FISH.map(r => [...r.padEnd(8, '.')].reverse().join(''));
     k.drawFish = (x, y, c, flip) => sprite(x, y, flip ? FISHR : FISH, { c, t: c, e: '#2b2433' });
     k.fish = (x, y, c, under = true) => add(under ? 0 : y, () => k.drawFish(x, y, c), !under);
-    k.flowersGround = (x, y, c) => { P(x, y, c); P(x - 1, y, c); P(x + 1, y, c); P(x, y - 1, c); P(x, y + 1, c); P(x, y, '#ffd34a'); };
+    // wildflowers are scenery: small, few, and blended toward the grass
+    k.flowersGround = (x, y, c) => { if (hash(x, y, 77) < .5) return; const soft = mix(c, C.g3, .35); P(x - 1, y, soft); P(x + 1, y, soft); P(x, y, '#f6f0de'); };
     // ---- fence: posts and two rails ----
     k.fence = (x0, y0, x1, y1) => {
       if (y0 === y1) { for (let x = x0; x <= x1; x += 5) add(y0 + 1, () => { R(x, y0 - 6, 2, 7, C.k3); P(x, y0 - 7, C.k4); R(x + 1, y0 - 6, 1, 7, C.k2); }); add(y0, () => { R(x0, y0 - 5, x1 - x0 + 2, 1, C.k2); R(x0, y0 - 3, x1 - x0 + 2, 1, C.k1); }); }
@@ -195,7 +201,7 @@
         P(x + i, top + j, c);
       }
     };
-    k.apple = (x, y, kind = 'red') => sprite(x, y, ['..k..', '.rlr.', 'rLrrr', 'rrrrd', '.rdd.'], { k: C.k1, l: C.l3, ...APPLES[kind] });
+    k.apple = (x, y, kind = 'red', far) => sprite(x, y, ['..k..', '.rlr.', 'rLrrr', 'rrrrd', '.rdd.'], { k: C.k1, l: C.l3, ...(far ? FAR_APPLES : APPLES)[kind] });
     // a woven basket, n apples heaped in it; x,y = bottom left, 22 wide
     k.basket = (x, y, n, kind = 'red') => {
       shadowEll(x + 11, y, 12, 2);
@@ -270,7 +276,10 @@
     const gr = c.createRadialGradient(CW / 2, CH / 2, CH * .4, CW / 2, CH / 2, CW * .75); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(30,20,45,.28)'); c.fillStyle = gr; c.fillRect(0, 0, CW, CH);
   }
 
+  // the apples she counts keep full color; apples far up in the trees fade back
   const APPLES = { red: { r: '#e8473f', L: '#ffb0a0', d: '#a82a33' }, yellow: { r: '#f7c531', L: '#fff3b0', d: '#c4861c' } };
+  const FAR_APPLES = { red: { r: '#c98b80', L: '#e8c4ba', d: '#a8736a' }, yellow: { r: '#d8c48a', L: '#efe4c0', d: '#b8a06a' } };
+  const FAR_LEAF = ['#4a7a60', '#5a8a6a', '#6e9c76', '#86b086', '#a6c8a0'];
   // a 4-color ramp from one color: [outline, shade, base, light]
   const mix = (c, to, f) => { const a = c[0] === '#' ? hex(c) : c.match(/\d+/g).map(Number), b = hex(to); return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * f).toString(16).padStart(2, '0')).join(''); };
   const ramp = c => [mix(c, '#1a1020', .62), mix(c, '#1a1020', .32), mix(c, '#000000', 0), mix(c, '#ffffff', .35)];

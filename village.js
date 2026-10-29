@@ -215,8 +215,9 @@
     const v = V(), build = mode === 'build';
     const items = px.ITEMS.filter(i => !i.area || v.open[i.area]);
     const sel = B.sel && placedAt(B.sel);
+    ui.primaryJob = undefined;
     $root.innerHTML = `<main class="village full ${build ? 'building' : ''} ${ui.story ? 'story' : ''}">
-      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas>
+      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze"></div>
         <div class="vbubble" id="vbubble"></div>
         <div class="vmark" id="vmark">!</div>
       </div>
@@ -235,9 +236,9 @@
   // ---------- Dot's guide: the one next thing to do, pinned at the top and marked on the map ----------
   function mission() {
     const v = V(), s = S(), done = EM.todayDone && EM.todayDone(), cheap = Math.min(...px.ITEMS.filter(i => !i.area || v.open[i.area]).map(i => i.cost));
-    const pond = { text: 'Catch fish at the pond', say: 'Tap the pond to catch some fish!', mark: [POND[0] + 30, POND[1] - 24], go: () => walkTo('dock', toFishing) };
-    const yard = { text: 'Buy something for your yard', say: `You have ${v.coins} coins. Tap your yard to spend them!`, mark: [YARD.x + 48, YARD.y - 8], go: () => walkTo('yard', () => enterBuild(null)) };
-    const rosa = { text: 'Help Rosa pick apples', say: 'Rosa needs help in the orchard. Tap her!', mark: [ROSA[0] + 4, ROSA[1] - 22], go: () => walkTo('orchard', toOrchard) };
+    const pond = { job: 'fish', text: 'Catch fish at the pond', say: 'Tap the pond to catch some fish!', mark: [POND[0] + 30, POND[1] - 24], go: () => walkTo('dock', toFishing) };
+    const yard = { job: 'build', text: 'Buy something for your yard', say: `You have ${v.coins} coins. Tap your yard to spend them!`, mark: [YARD.x + 48, YARD.y - 8], go: () => walkTo('yard', () => enterBuild(null)) };
+    const rosa = { job: 'orchard', text: 'Help Rosa pick apples', say: 'Rosa needs help in the orchard. Tap her!', mark: [ROSA[0] + 4, ROSA[1] - 22], go: () => walkTo('orchard', toOrchard) };
     const board = (text, say) => ({ text, say, mark: [BOARD[0] + 9, BOARD[1] - 26], go: () => walkTo('board', openBoard) });
     if (!v.rounds && !v.placed.length) return pond;
     if (!v.placed.length) return v.coins >= cheap ? yard : pond;
@@ -250,6 +251,7 @@
     place(document.getElementById('vbubble'), dot.x, dot.y - 9);
     const m = mission(), show = m && !ui.story && mode !== 'build';
     const mk = document.getElementById('vmark'); if (mk) { mk.classList.toggle('on', !!show); if (m) place(mk, m.mark[0], m.mark[1] - Math.round(Math.sin(now() / 300) * 1.5)); }
+    const job = show ? m.job : null; if (ui.primaryJob !== job) { ui.primaryJob = job; document.querySelectorAll('.vactions .big-btn').forEach(b => b.classList.toggle('primary', b.dataset.v === job)); }
     const g = document.getElementById('vguide'); if (g) { g.classList.toggle('on', !!show); const t = m ? m.text : ''; if (g.dataset.t !== t) { g.dataset.t = t; g.innerHTML = `${EM.theme.dot('happy', 40)}<span><small>Next job</small>${esc(t)}</span><b>›</b>`; } }
   }
   function drawMap(sc, k, t) {
@@ -441,7 +443,7 @@
     k.barrel(214, 100);
     [[40, 150], [84, 112], [150, 170], [190, 150], [24, 132]].forEach(([x, y], i) => k.lily(x, y, i % 2 === 0));
     [[16, 104], [19, 106], [22, 103], [212, 160], [215, 162], [218, 158], [100, 74], [103, 76]].forEach(([x, y]) => k.reeds(x, y));
-    for (let i = 0; i < 8; i++) k.tree(8 + i * 18 + (i % 2) * 6, 22 + (i % 3) * 5, { r: 9 + (i % 2) });
+    for (let i = 0; i < 8; i++) k.tree(8 + i * 18 + (i % 2) * 6, 22 + (i % 3) * 5, { r: 9 + (i % 2), far: true });
     [[288, 40], [292, 150], [266, 196], [14, 200], [236, 178]].forEach(([x, y], i) => k.tree(x, y, { r: 9 + (i % 2) }));
     for (let c = 0; c < 2; c++) for (let r = 0; r < 2; r++) k.tree(262 + c * 22, 130 + r * 26, { r: 8, apples: true });
     [[110, 72], [204, 80], [6, 160], [240, 120], [196, 196]].forEach(([x, y]) => k.bush(x, y));
@@ -485,7 +487,7 @@
   }
   function renderFishing() {
     $root.innerHTML = `<main class="village full fishing">
-      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas>
+      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze mid"></div>
         <div class="vtag" id="vtag"></div><div class="vbubble" id="vbubble"></div>
       </div>
       <div class="vhud vtl"><button class="vpill" data-v="stopfish">‹ Back to the village</button><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span></div>
@@ -645,9 +647,9 @@
   function buildOrchStill(g, k) {
     const path = (x, y) => y > 146 && y < 160 + Math.sin(x / 30) * 2;
     px.ground(g, W, H, { path, tall: (x, y) => y < 50 });
-    for (let i = 0; i < 7; i++) k.tree(10 + i * 44 + (i % 2) * 5, 52 + (i % 2) * 5, { r: 17 + (i % 3) });
-    k.add(70, () => [[8, 18], [30, 30], [20, 6], [60, 24], [76, 10], [100, 34], [112, 16], [150, 28], [140, 10], [180, 30], [196, 14], [228, 24], [250, 30], [274, 14], [290, 26]].forEach(([a, b]) => k.apple(a, b)), false);
-    k.add(140, () => [[160, 142], [4, 160], [150, 64], [64, 66], [210, 120]].forEach(([a, b]) => k.apple(a, b)), false);
+    for (let i = 0; i < 7; i++) k.tree(10 + i * 44 + (i % 2) * 5, 52 + (i % 2) * 5, { r: 17 + (i % 3), far: true });
+    k.add(70, () => [[8, 18], [30, 30], [20, 6], [60, 24], [76, 10], [100, 34], [112, 16], [150, 28], [140, 10], [180, 30], [196, 14], [228, 24], [250, 30], [274, 14], [290, 26]].forEach(([a, b]) => k.apple(a, b, 'red', true)), false);
+    k.add(140, () => [[160, 142], [4, 160], [150, 64], [64, 66], [210, 120]].forEach(([a, b]) => k.apple(a, b, 'red', b < 80)), false);
     for (let n = 0; n < 34; n++) { const x = Math.floor(px.hash(n, 3, 9) * W), y = 70 + Math.floor(px.hash(n, 4, 9) * 136); if (!path(x, y)) k.flowersGround(x, y, ['#ffffff', '#ffe066', '#ff9ac6', '#c7a6ff'][n % 4]); }
     [[262, 120], [286, 150], [250, 196], [20, 200]].forEach(([x, y], i) => k.tree(x, y, { r: 12 + (i % 2) }));
     [[200, 104], [178, 196], [120, 190]].forEach(([x, y]) => k.bush(x, y));
@@ -708,7 +710,7 @@
   function renderOrchard() {
     const marks = Array.from({ length: ORCH_GOAL }, (_, i) => `<i class="${i < (O ? O.picked : 0) ? 'on' : ''}"></i>`).join('');
     $root.innerHTML = `<main class="village full job orchard">
-      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas>
+      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze deep"></div>
         <div class="jsign" id="jsign"></div><div class="jbub" id="jbub"></div>
         <div class="jtag" id="jtag0"></div><div class="jtag" id="jtag1"></div>
       </div>

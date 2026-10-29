@@ -520,6 +520,24 @@ input, textarea { caret-color:var(--accent); }
 .jbub:after { content:""; position:absolute; bottom:-9px; left:var(--tx, 40px); width:22px; height:22px; background:inherit; transform:rotate(45deg); border-radius:0 0 4px 0; }
 .jtag { position:absolute; left:0; top:0; margin:-34px 0 0 -20px; min-width:40px; text-align:center; background:#fff7dc; border:3px solid #8a573a; border-radius:10px; padding:1px 8px; font:700 22px "Fredoka", system-ui, sans-serif; color:#3a2418; opacity:0; transition:opacity .2s; pointer-events:none; }
 .jtag.on { opacity:1; }
+/* depth and hierarchy: distance is hazy; the interface is quiet; only the one main action is loud */
+.vhaze { position:absolute; inset:0; pointer-events:none; background:linear-gradient(to bottom, rgba(236,240,226,.22) 0%, rgba(236,240,226,0) 38%); }
+.vhaze.mid { background:linear-gradient(to bottom, rgba(234,240,228,.26) 0%, rgba(234,240,228,0) 40%); }
+.vhaze.deep { background:linear-gradient(to bottom, rgba(234,240,228,.30) 0%, rgba(234,240,228,.12) 30%, rgba(234,240,228,0) 46%); }
+.vpanel { box-shadow:0 3px 0 rgba(60,50,40,.14), 0 8px 20px rgba(0,0,0,.10); }
+.vpill, .jhome { background:rgba(255,251,242,.9); box-shadow:0 2px 0 rgba(60,50,40,.12); }
+.jorder, .vguide { background:rgba(255,251,242,.9); box-shadow:0 2px 0 rgba(60,50,40,.12); }
+.jround, .jidk { background:rgba(255,251,242,.92); color:#4a4048; box-shadow:0 3px 0 rgba(60,50,40,.14); }
+.jpad { background:#b8987a; box-shadow:inset 0 2px 0 #d2b698, 0 3px 0 rgba(60,50,40,.16); }
+.jpad button { background:#fdf9ef; color:#3e3440; box-shadow:0 3px 0 #ddd0b8; }
+.jpad button:active { box-shadow:0 1px 0 #ddd0b8; }
+.jpad button.ok { background:#2e7d4f; color:#fff; box-shadow:0 4px 0 #1d5233; }
+.jbub { box-shadow:0 3px 0 rgba(60,50,40,.16); }
+.jtag { border-color:#a07d62; }
+.vactions .big-btn, .vactions .big-btn.alt { background:rgba(253,249,239,.95); color:#3e3440; box-shadow:0 4px 0 rgba(60,50,40,.18); }
+.vactions .big-btn span { color:#6f6557; }
+.vactions .big-btn.primary { background:#a84a28; color:#fff; box-shadow:0 5px 0 #6e2f18; }
+.vactions .big-btn.primary span { color:#fde8dc; }
 @keyframes floatup { from { margin-top:-10px; opacity:0 } 15% { opacity:1 } to { margin-top:-70px; opacity:0 } }
 .vfade { position:fixed; inset:0; z-index:40; background:#fffbf0; opacity:0; pointer-events:none; transition:opacity .26s ease; }
 .vfade.black { background:#14101e; transition:opacity 1.1s ease; }
@@ -591,18 +609,18 @@ input, textarea { caret-color:var(--accent); }
 <body>
 <div id="app"></div>
 <div id="turn" aria-live="polite"></div>
-<script src="engine.js?v=19"></script>
-<script src="content.js?v=19"></script>
-<script src="voice.js?v=19"></script>
-<script src="audio.js?v=19"></script>
-<script src="manip.js?v=19"></script>
-<script src="theme.js?v=19"></script>
-<script src="world.js?v=19"></script>
-<script src="avatar.js?v=19"></script>
-<script src="pixel.js?v=19"></script>
-<script src="village.js?v=19"></script>
-<script src="teach.js?v=19"></script>
-<script src="parent.js?v=19"></script>
-<script src="app.js?v=19"></script>
+<script src="engine.js?v=20"></script>
+<script src="content.js?v=20"></script>
+<script src="voice.js?v=20"></script>
+<script src="audio.js?v=20"></script>
+<script src="manip.js?v=20"></script>
+<script src="theme.js?v=20"></script>
+<script src="world.js?v=20"></script>
+<script src="avatar.js?v=20"></script>
+<script src="pixel.js?v=20"></script>
+<script src="village.js?v=20"></script>
+<script src="teach.js?v=20"></script>
+<script src="parent.js?v=20"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>

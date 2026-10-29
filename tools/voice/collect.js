@@ -70,6 +70,16 @@ const server = http.createServer((req, res) => { let p = decodeURIComponent(req.
       add(`Here are ${f.a} coins. The pie costs ${f.b}. How many coins back?`); add(`I have ${f.a} coins. One pie is ${f.b}. How many coins do I get back?`);
       add(`Yes! ${f.a} take away ${f.b} is ${f.ans}.`); add(`${f.a} take away ${f.b} is ${f.ans}. That one is yours now!`);
       const it = EM.factItem(k, 'normal'); for (const stage of [1, 2]) { const say = trayWords(it.help(0, stage).say); add(say); leads.forEach(l => add(`${l} ${say}`)); } }
+    // the bakery: doubles and near doubles, said as trays and buns
+    const bunWords = t => String(t).replace(/\bframes\b/g, 'trays').replace(/\bframe\b/g, 'tray').replace(/\bdots\b/g, 'buns').replace(/\bdot\b/g, 'bun');
+    const buns = n => `${n} bun${n === 1 ? '' : 's'}`;
+    for (const id of ['doubles', 'near']) for (const k of EM.SK[id].facts) { const f = EM.FACTS[k]; if (f.type !== 'add' || !f.a || !f.b) continue;
+      if (f.a === f.b) { add(`I baked ${buns(f.b)}. You baked the same. How many buns in all?`); add(`You baked ${buns(f.a)}, and I baked the same. How many buns in all?`); }
+      else add(`You baked ${buns(f.a)}. I baked ${buns(f.b)}. How many buns in all?`);
+      add(`Yes! ${f.a} and ${f.b} make ${f.ans}.`); add(`${f.a} + ${f.b} = ${f.ans} is yours now!`);
+      const it = EM.factItem(k, 'normal'); for (const stage of [1, 2]) { const say = bunWords(it.help(0, stage).say); add(say); leads.forEach(l => add(`${l} ${say}`)); } }
+    ["Hi! I'm Bea, the baker. Every tray holds ten buns. When I bake some, you bake the same, or one more. Count them up for me and I'll pay you a coin each time. Help me three times and I'll have a surprise.",
+      'Bea baked you a cake!', 'The buns are all baked!', 'Bea needs help in the bakery. Tap her!'].forEach(add);
     // fishing's help, said as fish and spots
     const fishWords = t => String(t).replace(/\bdots\b/g, 'fish').replace(/\bdot\b/g, 'fish').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot').replace(/\bboxes\b/g, 'spots');
     const fleads = ['Whoa, too fast! It slipped away. Think first, then tap.', "Oops, it got away. Let's figure it out together.", "Good idea to ask. Let's look together."];

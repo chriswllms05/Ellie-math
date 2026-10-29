@@ -228,6 +228,15 @@
         if (v === 'a') k.coin(cx, cy + 1);
         else if (v === 'x') sprite(cx, cy + 1, ['.oooo.', 'o....o', 'o....o', 'o....o', '.oooo.'], { o: '#a08a6a' }); }
     };
+    // a bun (5x4), and a baking tray of ten (two rows of 5): 'a' 'b' a bun, uppercase the one more (framed in light
+    // when ring is on; the caller blinks it), 'e' empty
+    k.bun = (x, y) => sprite(x, y, ['.ooo.', 'oLyyo', 'oyyyd', '.ddd.'], { o: '#a8602a', L: '#f8dc8a', y: '#e2ae52', d: '#c07a3a' });
+    k.bunTray10 = (x, y, cells, ring) => {
+      shadowEll(x + 19, y + 1, 20, 2);
+      R(x, y - 18, 38, 18, C.s0); R(x + 1, y - 17, 36, 16, C.s2); R(x + 1, y - 17, 36, 1, C.s3); R(x + 1, y - 9, 36, 1, C.s1);
+      for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) { const cx = x + 2 + c * 7, cy = y - 16 + r * 8, v = cells[r * 5 + c], more = v === 'A' || v === 'B';
+        R(cx, cy, 6, 6, more && ring ? '#fff7c2' : C.s1); if (v && v !== 'e') k.bun(cx, cy + 1); }
+    };
     // a package (tied with string) and the mail cart
     k.package = (x, y, w = 14, h = 10) => { R(x, y, w, h, '#c89a64'); R(x, y, w, 1, '#e2bc88'); R(x + w - 1, y, 1, h, '#9a6e40'); R(x, y + h - 1, w, 1, '#9a6e40'); R(x + Math.floor(w / 2), y, 2, h, '#b84a3e'); R(x, y + Math.floor(h / 2), w, 1, '#b84a3e'); };
     k.cart = (x, y) => { shadowEll(x + 30, y + 8, 30, 3); R(x, y - 16, 60, 16, C.k1); R(x + 1, y - 15, 58, 14, C.k2); R(x + 1, y - 15, 58, 1, C.k3); for (let i = x + 8; i < x + 60; i += 12) R(i, y - 15, 1, 14, C.k1);
@@ -305,6 +314,8 @@
   const CHIBI = {
     her: (look, long) => ({ rows: ['....hhhh', '..hhhhhh', '.hhHHhhh', '.hHhhhhh', 'hhhhhhhh', 'hhhhshss', ...(long ? FACE : FACE_SHORT), long ? 'hh.bbbbb' : '...bbbbb', long ? 'h.bBbbbb' : '..bBbbbb', '.bbbbbbb', '.sbbbbbb', '..pppppp', '.ppppppp', '.....ss.', '....fff.'],
       mat: { h: ramp(look.hair), s: ramp(look.skin), b: ramp(look.shirt), p: ramp('#55467a'), f: ramp('#6b4430') } }),
+    bea: () => ({ rows: ['...wwwww', '..wWWwww', '..wwwwww', '..wwwwww', '.kkkkkkk', '.hhsssss', '.hsswess', '.hsseess', '.hscssss', '.hhssssm', '..hsssss', '.....sss', '..bbbbbb', '.bbaaaaa', '.bbaAaaa', '.sbaaaaa', '..aaaaaa', '.ppppppp', '.....pp.', '....fff.'],
+      mat: { w: ramp('#f4efe2'), k: ramp('#cfc6b4'), h: ramp('#4a2a1a'), s: ramp('#e8b07f'), b: ramp('#c06456'), a: ramp('#f4efe2'), p: ramp('#55467a'), f: ramp('#6b4430') } }),
     mo: () => ({ rows: ['....qqqq', '..qqQQqq', '.qqQqqqq', '.qqqqqqq', 'kkkkkkkk', '.hhsssss', '.hsswess', '.hsseess', '.hscsssss'.slice(0, 8), '.hhssssm', '..hsssss', '.....sss', '..qqqqqq', '.qqqqqqq', '.qqyqqqq', '.sqqqqqq', '..qqqqqq', '.ddddddd', '.....dd.', '....fff.'],
       mat: { q: ramp('#3a5aa8'), k: ramp('#2b2b3a'), h: ramp('#3a2418'), s: ramp('#c98a6c'), y: ramp('#e2ae52'), d: ramp('#3a3a4e'), f: ramp('#6b4430') } }),
     pip: () => ({ rows: ['....ssss', '..sSssss', '.sSsssss', '.sssssss', 'wsssssss', 'wwssssss', 'wwsswess', 'wwsseess', 'wwscssss', '.wsswwww', '.wwwwwww', '..wwwwww', '...wwwww', '..bv.www', '.bvvvvbb', '.bvvVvbb', '.svvvvbb', '..vvvvvv', '.ppppppp', '.....pp.', '....fff.'],
@@ -340,6 +351,7 @@
     { id: 'appletree', name: "Rosa's apple tree", cost: 0, paint: 'green', gift: 'orchard' },
     { id: 'kitten', name: "Mr. Pip's kitten", cost: 0, paint: 'orange', gift: 'market' },
     { id: 'mailbox', name: "Mo's mailbox", cost: 0, paint: 'blue', gift: 'post' },
+    { id: 'cake', name: "Bea's cake", cost: 0, paint: 'pink', gift: 'bakery' },
   ];
   const ITEM = Object.fromEntries(ITEMS.map(i => [i.id, i]));
   // x,y = top-left of the cell
@@ -358,6 +370,7 @@
       case 'appletree': { const leaf = [C.l0, pd, pb, pl]; sh(8, 7); R(x + 7, y + 9, 2, 7, C.k2); P(x + 7, y + 9, C.k3); for (let py = 0; py <= 11; py++) for (let px = 0; px <= 16; px++) { const a = ((px - 8) / 7.5) ** 2 + ((py - 6) / 5.8) ** 2; if (a > 1) continue; const e = a > .8, l = -(px - 8) * .12 - (py - 5) * .2 + (hash(px >> 1, py >> 1, 57) - .5) * .8; P(x + px, y + py, e ? (px > 8 || py > 8 ? leaf[0] : leaf[1]) : l > .45 ? leaf[3] : l > -.25 ? leaf[2] : leaf[1]); }
         [[4, 4], [10, 3], [7, 8], [12, 8], [3, 9]].forEach(([a, b]) => { P(x + a, y + b, '#e8473f'); P(x + a + 1, y + b, '#c22f39'); P(x + a, y + b + 1, '#c22f39'); P(x + a + 1, y + b + 1, '#8e2335'); P(x + a, y + b, '#ffb0a0'); }); break; }
       case 'kitten': sh(7, 6); sprite(x + 1, y + 4, ['..o...o.........', '.oOo.oOo........', '.oOOOOOo........', 'oOeOOOeOo.......', 'oOOOnOOOo.......', '.oOOOOOo....t...', '..oOOOOo.....t..', '.oOOOOOOo....t..', '.oOLLOOOOottt...', '.oOLLOOOOOOo....', '..oooooooooo....'], { o: pd, O: pb, L: pl, e: '#2b2433', n: '#f08a8a', t: pd }); break;
+      case 'cake': sh(8, 6); R(x + 3, y + 13, 10, 1, C.k1); R(x + 7, y + 13, 2, 3, C.k2); sprite(x + 2, y + 3, ['.....yy.....', '.....r......', '..wwwwwwww..', '.wLLwwwwwww.', '.pppppppppp.', '.PPPPPPPPPP.', '.wwwwwwwwww.', '.pppppppppp.', '.dddddddddd.', '..........'], { y: '#ffe066', r: '#e8473f', w: '#fff7f0', L: '#ffffff', p: pb, P: pl, d: pd }); break;
       case 'mailbox': sh(8, 4); R(x + 7, y + 8, 2, 8, C.k2); R(x + 7, y + 8, 1, 8, C.k3); sprite(x + 3, y + 1, ['..bbbbbb..', '.bBBBBBBb.', 'bBLLBBBBBb', 'bBBBBBBBBb', 'bBBBBBBBBb', 'bbbbbbbbbb'], { b: pd, B: pb, L: pl }); R(x + 12, y, 1, 5, C.k1); R(x + 12, y, 3, 2, '#e8473f'); R(x + 5, y + 4, 4, 1, pd); break;
       case 'flag': sh(5, 3); R(x + 4, y + 1, 1, 15, C.k1); P(x + 4, y, C.y4); sprite(x + 5, y + 2, ['FFFFFFFF', 'FLLFFFFd', 'FFFFFFd.', 'FFFFFFFF', 'dddddddd'], { F: pb, L: pl, d: pd }); break;
       case 'doghouse': sh(8, 8); sprite(x, y + 1, ['......rr........', '.....rRRr.......', '....rRRRRr......', '...rRLRRRRr.....', '..rRLRRRRRRr....', '.rrrrrrrrrrrr...', '..wwwwwwwwww....', '..wwwkkkkwww....', '..wwkkkkkkww....', '..wwkkkkkkww....', '..wwkkkkkkww....', '..WWWWWWWWWW....'], { r: pd, R: pb, L: pl, w: C.k3, W: C.k2, k: C.k0 });

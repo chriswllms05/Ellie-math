@@ -26,7 +26,7 @@ What to say before placement: *"This isn't a test and there's nothing to get rig
 ## Days 2–7: morning orders, then free time (sit nearby, not beside)
 
 Each day the village has **three orders**, shown on Dot's note and on the notice board:
-- **Rosa's apples** (adding): 5 right answers in the orchard.
+- **Rosa's apples** (adding) or **Bea's buns** (doubles); they take turns: 5 right answers.
 - **Mr. Pip's pies** (taking away: his coins back), or **5 fish** until his stall opens. It opens when her partners of 10 are strong.
 - **Dot's lesson** on the notice board: big numbers, school work, Teach Dot. About 6 minutes.
 
@@ -36,7 +36,8 @@ When all three are done, the village says thank you with 5 bonus coins and **the
 - Say this once, before day 2: *"Do the three orders first, then the village is yours. When you get one wrong, Dot will show you with apples or coins. Look at it before you type."*
 - Stay within earshot but doing your own thing. If she calls you over, answer with a question: "What does the picture show?" Never with a number.
 - The one thing to react to live: a rushed guess. Dot says "Whoa, too fast!" You add, lightly, "Think first, then tap."
-- Rosa and Mr. Pip each promise a surprise after she helps them three times (an apple tree, a kitten). Let her discover them.
+- Each villager promises a surprise after she helps them three times (Rosa's apple tree, Bea's cake, Mr. Pip's kitten, Mo's mailbox). Let her discover them.
+- In Dot's lesson, harder story problems and column math have a **✏️ Scratchpad**: her own paper beside the problem. Encourage her to draw the bars or write the columns there, the way she does in class.
 
 ## Every day: the two-minute card
 

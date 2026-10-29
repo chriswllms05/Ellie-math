@@ -57,10 +57,10 @@ Like the errands in Zelda or Pokémon: she walks up to someone in the village, t
 
 | Place | Who asks | What she does | Skills inside it |
 |---|---|---|---|
-| Orchard | Rosa | Rosa and she each pick apples; how many in all? | +1 +2, Doubles, Near Doubles, Ten and More, Facts to 10, Make a 10 |
+| Orchard | Rosa | Rosa and she each pick apples; how many in all? | +1 +2, Ten and More, Facts to 10, Make a 10 |
 | Fishing pond | (her own) | The fish on her line shows a number; she types its partner to make 10 | Partners of 10 |
 | Market stall | Mr. Pip and other shoppers | Sell pies; work out the coins to give back | Take Away to 10, Ten Take Away, Take Away from Teens |
-| Bakery | the baker | Fill the trays: double the batch, then one more | Doubles, Near Doubles (later) |
+| Bakery | Bea | She and Bea each bake a tray of ten buns, the same or one more | Doubles, Near Doubles |
 | Bridge crew | the builders | Join planks to span the gap | Make a 10, Number Bonds |
 | Firefly meadow | Dot | A flock lights up for a moment: how many? | Quick Look |
 | Post office | Mo, the mail carrier | Read the blocks on a package's label, then deliver it to the house with that number | Read the Number, Count On, Which Is Greater?, Neighbors |
@@ -94,6 +94,7 @@ Designed for the iPad on its side, held in two hands or flat on a table. Not the
 
 Some jobs have problems with more than one step: two-step story problems (notice board), column adding and subtracting (workshop), and estimating (round, then add). While a skill is new, the screen walks her through each step; as she gets better, those supports fade, and that's when she'd reach for paper.
 
+- **Status: built**, in Dot's lesson, where story problems and column math are today; it moves with them when they become village jobs.
 - **Where:** only the notice board's story problems and the workshop's column math, and only once the on-screen steps have faded. Never for facts (they're about knowing it, and a scratchpad invites counting) and never for In Your Head (doing it in her head is the skill).
 - **How:** a panel that slides out beside the problem, not a pop-up over it, so she can see the problem while she works. A blank pad she draws on with her finger: a couple of colors and an eraser. Her class draws bars and writes columns, and this is where she can do the same.
 - **Fair timing:** the clock doesn't count against her while it's open. These skills aren't graded on speed.
@@ -205,7 +206,7 @@ If she fishes on her own, the rest of this holds. If she only builds, the jobs n
 
 **Status: built.** Morning orders: three requests a day (Rosa's apples, Mr. Pip's pies or 5 fish until his stall opens, and Dot's lesson on the notice board), a 12-minute limit for hard days, Mr. Pip's market (take-away facts), fishing on the shared job screen, and Rosa's and Mr. Pip's surprises. Dot's lesson still uses the plain practice screen (over a soft view of her village) for big numbers, school work and Teach Dot.
 
-Still to come from the original slice 2 plan: the post office (place value) and the bakery. Story problems move to the notice board and column math to the workshop, with the scratchpad, and then the plain practice screen retires.
+Since built: Mo's post office (place value) and Bea's bakery (doubles; her buns take turns with Rosa's apples as the first order). Still to come: Story problems move to the notice board and column math to the workshop, with the scratchpad, and then the plain practice screen retires.
 
 ### Slice 3
 

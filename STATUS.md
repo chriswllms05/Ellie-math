@@ -86,6 +86,12 @@ Dot now speaks with a recorded child voice (Azure neural voice "Ana", slightly f
 - Grown-up area → Voice: **Dot (recorded)** is the default and the first option; the iPad voices are still there.
 - To change lines or the voice: `node tools/voice/collect.js lines.json && node tools/voice/build.js lines.json` (needs the Azure key on the environment; only new lines are recorded). `tools/voice/coverage.js` checks nothing is missing.
 
+## Bea's bakery and the scratchpad (live)
+
+- **Bea's bakery (doubles and near doubles).** Bea's bakery sits up a lane from the orchard. She and Ellie each bake a tray of buns, the same or one more: "You baked 6 buns, and I baked the same. How many buns in all?" The trays are trays of ten, so help can say "Double 6. Count both trays," and for a near double the one more bun blinks. Doubles and near doubles moved here from the orchard (Rosa keeps +1 +2, Ten and More, Facts to 10 and Make a 10). Bea's surprise after three rounds is a cake for the yard.
+- **Morning orders take turns:** Rosa's apples one day she plays, Bea's buns the next. The other two orders are unchanged (Mr. Pip's pies or 5 fish, and Dot's lesson).
+- **The scratchpad.** In Dot's lesson, two-step story problems and column adding and subtracting get a **✏️ Scratchpad** button once their on-screen steps have faded. It slides out over the number pad, beside the problem, so the problem stays in view: finger drawing in pencil, blue or red, an eraser, and Clear. **Done** brings the numbers back. The time it's open doesn't count against her, and nothing she draws is saved, graded or shown to anyone: each new problem gets fresh paper. Never offered for facts or In Your Head.
+
 ## Morning orders, Mr. Pip's market, Mo's post office, and every job on one screen
 
 - **Morning orders.** Each day the village has three requests, shown on Dot's note ("Today's orders · 1 of 3 done") and on the notice board with checkboxes: **Rosa's apples** (5 right answers), **Mr. Pip's pies** (5; until his stall opens, **5 fish** instead), and **Dot's lesson** on the board. All three done: a thank-you, 5 bonus coins, and Dot's note switches to "Free time". A hard day still ends: after about 12 minutes on the orders, the day counts as done.

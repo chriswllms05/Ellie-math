@@ -28,17 +28,18 @@
   const MEADOW = { x: 222, y: 10, cols: 4, rows: 2 };          // across the bridge
   const DOCK = [106, 137, 30, 9];
   const BOARD = [178, 110];                                     // notice board (left post x, base y)
-  const PATHS = [[118, 112, 116, 9], [134, 112, 9, 34], [244, 52, 9, 62], [94, 112, 26, 9], [244, 121, 9, 56]];
+  const PATHS = [[118, 112, 116, 9], [134, 112, 9, 34], [244, 52, 9, 62], [94, 112, 26, 9], [244, 121, 9, 56], [98, 48, 8, 66], [98, 46, 44, 8]];
   const ORCHARD = [14, 44, 80, 62], ROSA = [82, 110];             // Rosa's orchard on the map, and where she stands
   const STALL = [258, 166], PIP = [272, 186];                     // Mr. Pip's pie stall, and where he waits
   const POST = [112, 102], MO = [152, 108];                       // the post office, and Mo by its door
+  const BAKERY = [122, 46], BEA = [162, 52];                      // Bea's bakery up the lane, and Bea outside it
   const inRect = (x, y, [rx, ry, rw, rh]) => x >= rx && x < rx + rw && y >= ry && y < ry + rh;
   const area = id => id === 'meadow' ? MEADOW : YARD;
   const cellAt = (x, y) => { for (const id of ['plot', 'meadow']) { const a = area(id); if (id === 'meadow' && !V().open.meadow) continue; const cx = Math.floor((x - a.x) / 16), cy = Math.floor((y - a.y) / 16); if (cx >= 0 && cy >= 0 && cx < a.cols && cy < a.rows) return { area: id, cx, cy }; } return null; };
   const placedAt = c => V().placed.find(p => p.area === c.area && p.cx === c.cx && p.cy === c.cy);
   // where she can walk: stops joined by paths (she takes the shortest way), plus free walking on grass
-  const NODES = { dock: [114, 144], bend: [138, 141], cross: [138, 118], yard: [166, 118], board: [190, 118], home: [244, 118], hill: [248, 98], bridge: [248, 82], orchard: [98, 116], market: [250, 176], post: [130, 116] };
-  const EDGES = [['dock', 'bend'], ['bend', 'cross'], ['cross', 'yard'], ['yard', 'board'], ['board', 'home'], ['home', 'hill'], ['hill', 'bridge'], ['cross', 'orchard'], ['home', 'market'], ['cross', 'post']];
+  const NODES = { dock: [114, 144], bend: [138, 141], cross: [138, 118], yard: [166, 118], board: [190, 118], home: [244, 118], hill: [248, 98], bridge: [248, 82], orchard: [98, 116], market: [250, 176], post: [130, 116], lane: [102, 52], bakery: [140, 52] };
+  const EDGES = [['dock', 'bend'], ['bend', 'cross'], ['cross', 'yard'], ['yard', 'board'], ['board', 'home'], ['home', 'hill'], ['hill', 'bridge'], ['cross', 'orchard'], ['home', 'market'], ['cross', 'post'], ['orchard', 'lane'], ['lane', 'bakery']];
   const CAM_FULL = { x: 0, y: 0, w: W, h: H };
   const camAround = (cx, cy, w) => ({ x: Math.max(0, Math.min(W - w, cx - w / 2)), y: Math.max(0, Math.min(H - w * H / W, cy - w * H / W / 2)), w, h: w * H / W });
 
@@ -180,8 +181,11 @@
     // Rosa's orchard: two rows of apple trees, and her crate by the path
     [[24, 66], [48, 62], [72, 66], [34, 92], [58, 90]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 2), apples: true }));
     k.crate(90, 112, '#e8473f'); k.crate(70, 106, '#f7c531');
-    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [126, 26], [150, 20], [168, 30], [8, 108], [290, 100], [290, 140], [116, 206], [20, 206], [196, 204], [262, 206], [168, 64]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
+    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [176, 24], [8, 108], [290, 100], [290, 140], [116, 206], [20, 206], [196, 204], [262, 206], [168, 64]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
     [[206, 128], [130, 190], [222, 196]].forEach(([x, y]) => k.bush(x, y));
+    // Bea's bakery: a gold roof and a bun sign
+    k.house(BAKERY[0], BAKERY[1], 36, 'gold', { chimney: true, lit: true });
+    k.add(BAKERY[1] + 1, () => { const x = BAKERY[0] + 12, y = BAKERY[1] - 27; k.R(x, y, 12, 7, C.k1); k.R(x + 1, y + 1, 10, 5, C.k3); k.bun(x + 3, y + 1); });
     // the post office: a little house with an envelope over the door
     k.house(POST[0], POST[1], 36, 'red', { lit: true });
     k.add(POST[1] + 1, () => { const x = POST[0] + 13, y = POST[1] - 26; k.R(x, y, 10, 7, '#f4ecdc'); k.R(x, y, 10, 1, '#fffaf0'); k.line(x, y, x + 5, y + 4, '#a8978a'); k.line(x + 9, y, x + 4, y + 4, '#a8978a'); k.R(x + 9, y, 1, 7, '#c9b9a0'); k.R(x, y + 6, 10, 1, '#c9b9a0'); });
@@ -234,7 +238,7 @@
       </div>
       <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${v.coins}</b></span><button class="vguide vpanel" id="vguide" data-v="guide"></button></div>
       <div class="vhud vbr"><button class="vpill vgrown grownup" data-hold="parent"><span class="fillbar"></span>Grown-ups: hold</button></div>
-      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="orchard">🍎 Help Rosa<span>Pick apples, earn coins</span></button>${jobOpen('market') ? '<button class="big-btn" data-v="market">🥧 Help Mr. Pip<span>Count his coins back</span></button>' : ''}<button class="big-btn" data-v="post">📦 Help Mo<span>Deliver the mail</span></button><button class="big-btn" data-v="fish">🎣 Go fishing<span>Sell fish for coins</span></button><button class="big-btn alt" data-v="build">🔨 Fix up your yard<span>Spend your coins</span></button></div>`}
+      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="orchard">🍎 Help Rosa<span>Pick apples, earn coins</span></button>${jobOpen('market') ? '<button class="big-btn" data-v="market">🥧 Help Mr. Pip<span>Count his coins back</span></button>' : ''}<button class="big-btn" data-v="bakery">🍞 Help Bea<span>Bake buns</span></button><button class="big-btn" data-v="post">📦 Help Mo<span>Deliver the mail</span></button><button class="big-btn" data-v="fish">🎣 Go fishing<span>Sell fish for coins</span></button><button class="big-btn alt" data-v="build">🔨 Fix up your yard<span>Spend your coins</span></button></div>`}
       <div class="vfade" id="vfade"></div>
     </main>`;
     fit();
@@ -253,7 +257,8 @@
     if (!v.orders || v.orders.day !== day) {
       if (v.orders && v.orders.list) { const o = v.orders, log = v.orderLog = v.orderLog || {}; log[o.day] = { done: o.list.filter(x => x.got >= x.need).length, n: o.list.length, ms: o.ms || 0 }; Object.keys(log).sort().slice(0, -30).forEach(d => delete log[d]); }
       v.orders = { day, list: [
-        { id: 'orchard', text: 'Pick 5 apples with Rosa', short: "Rosa's apples", need: 5, got: 0 },
+        // the first order takes turns: Rosa's apples one day she plays, Bea's buns the next
+        (v.orderDays = (v.orderDays || 0) + 1) % 2 === 0 ? { id: 'bakery', text: 'Bake 5 trays with Bea', short: "Bea's buns", need: 5, got: 0 } : { id: 'orchard', text: 'Pick 5 apples with Rosa', short: "Rosa's apples", need: 5, got: 0 },
         jobOpen('market') ? { id: 'market', text: 'Sell 5 pies to Mr. Pip', short: "Mr. Pip's pies", need: 5, got: 0 } : { id: 'fish', text: 'Catch 5 fish', short: '5 fish', need: 5, got: 0 },
         { id: 'lesson', text: "Do Dot's lesson on the board", short: "Dot's lesson", need: 1, got: 0 },
       ] };
@@ -276,6 +281,7 @@
     const pond = { job: 'fish', text: 'Catch fish at the pond', say: 'Tap the pond to catch some fish!', mark: [POND[0] + 30, POND[1] - 24], go: () => walkTo('dock', toFishing) };
     const yard = { job: 'build', text: 'Buy something for your yard', say: `You have ${v.coins} coins. Tap your yard to spend them!`, mark: [YARD.x + 48, YARD.y - 8], go: () => walkTo('yard', () => enterBuild(null)) };
     const rosa = { job: 'orchard', text: 'Help Rosa pick apples', say: 'Rosa needs help in the orchard. Tap her!', mark: [ROSA[0] + 4, ROSA[1] - 22], go: () => walkTo('orchard', toOrchard) };
+    const bea = { job: 'bakery', text: 'Bake buns with Bea', say: 'Bea needs help in the bakery. Tap her!', mark: [BEA[0] + 4, BEA[1] - 22], go: () => walkTo('bakery', toBakery) };
     const pip = { job: 'market', text: 'Sell pies to Mr. Pip', say: 'Mr. Pip needs help with his coins. Tap him!', mark: [PIP[0] + 4, PIP[1] - 20], go: () => walkTo('market', marketTap) };
     const board = (text, say) => ({ text, say, mark: [BOARD[0] + 9, BOARD[1] - 26], go: () => walkTo('board', openBoard) });
     if (!v.rounds && !v.placed.length) return pond;
@@ -286,6 +292,7 @@
     if (next) {
       const tag = { label: `Today's orders · ${ordersCount()} of ${o.list.length} done` }, count = next.need > 1 ? ` (${next.got} of ${next.need})` : '';
       if (next.id === 'orchard') return { ...rosa, ...tag, text: next.text + count };
+      if (next.id === 'bakery') return { ...bea, ...tag, text: next.text + count };
       if (next.id === 'market') return { ...pip, ...tag, text: next.text + count };
       if (next.id === 'fish') return { ...pond, ...tag, text: next.text + count };
       return { ...board(next.text, "Dot's lesson is on the board."), ...tag };
@@ -293,7 +300,7 @@
     // the day is hers: build, or keep helping (whoever she's helped least)
     if (v.coins >= 6) return { ...yard, label: 'Free time' };
     const mo = { job: 'post', text: 'Help Mo deliver the mail', say: 'Mo has packages to deliver. Tap Mo!', mark: [MO[0] + 4, MO[1] - 20], go: () => walkTo('post', toPost) };
-    const friends = [[rosa, v.orchardRounds || 0], [mo, v.postRounds || 0], ...(jobOpen('market') ? [[pip, v.marketRounds || 0]] : [])];
+    const friends = [[rosa, v.orchardRounds || 0], [bea, v.bakeryRounds || 0], [mo, v.postRounds || 0], ...(jobOpen('market') ? [[pip, v.marketRounds || 0]] : [])];
     return { ...friends.sort((a, b) => a[1] - b[1])[0][0], label: 'Free time' };
   }
   function mapOverlays() {
@@ -322,6 +329,8 @@
     // Rosa by her orchard, in her straw hat; she waves when helping her is the next job
     items.push({ y: ROSA[1], box: [ROSA[0] - 2, ROSA[1] - 19, 13, 20], draw: () => { const [x, y] = ROSA; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, ROSA_LOOK, { blink: (t % 3900) < 120, wave: (t % 5200) < 1100 && (mission() || {}).text === 'Help Rosa pick apples' });
       k.R(x + 2, y - 18, 5, 2, '#e2ae52'); k.R(x + 2, y - 18, 3, 1, '#f8dc8a'); k.R(x, y - 16, 9, 1, '#c08636'); k.R(x + 2, y - 17, 5, 1, '#b84a3e'); } });
+    items.push({ y: BEA[1], box: [BEA[0] - 2, BEA[1] - 19, 13, 20], draw: () => { const [x, y] = BEA; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, BEA_LOOK, { flip: true, blink: ((t + 3300) % 4500) < 120, wave: (t % 5900) < 1100 && (mission() || {}).job === 'bakery' });
+      k.R(x + 1, y - 19, 7, 4, '#f4efe2'); k.R(x + 1, y - 19, 7, 1, '#ffffff'); k.R(x + 1, y - 15, 7, 1, '#cfc6b4'); } });
     items.push({ y: MO[1], box: [MO[0] - 2, MO[1] - 17, 13, 18], draw: () => { const [x, y] = MO; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, MO_LOOK, { flip: true, blink: ((t + 2600) % 4700) < 120, wave: (t % 6100) < 1100 && (mission() || {}).job === 'post' });
       k.R(x + 1, y - 16, 7, 2, '#3a5aa8'); k.R(x, y - 14, 9, 1, '#2b2b3a'); } });
     items.push({ y: PIP[1], box: [PIP[0] - 2, PIP[1] - 17, 13, 18], draw: () => { const [x, y] = PIP; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, PIP_LOOK, { flip: true, blink: ((t + 1700) % 4300) < 120, wave: (t % 5600) < 1100 && (mission() || {}).job === 'market' });
@@ -437,6 +446,7 @@
     if (px.inEll(x, y, ...POND) || inRect(x, y, DOCK)) { ui.pulsePond = false; return walkTo('dock', () => toFishing()); }
     if (inRect(x, y, ORCHARD) || Math.hypot(x - ROSA[0] - 4, y - ROSA[1] + 8) < 10) return walkTo('orchard', toOrchard);
     if (inRect(x, y, [STALL[0] - 4, STALL[1] - 26, 42, 30]) || Math.hypot(x - PIP[0] - 4, y - PIP[1] + 8) < 10) return walkTo('market', marketTap);
+    if (inRect(x, y, [BAKERY[0] - 4, BAKERY[1] - 40, 46, 42]) || Math.hypot(x - BEA[0] - 4, y - BEA[1] + 8) < 10) return walkTo('bakery', toBakery);
     if (inRect(x, y, [POST[0] - 4, POST[1] - 40, 46, 42]) || Math.hypot(x - MO[0] - 4, y - MO[1] + 8) < 10) return walkTo('post', toPost);
     if (c && c.area === 'plot') { ui.pulseYard = false; return walkTo('yard', () => enterBuild(placedAt(c) ? c : null)); }
     if (inRect(x, y, [BOARD[0] - 4, BOARD[1] - 24, 28, 26])) return walkTo('board', openBoard);
@@ -734,6 +744,7 @@
   // =====================================================================
   const JCAM = { x: 0, y: 0, w: 236, h: 236 * H / W };              // the close-up: 236 scene pixels across
   const ROSA_LOOK = { hair: '#a84a2a', skin: '#f2c49c', skinD: '#d9997a', shirt: '#4f8a5b', shirtD: '#2f5a3b', long: true };
+  const BEA_LOOK = { hair: '#4a2a1a', skin: '#e8b07f', skinD: '#c98a6c', shirt: '#c06456', shirtD: '#8e4040', long: false };
   const MO_LOOK = { hair: '#3a2418', skin: '#c98a6c', skinD: '#a8705a', shirt: '#3a5aa8', shirtD: '#26346a', long: false };
   const PIP_LOOK = { hair: '#e8e8f0', skin: '#f2c49c', skinD: '#d9997a', shirt: '#7a4a2a', shirtD: '#5a3420', long: false };
   const fillN = (n, c) => Array(Math.max(0, n)).fill(c), ten = (...parts) => [...parts.flat(), ...fillN(10 - parts.flat().length, 'e')];
@@ -742,7 +753,7 @@
     // the orchard: she and Rosa each pick apples; how many in all? (positions stay clear of the sides a 4:3 iPad crops)
     orchard: {
       npc: 'Rosa', chibi: 'rosa', order: 'Rosa needs apples', marks: 'apple', node: 'orchard', mapCam: [60, 80, 96], rounds: 'orchardRounds', log: 'Picking apples with Rosa',
-      skills: ['plus12', 'doubles', 'teens', 'to10', 'near', 'bridge'], fact: f => f.type === 'add' && f.a > 0 && f.b > 0,
+      skills: ['plus12', 'teens', 'to10', 'bridge'], fact: f => f.type === 'add' && f.a > 0 && f.b > 0,
       her: [16, 134], npcAt: [134, 136], head: [142, 113], sign: [39, 73, 78, 28], dotHome: [30, 100], dotHelp: n => [n === 1 ? 126 : 150, 104],
       boxes: [[38, 138], [102, 138]],
       eq: (a, b) => `${a} + ${b} =`,
@@ -783,6 +794,45 @@
       draw(k, t, O, hop) {
         if (O.crates) { const xs = O.crates.length === 1 ? [78] : [58, 100]; O.crates.forEach((c, i) => k.crate10(xs[i], 141, c, Math.floor(t / 350) % 2 === 0)); }
         else this.boxes.forEach(([bx, by], i) => k.basket(bx, by - hop, O.shown[i], i ? 'yellow' : 'red'));
+        drawHer(k, t, this.her, O, hop); drawNpc(k, t, this, O, hop);
+      },
+    },
+    // the bakery: Bea and she each bake a tray of buns, the same or one more (doubles and near doubles); the trays
+    // are trays of ten, so help can say "double 6" and point at both
+    bakery: {
+      npc: 'Bea', chibi: 'bea', order: 'Bea needs buns baked', marks: 'bun', node: 'bakery', mapCam: [136, 44, 96], rounds: 'bakeryRounds', log: 'Baking buns with Bea',
+      skills: ['doubles', 'near'], fact: f => f.type === 'add' && f.a > 0 && f.b > 0 && Math.abs(f.a - f.b) <= 1,
+      her: [16, 134], npcAt: [134, 136], head: [142, 113], sign: [39, 73, 78, 28], dotHome: [30, 100], dotHelp: () => [150, 100],
+      trays: [[50, 142], [92, 142]],
+      eq: (a, b) => `${a} + ${b} =`,
+      ask: (f, i) => { const buns = n => `${n} bun${n === 1 ? '' : 's'}`; return f.a === f.b ? (i % 2 ? `I baked ${buns(f.b)}. You baked the same. How many buns in all?` : `You baked ${buns(f.a)}, and I baked the same. How many buns in all?`) : `You baked ${buns(f.a)}. I baked ${buns(f.b)}. How many buns in all?`; },
+      solved: f => `Yes! ${f.a} and ${f.b} make ${f.ans}.`,
+      words: t => String(t).replace(/\bframes\b/g, 'trays').replace(/\bframe\b/g, 'tray').replace(/\bdots\b/g, 'buns').replace(/\bdot\b/g, 'bun'),
+      // her buns on the left tray, Bea's on the right; for a near double the one more bun is marked
+      cells(f) { const t = n => ten(fillN(n, 'a')); if (f.a === f.b) return [t(f.a), t(f.b)]; const small = Math.min(f.a, f.b); const more = n => ten(fillN(small, 'a'), ['B']);
+        return f.a < f.b ? [t(f.a), more(f.b)] : [more(f.a), t(f.b)]; },
+      // Bea sets the buns out one at a time
+      deal(f, i) { const t = now(), d = []; for (let n = 0; n < f.a; n++) d.push({ who: 0, t0: t + 250 + n * 100, x: 132, y: 112 }); for (let n = 0; n < f.b; n++) d.push({ who: 1, t0: t + 250 + (f.a + n) * 100, x: 132, y: 112 }); return d; },
+      land(who, n) { const [x, y] = this.trays[who]; return [x + 2 + (n % 5) * 7, y - 15 + Math.floor(n / 5) * 8]; },
+      falling: (k, x, y) => k.bun(x, y),
+      tags(O) { return this.trays.map(([x, y], i) => ({ x: x + 19, y: y - 22, text: O.shown[i], on: O.shown[i] > 0 })); },
+      still(g, k) {
+        const path = (x, y) => y > 146 && y < 160 + Math.sin(x / 30) * 2;
+        px.ground(g, W, H, { path });
+        k.house(-6, 52, 48, 'blue', { chimney: true, lit: true, far: true }); k.house(176, 52, 44, 'red', { far: true });
+        // the bakery's front (gold roof, like on the map): a striped awning and a bun sign
+        k.house(66, 60, 84, 'gold', { chimney: true, lit: true });
+        k.add(61, () => { for (let i = 0; i < 88; i++) k.P(64 + i, 58, Math.floor(i / 6) % 2 ? '#efe8dc' : '#c06456'); k.R(98, 18, 20, 9, C.k1); k.R(99, 19, 18, 7, C.k3); k.bun(101, 21); k.bun(109, 21); }, false);
+        [[250, 100], [280, 150], [228, 190], [16, 196]].forEach(([x, y], i) => k.tree(x, y, { r: 11 + (i % 2) }));
+        k.barrel(200, 120); k.crate(212, 124, '#f2c94c');
+        k.add(118, () => k.sign(38, 118, 80, 30));
+        return [];
+      },
+      draw(k, t, O, hop) {
+        // the table, and the two trays (help marks the one more bun)
+        k.R(44, 140, 92, 4, C.k3); k.R(44, 140, 92, 1, C.k4); k.R(44, 143, 92, 1, C.k1); k.R(48, 144, 3, 10, C.k1); k.R(129, 144, 3, 10, C.k1);
+        const cells = O.crates || [ten(fillN(O.shown[0], 'a')), ten(fillN(O.shown[1], 'a'))];
+        this.trays.forEach(([x, y], i) => k.bunTray10(x, y - (O.phase === 'right' ? hop : 0), cells[i], Math.floor(t / 350) % 2 === 0));
         drawHer(k, t, this.her, O, hop); drawNpc(k, t, this, O, hop);
       },
     },
@@ -886,16 +936,18 @@
     ui.busy = true; her.path = [];
     tweenCam(camAround(...J.mapCam), 800, () => { const f = document.getElementById('vfade'); if (f) f.classList.add('on'); setTimeout(() => { ui.busy = false; startJob(id); }, 260); });
   }
-  const toOrchard = () => toJob('orchard'), toMarket = () => toJob('market'), toPost = () => toJob('post');
+  const toOrchard = () => toJob('orchard'), toMarket = () => toJob('market'), toPost = () => toJob('post'), toBakery = () => toJob('bakery');
   // Mr. Pip's stall opens with the take-away facts (Ten Take Away needs Partners of 10)
   function marketTap() { if (jobOpen('market')) return toMarket(); say("Mr. Pip's stall opens once your partners of 10 get strong. Keep fishing!"); }
   // What each villager says the first time, and the surprise they promise for three full rounds
   const MEET = {
     orchard: "Hi! I'm Rosa. Apples are falling everywhere! Help me count them, and I'll pay you a coin for each one. Fill my baskets three times and I'll have a surprise for you.",
+    bakery: "Hi! I'm Bea, the baker. Every tray holds ten buns. When I bake some, you bake the same, or one more. Count them up for me and I'll pay you a coin each time. Help me three times and I'll have a surprise.",
     post: "Hi, I'm Mo, the mail carrier! Every package has its house number on the label, written in number discs. Read them for me and I'll pay you a coin for each one. Help me three times and I'll have a surprise.",
     market: "Hello! I'm Mr. Pip. I buy a pie every day, but I always mix up my coins. Help me count my coins back, and there's a coin in it for you. Help me three times and I'll have a surprise.",
   };
   const GIFT = { orchard: { item: 'appletree', title: 'Rosa gave you an apple tree!', text: 'Grown from her very best apples. It\'s waiting in your yard tray.' },
+    bakery: { item: 'cake', title: 'Bea baked you a cake!', text: 'A cake of your very own. It\'s waiting in your yard tray.' },
     post: { item: 'mailbox', title: 'Mo gave you a mailbox!', text: 'Now you can get letters too. It\'s waiting in your yard tray.' },
     market: { item: 'kitten', title: 'Mr. Pip gave you a kitten!', text: 'One of his cat\'s kittens needs a home. It\'s waiting in your yard tray.' } };
   const giftDue = id => (V()[JOBS[id].rounds] || 0) >= 3 && !(V().gifted || {})[id] ? GIFT[id] : null;
@@ -1035,10 +1087,11 @@
     ambient(sc, k, t, { butterflies: [[60, 140, 20, 8, .6, '#ffe066'], [190, 90, 16, 10, .5, '#ff9ac6']] });
     if (!O) return;
     const J = O.J;
-    // things arriving: apples falling into baskets, coins counted onto the counter
+    // things arriving: apples falling into baskets, coins counted onto the counter, buns set on trays
+    const arcs = O.id === 'market' || O.id === 'bakery';
     O.drops = O.drops.filter(d => { const e = (t - d.t0) / 420; if (e < 0) return true; const [tx, ty] = J.land(d.who, O.shown[d.who]);
-      if (e >= 1) { O.shown[d.who]++; if (O.id === 'market') sfx('tick'); renderJobWork(); return false; }
-      J.falling(k, Math.round(lerp(d.x, tx, e)), Math.round(lerp(d.y, ty, e) - (O.id === 'market' ? Math.sin(e * Math.PI) * 10 : 0) + (O.id === 'market' ? 0 : (ty - d.y) * (e * e - e))), d.who); return true; });
+      if (e >= 1) { O.shown[d.who]++; if (arcs) sfx('tick'); renderJobWork(); return false; }
+      J.falling(k, Math.round(lerp(d.x, tx, e)), Math.round(lerp(d.y, ty, e) - (arcs ? Math.sin(e * Math.PI) * 10 : 0) + (arcs ? 0 : (ty - d.y) * (e * e - e))), d.who); return true; });
     if (O.phase === 'pick' && !O.drops.length) jobAsk();
     const hop = O.cheer && t - O.cheer < 500 ? Math.round(Math.sin((t - O.cheer) / 500 * Math.PI) * 3) : 0;
     J.draw(k, t, O, hop);
@@ -1069,7 +1122,7 @@
     const ms = (O.tLast || tn) - (O.t0 || tn), gap = tn - (O.tLast || tn);
     if (ok) {
       const fast = ms <= EM.fastMs(O.item, 0) && gap <= CONFIRM_MS, g = oGrade(fast ? 'fast' : 'slow', ms);
-      O.picked++; V().coins++; if (O.id === 'orchard') V().apples = (V().apples || 0) + 1; else V().pies = (V().pies || 0) + 1;
+      O.picked++; V().coins++;
       orderProgress(O.id); EM.save();
       O.phase = 'right'; O.cheer = now(); O.said = fast ? 'Wow, you just knew that! Here, a coin.' : 'Thank you! Here, a coin.';
       J.tags(O).forEach(tg => burst(tg.x, tg.y + 4, 8, ['#fff7c2', '#ffe27a', '#ffffff'], { up: true, spread: 2, speed: 40, life: 600 }));
@@ -1100,7 +1153,7 @@
     if (O.picked >= O.goal) {
       const J = O.J; V()[J.rounds] = (V()[J.rounds] || 0) + 1; EM.save();
       const gift = giftDue(O.id);
-      const title = { orchard: "Rosa's baskets are full!", market: 'Mr. Pip has his pies!', post: 'All the mail is delivered!' }[O.id];
+      const title = { orchard: "Rosa's baskets are full!", market: 'Mr. Pip has his pies!', post: 'All the mail is delivered!', bakery: 'The buns are all baked!' }[O.id];
       const next = () => { O.picked = 0; renderJobWork(); nextQ(); };
       if (gift) return celebrate(title, `${J.npc} paid you ${O.goal} coins.`, () => giveGift(gift, next));
       return celebrate(title, `${J.npc} paid you ${O.goal} coins. You have ${V().coins} coins.${untilGift(O.id)}`, next, [['Keep going', 'keep'], ['Spend them', 'tobuild']]);
@@ -1161,6 +1214,7 @@
       case 'guide': { const m = mission(); if (m && !ui.story && !ui.busy) m.go(); return; }
       case 'market': return walkTo('market', marketTap);
       case 'post': return walkTo('post', toPost);
+      case 'bakery': return walkTo('bakery', toBakery);
       case 'jhear': return mode === 'fish' ? fishHear() : jobHear();
       case 'jidk': return mode === 'fish' ? fIdk() : oIdk();
       case 'fidk': return fIdk();

@@ -197,6 +197,43 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     const pl = await page.evaluate(() => EM.S.sessions[EM.S.sessions.length - 1]);
     check(pl.kind === 'post' && pl.items === 1, 'the post office logs a session');
 
+    // ---- Bea's bakery: doubles and near doubles on trays of ten ----
+    await page.click('[data-v=bakery]'); await page.waitForSelector('.bakery', { timeout: 30000 });
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'hello', null, { timeout: 8000 });
+    check(/Bea/.test(await page.textContent('#jbub')), 'Bea says hello the first time');
+    await page.click('#vstage'); await oAsk(); await page.waitForTimeout(300); await shot('07g3-bakery');
+    const k1 = await page.evaluate(() => { const O = EM.village._job(); return { a: O.f.a, b: O.f.b, ans: O.f.ans, coins: EM.village.state().coins, bub: document.getElementById('jbub').textContent }; });
+    check(Math.abs(k1.a - k1.b) <= 1 && /buns? in all/.test(k1.bub), `Bea asks a double or near double: ${k1.a} + ${k1.b}`);
+    await page.waitForTimeout(900);
+    for (const d of String(k1.ans)) await page.click(`.jpad [data-fd="${d}"]`); await page.click('.jpad [data-v=fok]'); await page.waitForTimeout(300);
+    check((await page.evaluate(() => EM.village.state().coins)) === k1.coins + 1, 'a right answer earns a coin from Bea');
+    await oAsk(); await page.click('[data-v=jidk]'); await page.waitForTimeout(700);
+    const kh = await page.evaluate(() => ({ trays: (EM.village._job().crates || []).length, bub: document.getElementById('jbub').textContent }));
+    check(kh.trays === 2 && !/frame|dots/.test(kh.bub), `help shows both trays: "${kh.bub.slice(0, 60)}"`);
+    await shot('07g4-bakery-help');
+    await page.click('[data-v=leavejob]'); await page.waitForSelector('.village:not(.bakery)', { timeout: 6000 }); await page.waitForTimeout(1500);
+
+    // ---- the scratchpad: two-step story problems and column math, once the steps have faded ----
+    const showItem = (id, lv, tier) => page.evaluate(([id, lv, tier]) => { const it = EM.procItem(id, lv, tier); EM.startSession('skill', { id: 'doubles' }); const R = EM._run(); R.queue = [it]; R.idx = 0; R.cur = it; R.step = 0; R.phase = 'ask'; R.input = ''; R.waitReady = false; R.waitTrick = false; R.waitSpeech = false; R.lock = false; R.msg = null; R.helpStage = 0; R.stepRes = []; R.t0 = performance.now(); EM.render(); }, [id, lv, tier]);
+    await showItem('words', 2, 0); await page.waitForTimeout(200);
+    check(!(await page.isVisible('.scratchbtn')), 'no scratchpad while the steps are still shown');
+    await showItem('mental', 0, 1); await page.waitForTimeout(200);
+    check(!(await page.isVisible('.scratchbtn')), 'no scratchpad for In Your Head');
+    await showItem('words', 2, 1); await page.waitForTimeout(200);
+    check(await page.isVisible('.scratchbtn'), 'a scratchpad for a two-step story problem once the steps fade');
+    const st0 = await page.evaluate(() => EM._run().t0);
+    await page.click('.scratchbtn'); await page.waitForTimeout(400);
+    const sb = await page.locator('.scratch canvas').boundingBox();
+    await page.mouse.move(sb.x + 40, sb.y + 60); await page.mouse.down(); await page.mouse.move(sb.x + 220, sb.y + 90, { steps: 6 }); await page.mouse.up();
+    check(await page.evaluate(() => getComputedStyle(document.querySelector('.practice .pad, .practice .choicepad')).visibility === 'hidden'), 'it slides out over the number pad; the problem stays in view');
+    await shot('07g5-scratchpad'); await page.waitForTimeout(1000);
+    await page.click('.scratch [data-tool=done]'); await page.waitForTimeout(200);
+    check((await page.evaluate(() => EM._run().t0)) - st0 >= 1000, "time with it open doesn't count against her");
+    await showItem('regroup', 1, 1); await page.waitForTimeout(200); await page.click('.scratchbtn'); await page.waitForTimeout(300);
+    check(await page.evaluate(() => { const c = document.querySelector('.scratch canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 4) if (d[i]) return false; return true; }), 'each new problem gets fresh paper (nothing is kept)');
+    await page.click('.scratch [data-tool=done]'); await page.evaluate(() => EM.go('home')); await page.waitForTimeout(1500);
+    check(!(await page.isVisible('.scratchbtn')), 'the scratchpad goes away outside practice');
+
     // ---- the morning orders: the board lists them; when all are done the village says thank you ----
     await page.evaluate(() => EM.village.openBoard()); await page.waitForSelector('.vorders');
     check(await page.$('[data-b=lesson]') !== null && (await page.$$('.vorders li')).length === 3, "the board lists today's three orders and Dot's lesson");

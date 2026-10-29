@@ -24,6 +24,7 @@
     const inworld = ['practice', 'summary', 'skills', 'break'].includes(screen) && EM.village && S.avatar;
     document.body.classList.toggle('inworld', !!inworld);
     if (inworld) { try { document.body.style.setProperty('--world', `url(${EM.village.backdrop()})`); } catch (e) {} }
+    if (EM.scratch) EM.scratch.sync(R, screen);
     fitEqs();
   }
   // a long equation (400 + 600 = ___) shrinks to fit its column instead of pushing the answer box off the edge
@@ -36,6 +37,8 @@
   }
   addEventListener('resize', fitEqs);
   EM.go = go; EM.render = render;
+  // time with the scratchpad open doesn't count against her: the question's clock moves on by that much
+  if (EM.scratch) EM.scratch.onShift((ms, openAt) => { if (!R) return; if (R.t0) R.t0 += ms; if (R.tLast && R.tLast < openAt) R.tLast += ms; });
   EM.todayDone = () => todayDone(); EM.dueTonight = () => dueTonight();
 
   // ---------- home ----------
@@ -659,7 +662,7 @@
     if (R.kind === 'placement') {
       $app.innerHTML = `<main class="wrap sumview">
         ${villageHTML(`Thank you, ${esc(NAME())}! Now I know where to start.`, { mood: 'cheer' })}
-        <p class="sub">Every day your village has three orders: Rosa's apples, some fish or Mr. Pip's pies, and my lesson on the notice board. Then the rest of the day is yours.</p>
+        <p class="sub">Every day your village has three orders: Rosa's apples or Bea's buns, some fish or Mr. Pip's pies, and my lesson on the notice board. Then the rest of the day is yours.</p>
         <div class="tiles"><div class="tile"><b>${st.fast}</b><span>⚡ Knew it fast</span></div><div class="tile"><b>${st.slow}</b><span>✓ Figured it out</span></div><div class="tile"><b>${st.wrong + st.idk}</b><span>🧠 To learn</span></div></div>
         ${st.idk ? `<div class="note">🙋 You said "I don't know" ${st.idk} time${st.idk > 1 ? 's' : ''}. That's exactly right. Now I know what to teach.</div>` : ''}
         ${gcard}

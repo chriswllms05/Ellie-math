@@ -95,6 +95,11 @@ function audit() {
     await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'ask' && !EM.village._job().waitSpeech, null, { timeout: 10000 }); await check('09e-market', 400);
     await page.click('[data-v=jidk]'); await check('09f-market-help', 700);
     await page.click('[data-v=leavejob]'); await page.waitForTimeout(1500);
+    await page.click('[data-v=bakery]'); await page.waitForSelector('.bakery', { timeout: 30000 });
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'hello', null, { timeout: 8000 }); await page.click('#vstage');
+    await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'ask' && !EM.village._job().waitSpeech, null, { timeout: 10000 }); await check('09f0-bakery', 400);
+    await page.click('[data-v=jidk]'); await check('09f1-bakery-help', 700);
+    await page.click('[data-v=leavejob]'); await page.waitForTimeout(1500);
     await page.click('[data-v=post]'); await page.waitForSelector('.post', { timeout: 30000 });
     await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'hello', null, { timeout: 8000 }); await page.click('#vstage');
     await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'ask' && !EM.village._job().waitSpeech, null, { timeout: 10000 }); await check('09f2-post', 400);
@@ -124,6 +129,7 @@ function audit() {
     await show('16-regroup', { kind: 'proc', id: 'regroup', level: 1, tier: 1 }, 0);
     await show('17-words', { kind: 'proc', id: 'words', level: 0, tier: 0 });
     await show('18-skip', { kind: 'proc', id: 'skip', level: 0, tier: 1 });
+    await show('18b-scratchpad', { kind: 'proc', id: 'words', level: 2, tier: 1 }); await page.click('.scratchbtn'); await check('18c-scratchpad-open', 500); await page.click('.scratch [data-tool=done]');
     await page.evaluate(() => { EM.startSession('placement'); }); await check('19-placement');
     await page.evaluate(() => { const S = EM.S; EM.go('skills'); }); await check('20-skills');
     await page.evaluate(() => EM.go('parent')); await check('21-grownups');

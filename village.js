@@ -177,7 +177,7 @@
     { const a = YARD, x0 = a.x - 4, y0 = a.y - 3, x1 = a.x + a.cols * 16 + 2, y1 = a.y + a.rows * 16 + 4; k.fence(x0, y0, x1, y0); k.fence(x0, y1, x1, y1); k.fence(x1, y0, x1, y1); k.fence(x0, y0, x0, y0 + 14); k.fence(x0, y0 + 34, x0, y1); }
     // Rosa's orchard: two rows of apple trees, and her crate by the path
     [[24, 66], [48, 62], [72, 66], [34, 92], [58, 90]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 2), apples: true }));
-    k.crate(90, 112, '#e8473f'); k.crate(70, 106, '#8cc04a');
+    k.crate(90, 112, '#e8473f'); k.crate(70, 106, '#f7c531');
     [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [126, 26], [150, 20], [168, 30], [8, 108], [290, 100], [284, 140], [292, 196], [116, 206], [20, 206], [196, 204], [262, 206], [160, 74], [140, 64]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
     [[106, 86], [206, 128], [276, 172], [130, 190], [222, 196]].forEach(([x, y]) => k.bush(x, y));
     [[270, 120], [40, 196], [110, 198]].forEach(([x, y]) => k.rock(x, y));
@@ -633,13 +633,13 @@
   let O = null;
   // help says "frame" and "dots" in practice; in the orchard they are crates and apples
   const orchWords = t => String(t).replace(/\bframes\b/g, 'crates').replace(/\bframe\b/g, 'crate').replace(/\bdots\b/g, 'apples').replace(/\bdot\b/g, 'apple').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot');
-  // the crates help draws: her apples red ('a'), Rosa's green ('b'), an apple moved to make 10 gold ('c')
+  // the crates help draws: her apples red ('a'), Rosa's yellow ('b'); an apple moved over to make 10 is uppercase
   function helpCrates(f) {
     const { a, b } = f, A = a + b, fill = (n, c) => Array(Math.max(0, n)).fill(c), crate = (...parts) => [...parts.flat(), ...fill(10 - parts.flat().length, 'e')];
     if (a === b || Math.abs(a - b) === 1) return [crate(fill(a, 'a')), crate(fill(b, 'b'))];
     if (A > 10) { const herBig = a >= b, big = Math.max(a, b), small = Math.min(a, b), mine = herBig ? 'a' : 'b', other = herBig ? 'b' : 'a';
       if (big === 10) return [crate(fill(10, mine)), crate(fill(small, other))];
-      return [crate(fill(big, mine), fill(10 - big, 'c')), crate(fill(small - (10 - big), other))]; }
+      return [crate(fill(big, mine), fill(10 - big, other.toUpperCase())), crate(fill(small - (10 - big), other))]; }
     return [crate(fill(a, 'a'), fill(b, 'b'))];
   }
   function buildOrchStill(g, k) {
@@ -651,7 +651,7 @@
     for (let n = 0; n < 34; n++) { const x = Math.floor(px.hash(n, 3, 9) * W), y = 70 + Math.floor(px.hash(n, 4, 9) * 136); if (!path(x, y)) k.flowersGround(x, y, ['#ffffff', '#ffe066', '#ff9ac6', '#c7a6ff'][n % 4]); }
     [[262, 120], [286, 150], [250, 196], [20, 200]].forEach(([x, y], i) => k.tree(x, y, { r: 12 + (i % 2) }));
     [[200, 104], [178, 196], [120, 190]].forEach(([x, y]) => k.bush(x, y));
-    k.crate(170, 132, '#e8473f'); k.crate(179, 134, '#8cc04a');
+    k.crate(170, 132, '#e8473f'); k.crate(179, 134, '#f7c531');
     k.add(118, () => k.sign(38, 118, 80, 30));
     return [];
   }
@@ -764,12 +764,12 @@
     if (!O) return;
     // apples falling into the baskets
     O.drops = O.drops.filter(d => { const e = (t - d.t0) / 420; if (e < 0) return true; const [bx, by] = OBASKET[d.who], n = O.shown[d.who], tx = bx + 3 + (n % 4) * 4 + (Math.floor(n / 4) % 2) * 2, ty = by - 14 - Math.floor(n / 4) * 3;
-      if (e >= 1) { O.shown[d.who]++; renderOrchWork(); return false; } k.apple(Math.round(lerp(d.x, tx, e)), Math.round(lerp(d.y, ty, e * e)), d.who ? 'green' : 'red'); return true; });
+      if (e >= 1) { O.shown[d.who]++; renderOrchWork(); return false; } k.apple(Math.round(lerp(d.x, tx, e)), Math.round(lerp(d.y, ty, e * e)), d.who ? 'yellow' : 'red'); return true; });
     if (O.phase === 'pick' && !O.drops.length) orchAsk();
     // baskets, or the crates of ten while helping
     const hop = O.cheer && t - O.cheer < 500 ? Math.round(Math.sin((t - O.cheer) / 500 * Math.PI) * 3) : 0;
-    if (O.crates) { const xs = O.crates.length === 1 ? [78] : [58, 100]; O.crates.forEach((c, i) => k.crate10(xs[i], 141, c.map(v => v === 'c' && Math.floor(t / 350) % 2 ? 'c' : v))); }
-    else OBASKET.forEach(([bx, by], i) => k.basket(bx, by - hop, O.shown[i], i ? 'green' : 'red'));
+    if (O.crates) { const xs = O.crates.length === 1 ? [78] : [58, 100]; O.crates.forEach((c, i) => k.crate10(xs[i], 141, c, Math.floor(t / 350) % 2 === 0)); }
+    else OBASKET.forEach(([bx, by], i) => k.basket(bx, by - hop, O.shown[i], i ? 'yellow' : 'red'));
     const look2 = look(), herC = px.CHIBI.her(look2, look2.long), rosa = px.CHIBI.rosa(), blink = (t % 3600) < 120;
     k.chibi(OHER[0], OHER[1], herC.rows, herC.mat, { blink, bob: O.phase === 'right' ? hop : 0 });
     k.chibi(OROSA[0], OROSA[1], rosa.rows, rosa.mat, { flip: true, blink: ((t + 900) % 4100) < 120, bob: O.phase === 'right' ? hop : 0 });

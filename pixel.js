@@ -203,11 +203,12 @@
       for (let j = 0; j < 9; j++) { const ins = j > 6 ? j - 6 : 0; for (let i = ins; i < 22 - ins; i++) P(x + i, y - 9 + j, (i + (j >> 1)) % 3 === 0 ? C.k1 : j % 2 ? C.k2 : C.k3); }
       R(x - 1, y - 10, 24, 2, C.k3); R(x - 1, y - 10, 24, 1, C.k4); R(x - 1, y - 8, 24, 1, C.k1);
     };
-    // a crate of ten (two rows of 5), the orchard's ten-frame. cells: 'a' 'b' apple kinds, 'c' a moved apple (gold), 'e' empty
-    k.crate10 = (x, y, cells) => {
+    // a crate of ten (two rows of 5), the orchard's ten-frame. cells: 'a' red, 'b' yellow, 'e' empty;
+    // uppercase is an apple moved over to make 10, framed in light when ring is on (the caller blinks it)
+    k.crate10 = (x, y, cells, ring) => {
       shadowEll(x + 19, y + 1, 20, 2);
       R(x, y - 18, 38, 18, C.k1); R(x + 1, y - 17, 36, 16, C.k2); R(x + 1, y - 17, 36, 1, C.k3); R(x + 1, y - 9, 36, 1, C.k1);
-      for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) { const cx = x + 2 + c * 7, cy = y - 16 + r * 8, v = cells[r * 5 + c]; R(cx, cy, 6, 6, C.k0); if (v && v !== 'e') k.apple(cx, cy, v === 'a' ? 'red' : v === 'b' ? 'green' : 'gold'); }
+      for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) { const cx = x + 2 + c * 7, cy = y - 16 + r * 8, v = cells[r * 5 + c]; const moved = v === 'A' || v === 'B'; R(cx, cy, 6, 6, moved && ring ? '#fff7c2' : C.k0); if (moved && ring) R(cx + 1, cy + 1, 4, 4, C.k0); if (v && v !== 'e') k.apple(cx, cy, v.toLowerCase() === 'a' ? 'red' : 'yellow'); }
     };
     // a wooden sign on two posts; returns its face [x, y, w, h] for the words drawn over it
     k.sign = (x, y, w, h) => {
@@ -269,7 +270,7 @@
     const gr = c.createRadialGradient(CW / 2, CH / 2, CH * .4, CW / 2, CH / 2, CW * .75); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(30,20,45,.28)'); c.fillStyle = gr; c.fillRect(0, 0, CW, CH);
   }
 
-  const APPLES = { red: { r: '#e8473f', L: '#ffb0a0', d: '#a82a33' }, green: { r: '#8cc04a', L: '#d8f0a0', d: '#4f8a2a' }, gold: { r: '#f2c94c', L: '#fff0a0', d: '#c08636' } };
+  const APPLES = { red: { r: '#e8473f', L: '#ffb0a0', d: '#a82a33' }, yellow: { r: '#f7c531', L: '#fff3b0', d: '#c4861c' } };
   // a 4-color ramp from one color: [outline, shade, base, light]
   const mix = (c, to, f) => { const a = c[0] === '#' ? hex(c) : c.match(/\d+/g).map(Number), b = hex(to); return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * f).toString(16).padStart(2, '0')).join(''); };
   const ramp = c => [mix(c, '#1a1020', .62), mix(c, '#1a1020', .32), mix(c, '#000000', 0), mix(c, '#ffffff', .35)];

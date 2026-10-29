@@ -228,8 +228,8 @@
   function renderBreak() {
     const done = R.bi + 1, total = R.blocks.length;
     $app.innerHTML = `<main class="wrap break">
-      <div class="break-scene">${D('cheer', 96)}<span class="art">${T().breakArt}</span></div>
-      <h1>${T().breakTitle ? `${T().breakTitle} ` : ''}Part ${done} of ${total} done!</h1>
+      <div class="break-scene">${D('cheer', 96)}</div>
+      <h1>Part ${done} of ${total} done!</h1>
       <p class="sub">Shake out your hands. Take a breath. Next up: <b>${esc(R.blocks[R.bi + 1].name)}</b>.</p>
       <button class="big-btn" data-act="nextblock">I'm ready</button>
     </main>`;
@@ -523,7 +523,7 @@
     const n = EM.countCollected();
     confetti();
     EM.sfx.yours();
-    overlay(`<div class="celebrate-row">${S.avatar ? EM.avatar.draw(undefined, 78, 'cheer') : ''}${D('cheer', 92)}<span class="big-item">${T().item(n)}</span></div><h2>${esc(it.label)} is YOURS!</h2><p>You didn't know it before. <b>Now you do.</b><br>${T().newLine(n)}</p><button class="big-btn" data-close="1">Yes!</button>`, next);
+    overlay(`<div class="celebrate-row">${S.avatar ? EM.avatar.draw(undefined, 78, 'cheer') : ''}${D('cheer', 92)}<span class="big-item">⭐</span></div><h2>${esc(it.label)} is YOURS!</h2><p>You didn't know it before. <b>Now you do.</b><br>That's ${n} fact${n === 1 ? '' : 's'} that ${n === 1 ? 'is' : 'are'} yours.</p><button class="big-btn" data-close="1">Yes!</button>`, next);
     const tok = overlayTok;
     EM.speech.say(`${it.label.replace('−', 'minus').replace('+', 'plus').replace('?', 'what')} is yours! You didn't know it before. Now you do.`).then(() => playClip(tok));
   }
@@ -590,8 +590,8 @@
     if (answered && R.kind !== 'skill') { S.card = { date: Date.now(), html: EM.parent.grownupCard(R), seen: false }; EM.save(); }
     screen = answered ? 'summary' : 'home';
     render();
-    const ms = EM.world.crossed(R.knownBefore, EM.countCollected());
-    if (answered) unlockCeremony(R.newSkills, () => milestoneCeremony(ms));
+    // (the old world's milestone surprises are retired: her village has its own rewards)
+    if (answered) unlockCeremony(R.newSkills, () => {});
   }
 
   // Keep the in-flight session in saved state so an iOS-killed app still logs the day.

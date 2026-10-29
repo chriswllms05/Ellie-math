@@ -1,7 +1,8 @@
 /* Ellie Math service worker: cached copy first if the network is slow, never caches a bad response, updates on the next launch. */
 const VERSION = 'ellie-math-v25';
 const JS = ['engine', 'content', 'voice', 'audio', 'manip', 'theme', 'world', 'avatar', 'pixel', 'village', 'teach', 'parent', 'scratch', 'app'].map(n => `./${n}.js?v=25`);
-const FILES = ['./', './index.html', ...JS, './fonts/fredoka-latin-500-normal.woff2', './fonts/fredoka-latin-600-normal.woff2', './fonts/fredoka-latin-700-normal.woff2', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './icon-maskable-512.png', ...['garden', 'ocean', 'space', 'classroom'].map(w => `./icon-${w}-180.png`)];
+const ART = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow'].map(n => `./art/${n}.png?v=1`);
+const FILES = ['./', './index.html', ...JS, ...ART, './fonts/fredoka-latin-500-normal.woff2', './fonts/fredoka-latin-600-normal.woff2', './fonts/fredoka-latin-700-normal.woff2', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './icon-maskable-512.png', ...['garden', 'ocean', 'space', 'classroom'].map(w => `./icon-${w}-180.png`)];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 // Dot's recorded voice (~30 MB) lives in its own cache so an app update doesn't download it again; audio.js prunes old packs.
 const VOICE_CACHE = 'ellie-voice';

@@ -766,13 +766,47 @@
   const MO_LOOK = { hair: '#3a2418', skin: '#c98a6c', skinD: '#a8705a', shirt: '#3a5aa8', shirtD: '#26346a', long: false };
   const PIP_LOOK = { hair: '#e8e8f0', skin: '#f2c49c', skinD: '#d9997a', shirt: '#7a4a2a', shirtD: '#5a3420', long: false };
   const fillN = (n, c) => Array(Math.max(0, n)).fill(c), ten = (...parts) => [...parts.flat(), ...fillN(10 - parts.flat().length, 'e')];
+  // ---------- painted art (exploration): generated with Weave from a style swatch, cleaned onto the scene's pixel grid,
+  // and laid out here in code. The orchard uses it when it has loaded; until then (or offline without it) the drawn
+  // orchard stays. See vault notes: base plate + kit, composed, then her, Rosa, the basket and apples as sprites.
+  const ART = {}; let artReady = false;
+  (function loadArt() {
+    const names = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow']; let left = names.length;
+    names.forEach(n => { const im = new Image(); im.onload = () => { ART[n] = im; if (--left === 0) { artReady = true; if (scene && scene.kind === 'job' && O && O.id === 'orchard') scene.rebake(); } }; im.src = `art/${n}.png?v=1`; });
+  })();
+  // her painted sprite in her own avatar's colours: the hair and shirt pixels take her colours, keeping their shading
+  function herArt() {
+    const l = look(), key = `${l.hair}|${l.shirt}`; if (herArt.key === key) return herArt.c;
+    const im = ART.her, c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height), p = d.data, hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    const toRGB = s => s.startsWith('#') ? hex(s) : s.match(/\d+/g).map(Number);
+    const hair = toRGB(l.hair), shirt = toRGB(l.shirt), lum = (r, g2, b) => 0.2126 * r + 0.7152 * g2 + 0.0722 * b;
+    const cls = (r, g2, b) => { const mx = Math.max(r, g2, b), mn = Math.min(r, g2, b), sat = mx ? (mx - mn) / mx : 0;
+      if (r > 140 && b > g2 + 15 && g2 < r - 40 && sat > 0.3) return 'shirt';             // the pink shirt (skin has less blue than green)
+      if (mx < 130 && r >= g2 && g2 >= b - 10 && sat > 0.25) return 'hair';              // the dark-brown hair
+      return null; };
+    const ref = { shirt: lum(...hex('#e46a9a')), hair: lum(...hex('#6b4a32')) };
+    for (let i = 0; i < p.length; i += 4) { if (p[i + 3] < 128) continue; const k = cls(p[i], p[i + 1], p[i + 2]); if (!k) continue;
+      const t = k === 'shirt' ? shirt : hair, f = Math.min(1.6, lum(p[i], p[i + 1], p[i + 2]) / ref[k]);
+      p[i] = Math.min(255, t[0] * f); p[i + 1] = Math.min(255, t[1] * f); p[i + 2] = Math.min(255, t[2] * f); }
+    g.putImageData(d, 0, 0); herArt.key = key; herArt.c = c; return c;
+  }
+  // a basket of n apples: the first four sit inside the rim, the rest heap up out of it (relative to the basket's top-left)
+  const BASKET_SPOTS = [[3, 3], [8, 3], [13, 3], [17, 3], [5, 0], [10, -1], [15, 0], [7, -3], [12, -4], [10, -6]];
+  function drawBasketArt(cx, base, n, kind) {
+    const c = scene.frame.getContext('2d'), B = ART.basket, A = ART[kind === 'yellow' ? 'apple-yellow' : 'apple-red'], x = Math.round(cx - B.width / 2), y = base - B.height;
+    c.drawImage(B, x, y);
+    for (let i = 0; i < Math.min(n, BASKET_SPOTS.length); i++) c.drawImage(A, x + BASKET_SPOTS[i][0], y + BASKET_SPOTS[i][1]);
+    c.drawImage(B, 0, 7, B.width, B.height - 7, x, y + 7, B.width, B.height - 7);       // the basket's front wall over the lowest apples
+  }
+  function drawSpriteArt(im, cx, base) { scene.frame.getContext('2d').drawImage(im, Math.round(cx - im.width / 2), Math.round(base - im.height)); }
   let O = null;
   const JOBS = {
     // the orchard: she and Rosa each pick apples; how many in all? (positions stay clear of the sides a 4:3 iPad crops)
     orchard: {
       npc: 'Rosa', chibi: 'rosa', order: 'Rosa needs apples', marks: 'apple', node: 'orchard', mapCam: [60, 80, 96], rounds: 'orchardRounds', log: 'Picking apples with Rosa',
       skills: ['plus12', 'teens', 'to10', 'bridge'], fact: f => f.type === 'add' && f.a > 0 && f.b > 0,
-      her: [16, 134], npcAt: [134, 136], head: [142, 113], sign: [39, 73, 78, 28], dotHome: [30, 100], dotHelp: n => [n === 1 ? 126 : 150, 104],
+      her: [16, 134], npcAt: [134, 136], get head() { return artReady ? [142, 94] : [142, 113]; }, sign: [39, 73, 78, 28], get dotHome() { return artReady ? [22, 82] : [30, 100]; }, dotHelp: n => artReady ? (n === 1 ? [126, 96] : [124, 84]) : [n === 1 ? 126 : 150, 104],
       boxes: [[38, 138], [102, 138]],
       eq: (a, b) => `${a} + ${b} =`,
       ask: (f, i) => i % 2 ? `Your basket has ${f.a}. Mine has ${f.b}. How many apples altogether?` : `You picked ${f.a}. I picked ${f.b}. How many apples in all?`,
@@ -793,10 +827,13 @@
         for (let n = 0; n < f.a; n++) d.push({ who: 0, t0: t + 250 + n * 110, x: 24 + Math.floor(px.hash(n, i, 5) * 40), y: 18 + Math.floor(px.hash(i, n, 6) * 22) });
         for (let n = 0; n < f.b; n++) d.push({ who: 1, t0: t + 330 + n * 110, x: 100 + Math.floor(px.hash(n, i, 7) * 40), y: 18 + Math.floor(px.hash(i, n, 8) * 22) });
         return d; },
-      land(who, n) { const [bx, by] = this.boxes[who]; return [bx + 3 + (n % 4) * 4 + (Math.floor(n / 4) % 2) * 2, by - 14 - Math.floor(n / 4) * 3]; },
-      falling: (k, x, y, who) => k.apple(x, y, who ? 'yellow' : 'red'),
-      tags(O) { return this.boxes.map(([bx, by], i) => ({ x: bx + 11, y: by - 20 - Math.ceil(O.shown[i] / 4) * 3, text: O.shown[i], on: O.shown[i] > 0 })); },
+      land(who, n) { const [bx, by] = this.boxes[who];
+        if (artReady) { const s = BASKET_SPOTS[Math.min(n, BASKET_SPOTS.length - 1)]; return [bx + 11 - 11 + s[0], by + 2 - 21 + s[1]]; }
+        return [bx + 3 + (n % 4) * 4 + (Math.floor(n / 4) % 2) * 2, by - 14 - Math.floor(n / 4) * 3]; },
+      falling: (k, x, y, who) => artReady ? scene.frame.getContext('2d').drawImage(ART[who ? 'apple-yellow' : 'apple-red'], x, y) : k.apple(x, y, who ? 'yellow' : 'red'),
+      tags(O) { return this.boxes.map(([bx, by], i) => ({ x: bx + 11, y: artReady ? by - 24 - (O.shown[i] > 7 ? 7 : O.shown[i] > 4 ? 4 : 0) : by - 20 - Math.ceil(O.shown[i] / 4) * 3, text: O.shown[i], on: O.shown[i] > 0 })); },
       still(g, k) {
+        if (artReady) { px.ground(g, W, H, {}); g.drawImage(ART['orchard-scene'], 0, 0); k.add(118, () => k.sign(38, 118, 80, 30)); return []; }
         const path = (x, y) => y > 146 && y < 160 + Math.sin(x / 30) * 2;
         px.ground(g, W, H, { path, tall: (x, y) => y < 50 });
         for (let i = 0; i < 7; i++) k.tree(10 + i * 44 + (i % 2) * 5, 52 + (i % 2) * 5, { r: 17 + (i % 3), far: true });
@@ -811,7 +848,10 @@
       },
       draw(k, t, O, hop) {
         if (O.crates) { const xs = O.crates.length === 1 ? [78] : [58, 100]; O.crates.forEach((c, i) => k.crate10(xs[i], 141, c, Math.floor(t / 350) % 2 === 0)); }
+        else if (artReady) this.boxes.forEach(([bx, by], i) => drawBasketArt(bx + 11, by + 2 - hop, O.shown[i], i ? 'yellow' : 'red'));
         else this.boxes.forEach(([bx, by], i) => k.basket(bx, by - hop, O.shown[i], i ? 'yellow' : 'red'));
+        if (artReady) { const b = O.phase === 'right' ? hop : 0; k.shadowEll(this.her[0] + 8, this.her[1], 9, 2); k.shadowEll(this.npcAt[0] + 8, this.npcAt[1], 10, 2);
+          drawSpriteArt(herArt(), this.her[0] + 8, this.her[1] + 1 - b); drawSpriteArt(ART.rosa, this.npcAt[0] + 8, this.npcAt[1] + 1 - b); return; }
         drawHer(k, t, this.her, O, hop); drawNpc(k, t, this, O, hop);
       },
     },

@@ -49,6 +49,13 @@
     const me = S.avatar ? EM.avatar.draw(undefined, 64, opts.mood === 'cheer' ? 'cheer' : 'wave') : '';
     return `<div class="world${opts.inset ? ' inset' : ''}">${w.svg}${bubble ? `<div class="perch">${me}${D(opts.mood || 'calm', 64)}<div class="bubble">${bubble}</div></div>` : ''}</div>`;
   }
+  // her village in the summaries: the real village (crisp pixels), her and Dot, and Dot's words
+  function villageHTML(bubble, opts = {}) {
+    let img = ''; try { img = EM.village.backdrop(); } catch (e) {}
+    const me = S.avatar ? EM.avatar.draw(undefined, 64, opts.mood === 'cheer' ? 'cheer' : 'wave') : '';
+    return `<div class="world vworld" style="background-image:url(${img})">${bubble ? `<div class="perch">${me}${D(opts.mood || 'calm', 64)}<div class="bubble">${bubble}</div></div>` : ''}</div>`;
+  }
+  const facts = n => `${n} new fact${n === 1 ? '' : 's'}`;
   function worldCounts() { const w = EM.world.render(); return { yours: w.yours, sprouts: w.sprouts }; }
   const partsToday = () => planDaily().length;
   const dueTonight = () => EM.buildFactQueue(openIds('A'), 20, Date.now(), { dueOnly: true }).queue.length > 0;
@@ -460,7 +467,7 @@
       if (R.kind === 'placement') { showMsg('good', outcome === 'fast' ? '⚡' : '✓'); return later(after, 500); }
       if (it.mode === 'reask') { showMsg('good', pick(['✓ You remembered!', '✓ Got it this time!'])); EM.sfx.right(); mood('proud'); return later(after, 900); }
       if (it.mode === 'rehearse') { showMsg('good', outcome === 'fast' ? pick(['⚡ Again! Getting quicker.', '⚡ You remembered it!']) : '✓ Got it again!'); EM.sfx.right(); mood('happy'); return later(after, 800); }
-      if (quietYours) { showMsg('good', `${T().big} ${esc(it.label)} is yours!`); EM.sfx.fast(); mood('happy'); }
+      if (quietYours) { showMsg('good', `⭐ ${esc(it.label)} is yours!`); EM.sfx.fast(); mood('happy'); }
       else if (rescued) { showMsg('good', `💧 Rescued! ${esc(it.label)} is back.`); EM.sfx.fast(); mood('happy'); }
       else if (outcome === 'fast') { showMsg('good', pick(['⚡ You knew it!', '⚡ Quick!', '⚡ Zoom!'])); EM.sfx.fast(); mood('happy'); }
       else { showMsg('good', pick(['✓ Right! You figured it out.', '✓ Yes! You worked it out.'])); EM.sfx.right(); mood('proud'); }
@@ -651,8 +658,8 @@
     const gcard = `<details class="gwrap"><summary>For a grown-up 👋</summary>${EM.parent.grownupCard(R)}</details>`;
     if (R.kind === 'placement') {
       $app.innerHTML = `<main class="wrap sumview">
-        ${worldHTML(`Thank you! Look, you planted ${R.planted} ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} in your ${T().place} today!`, { mood: 'cheer', fresh: R.plantedKeys.slice(0, 60) })}
-        <p class="sub">Now I know where to start. Tomorrow we begin for real: a few short parts, about ${S.settings.minutes || 15} minutes.</p>
+        ${villageHTML(`Thank you, ${esc(NAME())}! Now I know where to start.`, { mood: 'cheer' })}
+        <p class="sub">Every day your village has three orders: Rosa's apples, some fish or Mr. Pip's pies, and my lesson on the notice board. Then the rest of the day is yours.</p>
         <div class="tiles"><div class="tile"><b>${st.fast}</b><span>⚡ Knew it fast</span></div><div class="tile"><b>${st.slow}</b><span>✓ Figured it out</span></div><div class="tile"><b>${st.wrong + st.idk}</b><span>🧠 To learn</span></div></div>
         ${st.idk ? `<div class="note">🙋 You said "I don't know" ${st.idk} time${st.idk > 1 ? 's' : ''}. That's exactly right. Now I know what to teach.</div>` : ''}
         ${gcard}
@@ -661,15 +668,16 @@
       return;
     }
     const notes = [];
-    if (R.yoursNow.length) notes.push(`${T().big} New ${R.yoursNow.length > 1 ? T().many : T().one}: <b>${R.yoursNow.map(esc).join(', ')}</b>. Those are yours now.`);
+    if (R.kind === 'lesson' && EM.village) notes.push(`📋 Dot's lesson is done. ${EM.village.ordersDone() ? "That's all of today's orders. The rest of the day is yours!" : "Check Dot's note in the village for the next order."}`);
+    if (R.yoursNow.length) notes.push(`⭐ Yours now: <b>${R.yoursNow.map(esc).join(', ')}</b>.`);
     if (st.learned.length) notes.push(`🧠 You didn't know <b>${esc(st.learned[0].label)}</b>${st.learned.length > 1 ? ` and ${st.learned.length - 1} more` : ''} at the start. Then you learned ${st.learned.length > 1 ? 'them' : 'it'}. That's brave, and it's how your brain grows.`);
     if (st.taught.n) notes.push(`🧑‍🏫 You taught Dot ${st.taught.ok} of ${st.taught.n}${st.taught.dotWrong ? ` and caught ${st.taught.caught} of Dot's ${st.taught.dotWrong} mistake${st.taught.dotWrong > 1 ? 's' : ''}` : ''}. Great teaching!`);
     if (st.samCaught) notes.push(`🕵️ Your estimate caught ${st.samCaught} of Sam's mistakes!`);
     const missed = st.wrong + st.idk, graded = st.fast + st.slow + missed;
     if (graded && missed > graded / 2) notes.unshift(`💪 You stuck with ${missed} tough ones today. Dot is proud of you. Tough days are how brains grow.`);
-    if (!R.yoursNow.length) { const tomorrow = Object.values(S.facts).filter(r => r.box === 1 && EM.startOfDay(r.due) <= EM.startOfDay(Date.now() + DAY)).length; notes.push(tomorrow ? `🌱 Tomorrow, ${tomorrow} ${tomorrow === 1 ? GROW[T().id][0] + ' is' : GROW[T().id][1] + ' are'} ready to turn into ${T().many}. Know them fast and they're yours!` : `⭐ Facts you get right fast on two different days become yours. Come back tomorrow!`); }
+    if (!R.yoursNow.length) { const tomorrow = Object.values(S.facts).filter(r => r.box === 1 && EM.startOfDay(r.due) <= EM.startOfDay(Date.now() + DAY)).length; notes.push(tomorrow ? `🌱 Tomorrow, ${tomorrow} fact${tomorrow === 1 ? ' is' : 's are'} ready to become yours. Know ${tomorrow === 1 ? "it fast and it's" : "them fast and they're"} yours!` : `⭐ Facts you get right fast on two different days become yours. Come back tomorrow!`); }
     $app.innerHTML = `<main class="wrap sumview">
-      ${worldHTML(R.yoursKeys.length ? `Nice work, ${esc(NAME())}! Look what's new in your ${T().place}!` : R.planted ? `Nice work, ${esc(NAME())}! You planted ${R.planted} new ${R.planted === 1 ? GROW[T().id][0] : GROW[T().id][1]} today.` : `Nice work, ${esc(NAME())}! Your ${GROW[T().id][1]} are getting stronger.`, { mood: 'cheer', fresh: [...R.yoursKeys, ...R.plantedKeys], freshDeco: EM.world.crossed(R.knownBefore, known).map(m => m[0]) })}
+      ${villageHTML(R.yoursKeys.length ? `Nice work, ${esc(NAME())}! ${R.yoursKeys.length === 1 ? 'A new fact is' : `${R.yoursKeys.length} new facts are`} yours now.` : R.planted ? `Nice work, ${esc(NAME())}! You started ${facts(R.planted)} today.` : `Nice work, ${esc(NAME())}! Your facts are getting stronger.`, { mood: 'cheer', fresh: [...R.yoursKeys, ...R.plantedKeys], freshDeco: EM.world.crossed(R.knownBefore, known).map(m => m[0]) })}
       <p class="sub" style="text-align:center">${R.title} · ${st.items} questions</p>
       <div class="tiles">
         <div class="tile"><b>${st.fast}</b><span>⚡ Knew it fast</span></div>
@@ -681,7 +689,7 @@
       <p style="margin-top:20px"><button class="big-btn" data-act="home">Done</button></p>
     </main>`;
     const top = document.querySelector('.perch .bubble'); if (top) EM.speech.say(top.textContent);
-    if (st.learned.length && R.kind === 'daily') setTimeout(() => playClip(), 2500);
+    if (st.learned.length && (R.kind === 'daily' || R.kind === 'lesson')) setTimeout(() => playClip(), 2500);
   }
 
   // ---------- events ----------

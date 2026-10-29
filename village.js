@@ -452,7 +452,8 @@
   function dayDone() {
     const ov = document.createElement('div'); ov.className = 'vover';
     const o = orders(), all = o.list.every(x => x.got >= x.need);
-    const title = all ? "Today's orders are done!" : 'You worked hard today!', text = all ? 'Rosa, Mr. Pip and I all say thank you. Here are 5 bonus coins. The rest of the day is yours: build, explore, or keep helping.' : "That's plenty of orders for one day. Here are 5 bonus coins. The rest of the day is yours: build, explore, or keep helping.";
+    const who = o.list.filter(x => JOBS[x.id]).map(x => JOBS[x.id].npc), thanks = who.length > 1 ? `${who.slice(0, -1).join(', ')}, ${who[who.length - 1]} and I all say thank you.` : `${who[0] || 'Everyone'} and I say thank you.`;
+    const title = all ? "Today's orders are done!" : 'You worked hard today!', text = all ? `${thanks} Here are 5 bonus coins. The rest of the day is yours: build, explore, or keep helping.` : "That's plenty of orders for one day. Here are 5 bonus coins. The rest of the day is yours: build, explore, or keep helping.";
     ov.innerHTML = `<div class="vcard"><div class="vcard-art">${EM.theme.dot('cheer', 72)}</div><h2>${title}</h2><p>${text}</p><div class="vrow"><button class="big-btn" data-ov="ok">Yay!</button></div></div>`;
     document.body.appendChild(ov); EM.speech && EM.speech.say(title); sfx('yours'); showCoins();
     burst(her.x + 4, her.y - 20, 24, ['#fff7c2', '#ffe27a', '#ff9ac6', '#ffffff'], { up: true, spread: 2.4, speed: 60, life: 1100 });

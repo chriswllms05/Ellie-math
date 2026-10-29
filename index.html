@@ -45,7 +45,7 @@ h2 { font-size:20px; margin:0 0 10px; }
 .btn.danger { color:var(--danger); }
 .card { background:var(--surface); border-radius:20px; padding:18px 20px; margin:18px 0; }
 .card ul { margin:0; padding:0; list-style:none; } .card li { margin:8px 0; }
-.back { background:none; border:0; color:var(--accent); font-weight:700; padding:0; margin-bottom:8px; font-size:17px; }
+.back { background:none; border:0; color:var(--accent); font-weight:700; padding:10px 14px 10px 0; min-height:44px; margin-bottom:0; font-size:17px; }
 .grownup { position:relative; overflow:hidden; display:block; margin:18px auto 0; background:none; border:1px solid var(--rule); border-radius:999px; padding:10px 18px; font-size:14px; color:var(--muted); user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; z-index:0; }
 .grownup .fillbar { position:absolute; inset:0 auto 0 0; width:0; background:var(--g0); z-index:-1; }
 .grownup.holding .fillbar { width:100%; transition:width 1.5s linear; }
@@ -324,7 +324,7 @@ body { background:var(--bg); }
 .pvpair.trio .pvc { gap:3px; } .pvpair.trio .col { min-width:40px; padding:2px; } .pvpair.trio .dcs { width:38px; min-height:56px; gap:2px; } .pvpair.trio .disc { width:21px; height:21px; font-size:8px; } .pvpair.trio .lab { font-size:11px; } .pvpair.trio .cnt { font-size:14px; } .pvpair.trio .pvtitle { font-size:15px; }
 @media (max-width:520px) { .pvpair.trio { flex-wrap:wrap; } } .pvtitle { font-weight:800; text-align:center; margin-bottom:4px; }
 .flats { display:flex; gap:4px; flex-wrap:wrap; justify-content:center; align-items:center; max-width:520px; }
-.flat { display:inline-grid; place-items:center; width:40px; height:40px; border-radius:8px; font-style:normal; font-size:11px; font-weight:800; color:#fff; background:var(--a); }
+.flat { display:inline-grid; place-items:center; width:40px; height:40px; border-radius:8px; font-style:normal; font-size:11px; font-weight:800; color:#120e18; background:var(--a); }
 .flat.b { background:var(--b); } .flats .opsign { font-size:28px; font-weight:800; padding:0 8px; }
 .colalg { font:600 clamp(30px, 8.5vw, 42px)/1.15 "Fredoka", ui-monospace, Menlo, monospace; font-variant-numeric:tabular-nums; text-align:right; display:inline-block; background:var(--surface); border-radius:14px; padding:10px 18px; }
 .colalg .r { display:flex; justify-content:flex-end; } .colalg .r span { width:1.1em; display:inline-block; text-align:center; }
@@ -433,15 +433,17 @@ input, textarea { caret-color:var(--accent); }
 .vstage { position:absolute; touch-action:none; }
 .vstage canvas { display:block; width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges; }
 .vpanel { background:rgba(255,251,240,.96); color:#2b2433; border-radius:20px; box-shadow:0 6px 0 rgba(43,36,51,.22), 0 10px 26px rgba(0,0,0,.18); }
+/* the village is always drawn in daylight colors, so its panels keep the light palette in dark mode too */
+.village, .vover { --bg:#fffaf3; --surface:#ffffff; --text:#2b2a33; --muted:#6b6878; --rule:#e6e1d8; --accent:#3d6bd6; --accent-ink:#ffffff; --help-bg:#eef3ff; --good:#23824a; --good-bg:#e3f5ea; --warn-bg:#fdf3dc; color:var(--text); }
 .vhud { position:fixed; z-index:5; display:flex; gap:10px; align-items:center; }
 .vtl { top:calc(14px + env(safe-area-inset-top)); left:calc(14px + env(safe-area-inset-left)); }
 .vtr { top:calc(14px + env(safe-area-inset-top)); right:calc(14px + env(safe-area-inset-right)); }
 .vbr { bottom:calc(16px + env(safe-area-inset-bottom)); right:calc(16px + env(safe-area-inset-right)); }
 .vbl { bottom:calc(16px + env(safe-area-inset-bottom)); left:calc(16px + env(safe-area-inset-left)); }
-.vpill { background:rgba(255,251,240,.96); color:#2b2433; border:0; border-radius:999px; padding:10px 18px; font:700 19px "Fredoka", system-ui, sans-serif; box-shadow:0 4px 0 rgba(43,36,51,.25); }
+.vpill { background:rgba(255,251,240,.96); color:#2b2433; border:0; border-radius:999px; padding:10px 18px; font:700 19px "Fredoka", system-ui, sans-serif; box-shadow:0 4px 0 rgba(43,36,51,.25); min-height:46px; }
 .vcaught { color:#3a9a4a; }
 .vactions { flex-direction:column; align-items:stretch; width:min(290px, 30vw); } .vactions .big-btn { margin:0; font-size:23px; padding:16px; } .vactions .big-btn span { font-size:15px; }
-.big-btn.alt { background:#c08636; box-shadow:0 6px 0 #8c5a28; }
+.big-btn.alt { background:#8f5c16; box-shadow:0 6px 0 #5f3c0c; }
 .vbubble, .vtag, .vmark, .vfloat { position:absolute; left:0; top:0; pointer-events:none; will-change:transform; }
 .vbubble > span { position:absolute; right:-26px; bottom:6px; width:max-content; max-width:min(34vw, 380px); background:rgba(255,251,240,.97); color:#2b2433; border-radius:14px; padding:9px 13px; font-weight:700; font-size:clamp(15px, 1.7vw, 20px); line-height:1.25; box-shadow:0 3px 0 rgba(43,36,51,.2); opacity:0; transform:translateY(6px) scale(.96); transform-origin:85% 100%; transition:opacity .2s, transform .25s cubic-bezier(.3,1.6,.6,1); }
 .vbubble.on > span { opacity:1; transform:none; }
@@ -492,13 +494,13 @@ input, textarea { caret-color:var(--accent); }
 @keyframes rise { from { transform:translate(-50%, 30px); opacity:0 } to { transform:translateX(-50%); opacity:1 } }
 .vdialog-dot { position:absolute; left:18px; top:18px; }
 .vdialog-t { font:600 clamp(19px, 2vw, 24px)/1.35 "Fredoka", system-ui, sans-serif; min-height:2.7em; }
-.vdialog-more { font-size:14px; font-weight:700; color:#9a8f80; text-align:right; margin-top:4px; animation:blinkmore 1.2s ease-in-out infinite; }
+.vdialog-more { font-size:14px; font-weight:700; color:#6f6557; text-align:right; margin-top:4px; animation:blinkmore 1.2s ease-in-out infinite; }
 @keyframes blinkmore { 50% { opacity:.35 } }
-.vskip { position:absolute; top:-46px; right:0; background:rgba(43,36,51,.6); color:#fff; border:0; border-radius:999px; padding:8px 16px; font-weight:700; }
+.vskip { position:absolute; top:-46px; right:0; background:rgba(43,36,51,.88); color:#fff; border:0; border-radius:999px; padding:12px 20px; font-weight:700; }
 /* the notice board */
 .vboard { text-align:left; max-width:480px; } .vboard h2 { text-align:center; }
 .vnote { background:#fff7dc; border:2px solid #ead9a8; border-radius:16px; padding:14px; margin:6px 0 12px; transform:rotate(-.6deg); box-shadow:0 3px 0 #e2cf96; }
-.vnote b { font-size:19px; } .vnote p { color:#5a5060; margin:6px 0 12px; font-size:17px; } .vnote .big-btn { margin:0; font-size:22px; padding:16px; }
+.vnote b { font-size:19px; color:#2b2433; } .vnote p { color:#5a5060; margin:6px 0 12px; font-size:17px; } .vnote .big-btn { margin:0; font-size:22px; padding:16px; }
 .vboard .btn { margin-top:10px; }
 .vcard { background:var(--surface); border-radius:24px; padding:22px; max-width:440px; width:100%; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,.3); animation:grow .4s cubic-bezier(.3,1.6,.6,1) both; }
 .vcard h2 { margin:8px 0 6px; font-size:28px; } .vcard p { color:var(--muted); font-size:18px; margin:0 0 16px; }
@@ -550,18 +552,18 @@ input, textarea { caret-color:var(--accent); }
 <body>
 <div id="app"></div>
 <div id="turn" aria-live="polite"></div>
-<script src="engine.js?v=17"></script>
-<script src="content.js?v=17"></script>
-<script src="voice.js?v=17"></script>
-<script src="audio.js?v=17"></script>
-<script src="manip.js?v=17"></script>
-<script src="theme.js?v=17"></script>
-<script src="world.js?v=17"></script>
-<script src="avatar.js?v=17"></script>
-<script src="pixel.js?v=17"></script>
-<script src="village.js?v=17"></script>
-<script src="teach.js?v=17"></script>
-<script src="parent.js?v=17"></script>
-<script src="app.js?v=17"></script>
+<script src="engine.js?v=18"></script>
+<script src="content.js?v=18"></script>
+<script src="voice.js?v=18"></script>
+<script src="audio.js?v=18"></script>
+<script src="manip.js?v=18"></script>
+<script src="theme.js?v=18"></script>
+<script src="world.js?v=18"></script>
+<script src="avatar.js?v=18"></script>
+<script src="pixel.js?v=18"></script>
+<script src="village.js?v=18"></script>
+<script src="teach.js?v=18"></script>
+<script src="parent.js?v=18"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>

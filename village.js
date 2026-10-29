@@ -586,7 +586,8 @@
   function render($app) {
     $root = $app;
     if (mode === 'fish' && F) { renderFishing(); scene = null; startFishingScene(); return; }
-    mode = mode === 'build' ? 'build' : 'map'; scene = null; ui.arrived = false; ui.popping = [];
+    // a story or cinematic cut short (say, by opening the grown-up area) must not leave the village ignoring taps
+    mode = mode === 'build' ? 'build' : 'map'; scene = null; ui.arrived = false; ui.popping = []; ui.story = false; ui.busy = false; ui.dotTarget = null; ui.plankFly = null;
     renderMap();
   }
   function startFishingScene() { scene = makeScene('fish', buildFishStill); scene.after = fishOverlays; startLoop(drawFishing); renderFishWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }

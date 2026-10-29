@@ -20,7 +20,17 @@
   function render() {
     const views = { avatar: () => { $app.innerHTML = EM.avatar.builder(!S.avatar); }, world: renderWorld, home: renderHome, skills: renderSkills, practice: renderPractice, summary: renderSummary, parent: () => EM.parent.render($app, { go, startSession }), break: renderBreak, village: () => EM.village.render($app) };
     (views[screen] || renderHome)();
+    fitEqs();
   }
+  // a long equation (400 + 600 = ___) shrinks to fit its column instead of pushing the answer box off the edge
+  function fitEqs() {
+    document.querySelectorAll('.practice .eq').forEach(el => {
+      el.style.fontSize = '';
+      const w = el.parentElement.clientWidth;
+      if (el.scrollWidth > w) el.style.fontSize = `${Math.floor(parseFloat(getComputedStyle(el).fontSize) * w / el.scrollWidth * .97)}px`;
+    });
+  }
+  addEventListener('resize', fitEqs);
   EM.go = go; EM.render = render;
   EM.todayDone = () => todayDone(); EM.dueTonight = () => dueTonight();
 

@@ -43,11 +43,15 @@
     const line = (x0, y0, x1, y1, c) => { x0 |= 0; y0 |= 0; x1 |= 0; y1 |= 0; let dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, e = dx + dy; for (;;) { P(x0, y0, c); if (x0 === x1 && y0 === y1) break; const e2 = 2 * e; if (e2 >= dy) { e += dy; x0 += sx; } if (e2 <= dx) { e += dx; y0 += sy; } } };
     const shadowEll = (cx, cy, rx, ry) => ell(cx, cy, rx, ry, 'rgba(28,36,58,.30)');
     const list = [], shadows = [];
+    // a skin wraps every draw added from now on (a painted map fills the drawn shapes with its own pixels); raw(fn)
+    // adds things unwrapped, for what still changes as she plays
+    let skin = null;
     // add(y, f, tall): tall things also become occluders, so a moving character can pass behind them
-    const add = (y, f, tall = true) => list.push({ y, f, tall }), shadow = f => shadows.push(f);
+    const add = (y, f, tall = true) => list.push({ y, f: skin ? skin(f) : f, tall }), shadow = f => shadows.push(skin ? skin(f) : f);
     const flush = () => { shadows.forEach(f => f()); list.sort((a, b) => a.y - b.y).forEach(t => t.f()); list.length = 0; shadows.length = 0; };
     const k = { R, P, sprite, ell, line, shadowEll, add, shadow, flush, C, get g() { return g; } };
     k.setCtx = c => { g = c; };
+    k.setSkin = s => { skin = s; }; k.raw = fn => { const s = skin; skin = null; fn(); skin = s; };
     // Draw everything onto the current canvas, and also cut each tall thing out as its own sprite (with its base y).
     k.bake = (W, H) => {
       shadows.forEach(f => f());

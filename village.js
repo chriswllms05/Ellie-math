@@ -161,7 +161,33 @@
   // =====================================================================
   // the village map
   // =====================================================================
+  // the painted map: generated terrain (traced from the game's own paths, pond, stream and yard) and kit pieces placed
+  // where the drawn ones stand, depth-sorted so she walks behind them; the bridge planks and her yard stay in code
+  function buildPaintedMap(g, k, opt) {
+    const v = V(), open = !!v.open.meadow, I = n => ART['map-' + n];
+    g.drawImage(I('terrain'), 0, 0);
+    const piece = (n, cx, base, shade = true) => { const im = I(n); k.add(base, () => { if (shade) k.shadowEll(cx + 1, base, Math.max(3, Math.round(im.width * .4)), 2); k.g.drawImage(im, Math.round(cx - im.width / 2), base - im.height); }); };
+    piece('home', 246, 113); piece('post', 130, 103); piece('bakery', 140, 47); piece('workshop', 182, 79); piece('board', 187, 111); piece('stall', 274, 168); piece('dock', 121, 148, false);
+    // Rosa's orchard, then the village's other trees (every fifth one bears apples), bushes, rocks and reeds
+    [[24, 67], [48, 63], [72, 67], [34, 93], [58, 91]].forEach(([x, y], i) => piece(i % 2 ? 'tree-apple2' : 'tree-apple1', x, y));
+    const TREES = ['tree-round', 'tree-dark', 'tree-slim', 'tree-round', 'tree-dark'];
+    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [176, 24], [8, 108], [290, 100], [290, 140], [116, 206], [20, 206], [196, 204], [262, 206]].forEach(([x, y], i) => piece(i % 5 === 2 ? 'tree-apple2' : TREES[i % TREES.length], x, y + 1));
+    [[206, 128], [130, 190], [222, 196]].forEach(([x, y], i) => piece(i % 2 ? 'bush' : 'bush-flower', x, y));
+    [[270, 120], [40, 196], [110, 198]].forEach(([x, y], i) => piece(i ? 'rock' : 'boulder', x, y));
+    if (!open) [[212, 18], [236, 12], [270, 30], [284, 14], [258, 22]].forEach(([x, y], i) => piece(i % 2 ? 'rock' : 'boulder', x, y));
+    [[18, 142], [112, 178], [100, 122]].forEach(([x, y]) => piece('reeds', x, y, false));
+    piece('crate-red', 90, 114); piece('crate-yellow', 70, 108); piece('barrel', 130, 138); piece('crate-red', 118, 139);
+    // the bridge: one plank for each make-10 fact that is hers
+    const laid = Math.min(PLANKS, opt.planks === undefined ? v.planks : opt.planks);
+    k.add(66, () => { const x = 241, y = 50; k.R(x - 1, y + 1, 2, 18, C.k1); k.R(x + 14, y + 1, 2, 18, C.k1); k.R(x - 1, y + 1, 1, 18, C.k2); k.R(x + 14, y + 1, 1, 18, C.k2);
+      for (let j = 0; j < PLANKS; j++) { if (j >= laid) continue; const yy = y + 2 + j * 2; k.R(x + 1, yy, 13, 2, j % 2 ? C.k2 : C.k3); k.P(x + 1 + (j * 5) % 11, yy, C.k4); k.R(x + 1, yy + 1, 13, 1, C.k1); } }, false);
+    if (open) { const a = MEADOW, x0 = a.x - 4, y0 = a.y - 3, x1 = a.x + a.cols * 16 + 2, y1 = a.y + a.rows * 16 + 4; k.fence(x0, y0, x1, y0); k.fence(x0, y1, x1, y1); k.fence(x0, y0, x0, y1); k.fence(x1, y0, x1, y1); }
+    for (const p of v.placed) { if (p.area === 'meadow' && !open) continue; if (opt.skip && opt.skip.includes(p)) continue; const a = area(p.area), x = a.x + p.cx * 16, y = a.y + p.cy * 16; k.add(y + 15, () => px.drawItem(k, p.item, x, y, p.paint)); }
+    const pts = []; for (let i = 0; i < 70; i++) { const an = px.hash(i, 5, 61) * Math.PI * 2, r = Math.sqrt(px.hash(i, 6, 62)) * .8; const x = Math.round(POND[0] + Math.cos(an) * POND[2] * r), y = Math.round(POND[1] + Math.sin(an) * POND[3] * r); if (!inRect(x, y, [DOCK[0] - 2, DOCK[1] - 2, DOCK[2] + 4, DOCK[3] + 10])) pts.push([x, y]); }
+    return pts;
+  }
   function buildMapStill(g, k, opt = {}) {
+    if (mapArtReady) return buildPaintedMap(g, k, opt);
     const v = V(), open = !!v.open.meadow;
     const water = (x, y) => px.inEll(x, y, ...POND) || inStream(x, y);
     const path = (x, y) => PATHS.some(r => { const n = px.hash(x >> 1, y >> 1, 3) < .35 ? 1 : 0; return inRect(x, y, [r[0] - n, r[1] - n, r[2] + 2 * n, r[3] + 2 * n]); });
@@ -245,7 +271,7 @@
     const sel = B.sel && placedAt(B.sel);
     ui.primaryJob = undefined;
     $root.innerHTML = `<main class="village full ${build ? 'building' : ''} ${ui.story ? 'story' : ''}">
-      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze"></div>
+      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze ${mapArtReady ? 'off' : ''}"></div>
         <div class="vbubble" id="vbubble"></div>
         <div class="vmark" id="vmark">!</div>
       </div>
@@ -255,7 +281,7 @@
       <div class="vfade" id="vfade"></div>
     </main>`;
     fit();
-    if (!scene || scene.kind !== 'map' || ui.rebuildMap) { scene = makeScene('map', (g, k) => buildMapStill(g, k, { planks: v.planks, skip: ui.popping ? ui.popping.map(p => p.p) : [] })); ui.rebuildMap = false; addGlows(scene, [[240, 99, 7, 'rgba(255,180,90,.22)'], [259, 99, 7, 'rgba(255,180,90,.22)']]); }
+    if (!scene || scene.kind !== 'map' || ui.rebuildMap) { scene = makeScene('map', (g, k) => buildMapStill(g, k, { planks: v.planks, skip: ui.popping ? ui.popping.map(p => p.p) : [] })); scene.painted = mapArtReady; ui.rebuildMap = false; addGlows(scene, [[240, 99, 7, 'rgba(255,180,90,.22)'], [259, 99, 7, 'rgba(255,180,90,.22)']]); }
     scene.after = mapOverlays;
     hookMapInput();
     startLoop(drawMap);
@@ -340,6 +366,15 @@
     const items = [];
     const walking = her.path.length > 0, wf = walking ? [0, 1, 0, 3][Math.floor(her.walkT / .11) % 4] : 0;
     const hop = her.hop > t ? Math.round(Math.sin((her.hop - t) / 400 * Math.PI) * 4) : 0;
+    if (mapArtReady) {
+      const c = sc.frame.getContext('2d'), P = (im, cx, base, flip, bob) => { const x = Math.round(cx - im.width / 2), y = Math.round(base - im.height - bob);
+        if (flip) { c.save(); c.translate(x + im.width, y); c.scale(-1, 1); c.drawImage(im, 0, 0); c.restore(); } else c.drawImage(im, x, y); };
+      const step = walking ? Math.floor(her.walkT / .14) % 2 : 0, m = mission() || {}, wave = (period, off, on) => on && ((t + off) % period) < 1100 ? Math.floor(t / 180) % 2 : 0;
+      items.push({ y: her.y, box: [Math.round(her.x) - 2, Math.round(her.y) - 20, 13, 21], draw: () => { k.shadowEll(Math.round(her.x) + 4, Math.round(her.y), 5, 1); P(herArt('map-her'), Math.round(her.x) + 4, Math.round(her.y) + 1, her.flip, step + hop); } });
+      const npc = (n, [x, y], on, off) => items.push({ y, box: [x - 3, y - 20, 15, 21], draw: () => { k.shadowEll(x + 4, y, 5, 1); P(ART['map-' + n], x + 4, y + 1, false, wave(5600, off, on)); } });
+      npc('rosa', ROSA, m.text === 'Help Rosa pick apples', 0); npc('bea', BEA, m.job === 'bakery', 3300); npc('mo', MO, m.job === 'post', 2600); npc('pip', PIP, m.job === 'market', 1700);
+      if (placeOpen('workshop')) npc('tom', TOM, m.job === 'workshop', 2100);
+    } else {
     items.push({ y: her.y, box: [Math.round(her.x) - 1, Math.round(her.y) - 20, 11, 21], draw: () => { k.shadowEll(Math.round(her.x) + 4, Math.round(her.y), 4, 1); k.drawPerson(Math.round(her.x), Math.round(her.y), look(), { walk: wf, flip: her.flip, blink: !walking && (t % 3600) < 120, bob: hop, wave: her.wave > t }); } });
     // Rosa by her orchard, in her straw hat; she waves when helping her is the next job
     items.push({ y: ROSA[1], box: [ROSA[0] - 2, ROSA[1] - 19, 13, 20], draw: () => { const [x, y] = ROSA; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, ROSA_LOOK, { blink: (t % 3900) < 120, wave: (t % 5200) < 1100 && (mission() || {}).text === 'Help Rosa pick apples' });
@@ -352,6 +387,7 @@
       k.R(x + 1, y - 16, 7, 2, '#6a5a4a'); k.R(x, y - 14, 9, 1, '#4a3e34'); k.R(x + 2, y - 9, 5, 2, '#9a5a2a'); } });
     items.push({ y: PIP[1], box: [PIP[0] - 2, PIP[1] - 17, 13, 18], draw: () => { const [x, y] = PIP; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, PIP_LOOK, { flip: true, blink: ((t + 1700) % 4300) < 120, wave: (t % 5600) < 1100 && (mission() || {}).job === 'market' });
       k.R(x + 2, y - 10, 5, 2, '#e8e8f0'); k.P(x + 4, y - 8, '#e8e8f0'); } });
+    }
     // things she just built pop in
     (ui.popping || []).forEach(pp => { const a = Math.min(1, (t - pp.t0) / 380), s = a < .7 ? a / .7 * 1.15 : 1.15 - (a - .7) / .3 * .15, ar = area(pp.p.area), x = ar.x + pp.p.cx * 16, y = ar.y + pp.p.cy * 16;
       items.push({ y: y + 15, draw: () => { const c = pp.c || (pp.c = itemCanvas(pp.p.item, pp.p.paint)); const w = Math.max(1, Math.round(16 * s)); sc.frame.getContext('2d').drawImage(c, Math.round(x + 8 - w / 2), Math.round(y + 16 - w), w, w); } }); });
@@ -362,7 +398,7 @@
     // build mode: the spots
     if (mode === 'build') for (const id of ['plot', 'meadow']) { if (id === 'meadow' && !V().open.meadow) continue; const a = area(id); for (let cy = 0; cy < a.rows; cy++) for (let cx = 0; cx < a.cols; cx++) { const x = a.x + cx * 16, y = a.y + cy * 16, sel = B.sel && B.sel.area === id && B.sel.cx === cx && B.sel.cy === cy, col = sel ? '#ffe066' : 'rgba(255,255,255,.55)'; for (let i = 0; i < 16; i += 2) { k.R(x + i, y, 1, 1, col); k.R(x + i, y + 15, 1, 1, col); k.R(x, y + i, 1, 1, col); k.R(x + 15, y + i, 1, 1, col); } if (sel) { k.R(x, y, 16, 1, col); k.R(x, y + 15, 16, 1, col); k.R(x, y, 1, 16, col); k.R(x + 15, y, 1, 16, col); } } }
     if (B.drag && B.drag.at) px.drawItem(k, B.drag.p.item, Math.round(B.drag.at[0] - 8), Math.round(B.drag.at[1] - 12), B.drag.p.paint);
-    k.drawDot(Math.round(dot.x), Math.round(dot.y) + dy, t, blinkDot);
+    if (mapArtReady) { const im = ART['map-dot']; sc.frame.getContext('2d').drawImage(im, Math.round(dot.x - im.width / 2), Math.round(dot.y) + dy - Math.round(im.height / 2)); } else k.drawDot(Math.round(dot.x), Math.round(dot.y) + dy, t, blinkDot);
     clouds(k, t);
   }
   let backdropKey = '', backdropUrl = '';
@@ -770,16 +806,22 @@
   // ---------- painted art (exploration): generated with Weave from a style swatch, cleaned onto the scene's pixel grid,
   // and laid out here in code. The orchard uses it when it has loaded; until then (or offline without it) the drawn
   // orchard stays. See vault notes: base plate + kit, composed, then her, Rosa, the basket and apples as sprites.
-  const ART = {}; let artReady = false;
+  const ART = {}; let artReady = false, mapArtReady = false;
+  (function loadMapArt() {
+    const names = ['terrain', 'home', 'post', 'bakery', 'workshop', 'board', 'stall', 'dock', 'tree-apple1', 'tree-apple2', 'tree-round', 'tree-dark', 'tree-slim', 'bush-flower', 'bush', 'boulder', 'rock', 'reeds', 'crate-red', 'crate-yellow', 'barrel', 'mo', 'pip', 'tom', 'her', 'rosa', 'bea', 'dot'];
+    let left = names.length;
+    names.forEach(n => { const im = new Image(); im.onload = () => { ART['map-' + n] = im; if (--left === 0) { mapArtReady = true; if (scene && scene.kind === 'map') { scene.painted = true; scene.rebake(); const hz = document.querySelector('.vhaze'); if (hz) hz.className = 'vhaze off'; } } }; im.src = `art/map-${n}.png?v=1`; });
+  })();
   (function loadArt() {
     const names = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow', 'bakery-scene', 'bea', 'tray', 'bun', 'dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5', 'dot-6']; let left = names.length;
     names.forEach(n => { const im = new Image(); im.onload = () => { ART[n] = im; if (--left === 0) { artReady = true; if (scene && scene.kind === 'job' && paintedJob()) { scene.painted = true; scene.rebake(); const hz = document.querySelector('.vhaze'); if (hz) hz.className = 'vhaze off'; } } }; im.src = `art/${n}.png?v=1`; });
   })();
   const paintedJob = () => !!(O && O.J.art && artReady);
   // her painted sprite in her own avatar's colours: the hair and shirt pixels take her colours, keeping their shading
-  function herArt() {
-    const l = look(), key = `${l.hair}|${l.shirt}`; if (herArt.key === key) return herArt.c;
-    const im = ART.her, c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+  const herCache = {};
+  function herArt(src = 'her') {
+    const l = look(), key = `${src}|${l.hair}|${l.shirt}`; if (herCache[key]) return herCache[key];
+    const im = ART[src], c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
     const d = g.getImageData(0, 0, c.width, c.height), p = d.data, hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
     const toRGB = s => s.startsWith('#') ? hex(s) : s.match(/\d+/g).map(Number);
     const hair = toRGB(l.hair), shirt = toRGB(l.shirt), lum = (r, g2, b) => 0.2126 * r + 0.7152 * g2 + 0.0722 * b;
@@ -791,7 +833,7 @@
     for (let i = 0; i < p.length; i += 4) { if (p[i + 3] < 128) continue; const k = cls(p[i], p[i + 1], p[i + 2]); if (!k) continue;
       const t = k === 'shirt' ? shirt : hair, f = Math.min(1.6, lum(p[i], p[i + 1], p[i + 2]) / ref[k]);
       p[i] = Math.min(255, t[0] * f); p[i + 1] = Math.min(255, t[1] * f); p[i + 2] = Math.min(255, t[2] * f); }
-    g.putImageData(d, 0, 0); herArt.key = key; herArt.c = c; return c;
+    g.putImageData(d, 0, 0); herCache[key] = c; return c;
   }
   // a basket of n apples: the first four sit inside the rim, the rest heap up out of it (relative to the basket's top-left)
   const BASKET_SPOTS = [[3, 4], [8, 4], [13, 4], [17, 4], [5, 1], [10, 0], [15, 1], [7, -2], [12, -3], [10, -5]];

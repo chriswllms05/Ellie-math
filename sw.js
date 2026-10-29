@@ -2,7 +2,8 @@
 const VERSION = 'ellie-math-v25';
 const JS = ['engine', 'content', 'voice', 'audio', 'manip', 'theme', 'world', 'avatar', 'pixel', 'village', 'teach', 'parent', 'scratch', 'app'].map(n => `./${n}.js?v=25`);
 const ART = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow', 'bakery-scene', 'bea', 'tray', 'bun', 'dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5', 'dot-6'].map(n => `./art/${n}.png?v=1`);
-const FILES = ['./', './index.html', ...JS, ...ART, './fonts/fredoka-latin-500-normal.woff2', './fonts/fredoka-latin-600-normal.woff2', './fonts/fredoka-latin-700-normal.woff2', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './icon-maskable-512.png', ...['garden', 'ocean', 'space', 'classroom'].map(w => `./icon-${w}-180.png`)];
+const MAP = ['terrain', 'home', 'post', 'bakery', 'workshop', 'board', 'stall', 'dock', 'tree-apple1', 'tree-apple2', 'tree-round', 'tree-dark', 'tree-slim', 'bush-flower', 'bush', 'boulder', 'rock', 'reeds', 'crate-red', 'crate-yellow', 'barrel', 'mo', 'pip', 'tom', 'her', 'rosa', 'bea', 'dot'].map(n => `./art/map-${n}.png?v=1`);
+const FILES = ['./', './index.html', ...JS, ...ART, ...MAP, './fonts/fredoka-latin-500-normal.woff2', './fonts/fredoka-latin-600-normal.woff2', './fonts/fredoka-latin-700-normal.woff2', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './icon-maskable-512.png', ...['garden', 'ocean', 'space', 'classroom'].map(w => `./icon-${w}-180.png`)];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 // Dot's recorded voice (~30 MB) lives in its own cache so an app update doesn't download it again; audio.js prunes old packs.
 const VOICE_CACHE = 'ellie-voice';

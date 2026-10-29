@@ -234,6 +234,40 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     await page.click('.scratch [data-tool=done]'); await page.evaluate(() => EM.go('home')); await page.waitForTimeout(1500);
     check(!(await page.isVisible('.scratchbtn')), 'the scratchpad goes away outside practice');
 
+    // ---- Tom's workshop and the notes on the board: practice's own problems in a village frame ----
+    await page.evaluate(() => { ['words', 'regroup', 'trade'].forEach(id => { EM.skillRec(id).manual = true; (EM.S.unlockedSeen = EM.S.unlockedSeen || {})[id] = true; }); EM.save(); EM.go('home'); }); await page.waitForTimeout(1800);
+    check(await page.isVisible('[data-v=workshop]') && await page.isVisible('[data-v=notes]'), 'Help Tom and the notes appear once their skills open');
+    const solve = async () => { // answer the current step right; returns false once the place is done
+      for (let i = 0; i < 60; i++) { const st = await page.evaluate(() => { const R = EM._run(); if (EM._screen() !== 'practice') return null; return { lock: R.lock || R.waitSpeech, ans: R.cur.steps[R.step].ans, ch: !!R.cur.steps[R.step].choices, line: !!R.cur.steps[R.step].line }; });
+        if (!st) return false; if (st.lock) { await page.waitForTimeout(120); continue; }
+        await page.waitForTimeout(600);
+        if (st.ch) await page.click(`[data-choice="${st.ans}"]`); else if (st.line) { await page.evaluate(v => EM.manip.setLine(v), st.ans); await page.keyboard.press('Enter'); } else { for (const c of String(st.ans)) await page.keyboard.press(c); await page.keyboard.press('Enter'); }
+        await page.waitForTimeout(200); return true; } return true; };
+    await page.click('[data-v=workshop]'); await page.waitForSelector('.vhello', { timeout: 15000 });
+    check(/Tom/.test(await page.textContent('.vhello')), 'Tom says hello the first time'); await shot('07i0-tom-hello');
+    await page.click('.vhello [data-ov=go]'); await page.waitForSelector('.practice.framed.in-workshop');
+    check(await page.evaluate(() => ['regroup', 'trade'].includes(EM._run().cur.skillId) && document.body.classList.contains('framed')), "the workshop asks column math and trading tens, with the workshop behind");
+    await page.waitForTimeout(800); await shot('07i1-workshop');
+    const wc0 = await page.evaluate(() => EM.village.state().coins);
+    while (await solve()) {}
+    await page.waitForSelector('.vover', { timeout: 15000 }); await page.waitForTimeout(400);
+    const wv = await page.evaluate(() => ({ coins: EM.village.state().coins, rounds: EM.village.state().workshopRounds, text: document.querySelector('.vover').innerText, log: EM.S.sessions[EM.S.sessions.length - 1] }));
+    check(wv.coins === wc0 + 3 && wv.rounds === 1 && /Tom paid you 3 coins/.test(wv.text) && wv.log.kind === 'workshop', `three problems solved: Tom pays 3 coins and says thanks back in the village (${wv.coins - wc0} coins)`);
+    await shot('07i2-tom-thanks'); await page.click('.vover [data-ov=keep]'); await page.waitForTimeout(600);
+    await page.click('[data-v=notes]'); await page.waitForSelector('.vhello', { timeout: 15000 }); await page.click('.vhello [data-ov=go]'); await page.waitForSelector('.practice.framed.in-notes');
+    const cast = await page.evaluate(() => EM._run().queue.map(it => it.steps.map(s => s.html).join(' ')).join(' '));
+    check(/\b(Rosa|Bea|Mo|Mr\. Pip|Tom|Mia)\b/.test(cast) && !/\b(Leo|Ava|Nora|Zoe|Max|Eli)\b/.test(cast), 'the notes are about her neighbors');
+    await page.waitForTimeout(800); await shot('07i3-notes');
+    await solve(); await page.waitForTimeout(400);
+    await page.click('[data-act=leaveplace]'); await page.waitForSelector('.village', { timeout: 8000 }); await page.waitForTimeout(1500);
+    check(await page.evaluate(() => EM.S.sessions[EM.S.sessions.length - 1].kind === 'notes' && !EM.village.state().notesRounds), 'leaving the notes early goes home without a round');
+    await page.evaluate(() => { EM.village.state().workshopRounds = 2; EM.save(); });
+    await page.click('[data-v=workshop]'); await page.waitForSelector('.practice.framed.in-workshop', { timeout: 15000 });
+    while (await solve()) {}
+    await page.waitForSelector('.vover', { timeout: 15000 }); await page.click('.vover [data-ov=keep]'); await page.waitForTimeout(600);
+    check(/wheelbarrow/.test(await page.textContent('.vover')) && (await page.evaluate(() => EM.village.state().gifts.wheelbarrow)) === 1, 'after three rounds Tom builds her a wheelbarrow');
+    await shot('07i4-tom-gift'); await page.click('.vover [data-ov=keep]'); await page.waitForTimeout(600);
+
     // ---- the morning orders: the board lists them; when all are done the village says thank you ----
     await page.evaluate(() => EM.village.openBoard()); await page.waitForSelector('.vorders');
     check(await page.$('[data-b=lesson]') !== null && (await page.$$('.vorders li')).length === 3, "the board lists today's three orders and Dot's lesson");

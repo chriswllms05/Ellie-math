@@ -587,6 +587,26 @@ body.scratching .practice .pad, body.scratching .practice .idk { visibility:hidd
 body.inworld { background:transparent; }
 body.inworld::before { content:""; position:fixed; inset:-24px; z-index:-1; background:var(--world) center / cover no-repeat; filter:blur(7px) saturate(.85); opacity:.34; }
 @media (prefers-color-scheme: dark) { body.inworld::before { opacity:.2; } }
+/* a village place (Tom's workshop, the notes on the board): the place itself behind the problem, crisp; the problem
+   on a pinned paper note; the jobs' wooden pad. Always the village's light palette, like the village. */
+body.framed::before { inset:0; filter:none; opacity:1; image-rendering:pixelated; }
+.practice.framed { --bg:#fffaf3; --surface:#ffffff; --text:#2b2a33; --muted:#6b6878; --rule:#e6e1d8; --accent:#3d6bd6; --accent-ink:#ffffff; --help-bg:#eef3ff; --good:#23824a; --good-bg:#e3f5ea; --warn-bg:#fdf3dc; color:var(--text); }
+.practice.framed > .stage { align-self:start; margin:16px 0 12px; padding:30px 26px 22px; max-height:calc(100dvh - 128px); background:#fdf8ec; border-radius:4px 4px 12px 12px; position:relative; box-shadow:0 5px 0 rgba(70,48,28,.28), 0 18px 34px rgba(40,28,18,.32); }
+.practice.framed > .stage::before { content:""; position:absolute; top:10px; left:50%; width:18px; height:18px; margin-left:-9px; border-radius:50%; background:#d84a4a; box-shadow:inset -3px -3px 0 #9a2a2a, inset 3px 3px 0 #ff9a8a, 0 2px 0 rgba(0,0,0,.25); }
+.practice.framed.in-workshop > .stage::before { background:#8a8a96; box-shadow:inset -3px -3px 0 #5a5a66, inset 3px 3px 0 #c8c8d4, 0 2px 0 rgba(0,0,0,.25); }
+.practice.framed > .pad { padding:14px; border-radius:26px; background:#b8987a; box-shadow:inset 0 2px 0 #d2b698, 0 3px 0 rgba(60,50,40,.16); }
+.practice.framed > .pad button { border:0; background:#fdf9ef; color:#3e3440; box-shadow:0 3px 0 #ddd0b8; }
+.practice.framed > .pad .ok { background:#2e7d4f; color:#fff; box-shadow:0 4px 0 #1d5233; }
+.practice.framed > .idk { border:0; border-radius:38px; background:rgba(255,251,242,.94); color:#4a4048; box-shadow:0 3px 0 rgba(60,50,40,.16); }
+.practice.framed > .idk.showme { color:#2b4fa8; }
+.practice.framed .msg.good img.vcoin { width:26px; height:26px; vertical-align:-5px; image-rendering:pixelated; }
+.ftop { gap:12px; } .ftop .jhome { min-height:56px; } .ftop .jorder { display:flex; align-items:center; gap:10px; padding:6px 18px 8px 10px; }
+.ftop .fface { width:48px; height:39px; image-rendering:pixelated; } .ftop .fcoins { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.ftop .fcoins img.vcoin { width:26px; height:26px; image-rendering:pixelated; }
+.jmarks.plank i { border-radius:4px; width:30px; height:16px; margin-top:3px; } .jmarks.plank i.on { background:#d8a670; box-shadow:inset -3px -3px 0 #a8764a, inset 3px 3px 0 #f4cc94; }
+.jmarks.paper i { border-radius:3px; width:20px; height:24px; } .jmarks.paper i.on { background:#fdf3c8; box-shadow:inset -3px -3px 0 #d9c48a, inset 3px 3px 0 #ffffff, 0 0 0 2px #c8a070; }
+.vover.vhello { background-position:center; background-size:cover; image-rendering:pixelated; }
+.vface { width:96px; height:78px; image-rendering:pixelated; }
 @keyframes floatup { from { margin-top:-10px; opacity:0 } 15% { opacity:1 } to { margin-top:-70px; opacity:0 } }
 .vfade { position:fixed; inset:0; z-index:40; background:#fffbf0; opacity:0; pointer-events:none; transition:opacity .26s ease; }
 .vfade.black { background:#14101e; transition:opacity 1.1s ease; }
@@ -658,19 +678,19 @@ body.inworld::before { content:""; position:fixed; inset:-24px; z-index:-1; back
 <body>
 <div id="app"></div>
 <div id="turn" aria-live="polite"></div>
-<script src="engine.js?v=24"></script>
-<script src="content.js?v=24"></script>
-<script src="voice.js?v=24"></script>
-<script src="audio.js?v=24"></script>
-<script src="manip.js?v=24"></script>
-<script src="theme.js?v=24"></script>
-<script src="world.js?v=24"></script>
-<script src="avatar.js?v=24"></script>
-<script src="pixel.js?v=24"></script>
-<script src="village.js?v=24"></script>
-<script src="teach.js?v=24"></script>
-<script src="parent.js?v=24"></script>
-<script src="scratch.js?v=24"></script>
-<script src="app.js?v=24"></script>
+<script src="engine.js?v=25"></script>
+<script src="content.js?v=25"></script>
+<script src="voice.js?v=25"></script>
+<script src="audio.js?v=25"></script>
+<script src="manip.js?v=25"></script>
+<script src="theme.js?v=25"></script>
+<script src="world.js?v=25"></script>
+<script src="avatar.js?v=25"></script>
+<script src="pixel.js?v=25"></script>
+<script src="village.js?v=25"></script>
+<script src="teach.js?v=25"></script>
+<script src="parent.js?v=25"></script>
+<script src="scratch.js?v=25"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>

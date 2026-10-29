@@ -545,8 +545,10 @@
 
   // ---------- story problems with bar models ----------
   const WHO = ['Mia', 'Leo', 'Ava', 'Sam', 'Nora', 'Eli', 'Zoe', 'Max'], THINGS = ['stickers', 'shells', 'marbles', 'cards', 'beads', 'stamps', 'apples', 'books'];
+  // the village's notes set their own cast (her neighbors, village things) in EM.storyCast while they're built
   function genWord(level, tier) {
-    const [A, B] = shuffle(WHO.slice()), th = pick(THINGS), sm = level === 0, R = (lo, hi) => sm ? rint(lo, hi) : rint(lo * 10 + rint(0, 9), hi * 10 + rint(0, 9));
+    const cast = EM.storyCast || {}, [A, B] = shuffle((cast.who || WHO).slice());
+    let th = pick(cast.things || THINGS); const sm = level === 0, R = (lo, hi) => sm ? rint(lo, hi) : rint(lo * 10 + rint(0, 9), hi * 10 + rint(0, 9));
     let text, steps = [], grabs = [], model, bigShow = tier === 0, whole = true, compare = false;
     const q = (t, ans, say) => ({ ans, html: `<div class="ask">${t}</div><div class="eq">${slotN}</div>`, say: say || t, vis: '' });
     if (level < 2) {
@@ -554,7 +556,7 @@
       let a = R(sm ? 4 : 12, sm ? 12 : 60), b = R(sm ? 2 : 6, sm ? 8 : 39), ans;
       if (kind === 'join') { ans = a + b; text = `${A} has ${fmt(a)} ${th}. ${B} gives ${A} ${fmt(b)} more. How many ${th} does ${A} have now?`; model = bars([{ segs: [{ v: a, t: fmt(a) }, { v: b, t: fmt(b) }] }], { from: 0, to: a + b, t: '?', q: true }); grabs = [a - b]; }
       if (kind === 'separate') { whole = false; if (b > a) [a, b] = [b, a]; if (a === b) a++; ans = a - b; text = `${A} had ${fmt(a)} ${th}. ${A} gave ${fmt(b)} to ${B}. How many ${th} does ${A} have left?`; model = bars([{ segs: [{ v: b, t: fmt(b), ghost: true }, { v: ans, t: '?', q: true }] }], { from: 0, to: a, t: fmt(a) }); grabs = [a + b]; }
-      if (kind === 'part') { whole = false; const w = a + b; ans = a; text = `There are ${fmt(w)} ${th}. ${fmt(b)} are red and the rest are blue. How many are blue?`; model = bars([{ segs: [{ v: b, t: fmt(b) }, { v: a, t: '?', q: true }] }], { from: 0, to: w, t: fmt(w) }); grabs = [w + b]; }
+      if (kind === 'part') { if (cast.colored) th = pick(cast.colored); whole = false; const w = a + b; ans = a; text = `There are ${fmt(w)} ${th}. ${fmt(b)} are red and the rest are blue. How many are blue?`; model = bars([{ segs: [{ v: b, t: fmt(b) }, { v: a, t: '?', q: true }] }], { from: 0, to: w, t: fmt(w) }); grabs = [w + b]; }
       if (kind === 'more') { compare = true; ans = a + b; text = `${A} has ${fmt(a)} ${th}. ${B} has ${fmt(b)} more than ${A}. How many ${th} does ${B} have?`; model = bars([{ name: A, segs: [{ v: a, t: fmt(a) }] }, { name: B, segs: [{ v: a, t: fmt(a) }, { v: b, t: fmt(b) }] }], { row: 1, from: 0, to: a + b, t: '?', q: true }); grabs = [a - b]; }
       if (kind === 'diff') { compare = true; whole = false; if (b > a) [a, b] = [b, a]; if (a === b) a++; ans = a - b; text = `${A} has ${fmt(a)} ${th}. ${B} has ${fmt(b)}. How many more ${th} does ${A} have than ${B}?`; model = bars([{ name: A, segs: [{ v: b, t: fmt(b) }, { v: ans, t: '?', q: true }] }, { name: B, segs: [{ v: b, t: fmt(b) }] }], { row: 0, from: 0, to: a, t: fmt(a) }); grabs = [a + b]; }
       grabs.push(a, b);

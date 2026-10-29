@@ -66,8 +66,8 @@ Like the errands in Zelda or Pokémon: she walks up to someone in the village, t
 | Post office | Mo, the mail carrier | Read the blocks on a package's label, then deliver it to the house with that number | Read the Number, Count On, Which Is Greater?, Neighbors |
 | Bus stops | the bus driver | Drop each rider at the nearest stop | Round to 10 / 100 / 1,000, The Digit Shortcut |
 | Shop counter | shoppers | About how much? Add it up in your head | About How Much?, In Your Head |
-| Workshop | the builders | Pack crates of ten and regroup | Trade Tens, Column Add & Subtract |
-| Notice board | villagers | Their problems, drawn as bars | Story Problems |
+| Workshop | Tom, the carpenter | Help with his sums for planks and fences (built: practice's own column problems in the workshop) | Trade Tens, Column Add & Subtract |
+| Notice board | her neighbors | Notes pinned on the board, story problems starring Rosa, Bea, Mo, Mr. Pip, Tom and her (built) | Story Problems |
 | Garden rows | Rosa | Plant in rows and groups | Skip Counting, Rows and Groups, Times 2, 3, 4, 5, 10 |
 | Dot's school | Dot | Check Dot's work, teach Dot the steps | Teach Dot |
 
@@ -206,7 +206,7 @@ If she fishes on her own, the rest of this holds. If she only builds, the jobs n
 
 **Status: built.** Morning orders: three requests a day (Rosa's apples, Mr. Pip's pies or 5 fish until his stall opens, and Dot's lesson on the notice board), a 12-minute limit for hard days, Mr. Pip's market (take-away facts), fishing on the shared job screen, and Rosa's and Mr. Pip's surprises. Dot's lesson still uses the plain practice screen (over a soft view of her village) for big numbers, school work and Teach Dot.
 
-Since built: Mo's post office (place value) and Bea's bakery (doubles; her buns take turns with Rosa's apples as the first order). Still to come: Story problems move to the notice board and column math to the workshop, with the scratchpad, and then the plain practice screen retires.
+Since built: Mo's post office (place value) and Bea's bakery (doubles; her buns take turns with Rosa's apples as the first order). Then story problems moved to the notice board and column math to Tom's workshop, with the scratchpad (built: they run practice's own multi-step problems inside a village frame, see STATUS.md). Still to come: the rest of Dot's lesson (big numbers, rounding, In Your Head) moves into places, and then the plain practice screen retires.
 
 ### Slice 3
 

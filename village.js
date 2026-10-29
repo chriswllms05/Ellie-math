@@ -28,18 +28,19 @@
   const MEADOW = { x: 222, y: 10, cols: 4, rows: 2 };          // across the bridge
   const DOCK = [106, 137, 30, 9];
   const BOARD = [178, 110];                                     // notice board (left post x, base y)
-  const PATHS = [[118, 112, 116, 9], [134, 112, 9, 34], [244, 52, 9, 62], [94, 112, 26, 9], [244, 121, 9, 56], [98, 48, 8, 66], [98, 46, 44, 8]];
+  const PATHS = [[118, 112, 116, 9], [134, 112, 9, 34], [244, 52, 9, 62], [94, 112, 26, 9], [244, 121, 9, 56], [98, 48, 8, 66], [98, 46, 44, 8], [204, 86, 8, 28]];
   const ORCHARD = [14, 44, 80, 62], ROSA = [82, 110];             // Rosa's orchard on the map, and where she stands
   const STALL = [258, 166], PIP = [272, 186];                     // Mr. Pip's pie stall, and where he waits
   const POST = [112, 102], MO = [152, 108];                       // the post office, and Mo by its door
   const BAKERY = [122, 46], BEA = [162, 52];                      // Bea's bakery up the lane, and Bea outside it
+  const SHOP = [166, 78], TOM = [202, 84];                        // Tom's workshop (left wall x, base y), and Tom by it
   const inRect = (x, y, [rx, ry, rw, rh]) => x >= rx && x < rx + rw && y >= ry && y < ry + rh;
   const area = id => id === 'meadow' ? MEADOW : YARD;
   const cellAt = (x, y) => { for (const id of ['plot', 'meadow']) { const a = area(id); if (id === 'meadow' && !V().open.meadow) continue; const cx = Math.floor((x - a.x) / 16), cy = Math.floor((y - a.y) / 16); if (cx >= 0 && cy >= 0 && cx < a.cols && cy < a.rows) return { area: id, cx, cy }; } return null; };
   const placedAt = c => V().placed.find(p => p.area === c.area && p.cx === c.cx && p.cy === c.cy);
   // where she can walk: stops joined by paths (she takes the shortest way), plus free walking on grass
-  const NODES = { dock: [114, 144], bend: [138, 141], cross: [138, 118], yard: [166, 118], board: [190, 118], home: [244, 118], hill: [248, 98], bridge: [248, 82], orchard: [98, 116], market: [250, 176], post: [130, 116], lane: [102, 52], bakery: [140, 52] };
-  const EDGES = [['dock', 'bend'], ['bend', 'cross'], ['cross', 'yard'], ['yard', 'board'], ['board', 'home'], ['home', 'hill'], ['hill', 'bridge'], ['cross', 'orchard'], ['home', 'market'], ['cross', 'post'], ['orchard', 'lane'], ['lane', 'bakery']];
+  const NODES = { dock: [114, 144], bend: [138, 141], cross: [138, 118], yard: [166, 118], board: [190, 118], home: [244, 118], hill: [248, 98], bridge: [248, 82], orchard: [98, 116], market: [250, 176], post: [130, 116], lane: [102, 52], bakery: [140, 52], workshop: [208, 92] };
+  const EDGES = [['dock', 'bend'], ['bend', 'cross'], ['cross', 'yard'], ['yard', 'board'], ['board', 'home'], ['home', 'hill'], ['hill', 'bridge'], ['cross', 'orchard'], ['home', 'market'], ['cross', 'post'], ['orchard', 'lane'], ['lane', 'bakery'], ['board', 'workshop']];
   const CAM_FULL = { x: 0, y: 0, w: W, h: H };
   const camAround = (cx, cy, w) => ({ x: Math.max(0, Math.min(W - w, cx - w / 2)), y: Math.max(0, Math.min(H - w * H / W, cy - w * H / W / 2)), w, h: w * H / W });
 
@@ -181,11 +182,22 @@
     // Rosa's orchard: two rows of apple trees, and her crate by the path
     [[24, 66], [48, 62], [72, 66], [34, 92], [58, 90]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 2), apples: true }));
     k.crate(90, 112, '#e8473f'); k.crate(70, 106, '#f7c531');
-    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [176, 24], [8, 108], [290, 100], [290, 140], [116, 206], [20, 206], [196, 204], [262, 206], [168, 64]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
+    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [176, 24], [8, 108], [290, 100], [290, 140], [116, 206], [20, 206], [196, 204], [262, 206]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
     [[206, 128], [130, 190], [222, 196]].forEach(([x, y]) => k.bush(x, y));
     // Bea's bakery: a gold roof and a bun sign
     k.house(BAKERY[0], BAKERY[1], 36, 'gold', { chimney: true, lit: true });
     k.add(BAKERY[1] + 1, () => { const x = BAKERY[0] + 12, y = BAKERY[1] - 27; k.R(x, y, 12, 7, C.k1); k.R(x + 1, y + 1, 10, 5, C.k3); k.bun(x + 3, y + 1); });
+    // Tom's workshop: an open wooden shed with a workbench inside, planks leaning on the wall, a saw over the door
+    k.add(SHOP[1], () => { const [x, y] = SHOP, w = 32;
+      k.R(x, y - 20, w, 20, C.k1); k.R(x + 1, y - 19, w - 2, 19, C.k2); for (let a = x + 3; a < x + w - 1; a += 4) { k.R(a, y - 19, 1, 19, C.k1); k.P(a + 2, y - 15 + (a % 7), C.k3); }
+      k.R(x + 6, y - 15, 20, 15, '#3a2a24'); k.R(x + 6, y - 15, 20, 1, '#2a1e1a'); k.R(x + 5, y - 16, 1, 16, C.k3); k.R(x + 26, y - 16, 1, 16, C.k1);
+      k.R(x + 9, y - 13, 6, 1, C.s3); k.R(x + 9, y - 13, 2, 3, C.k3); k.R(x + 18, y - 13, 1, 5, C.s2); k.R(x + 20, y - 12, 1, 4, C.s3); k.R(x + 22, y - 13, 2, 2, C.k3);
+      k.R(x + 7, y - 7, 18, 2, C.k3); k.R(x + 7, y - 7, 18, 1, C.k4); k.R(x + 8, y - 5, 1, 5, C.k1); k.R(x + 23, y - 5, 1, 5, C.k1); k.R(x + 12, y - 9, 6, 2, C.k4); k.P(x + 19, y - 8, C.s3);
+      for (let j = 0; j < 7; j++) k.R(x - 3 + j, y - 27 + j, w + 6 - 2 * j > 0 ? w + 6 : 0, 1, j === 6 ? '#5a3020' : j % 2 ? '#8a4a32' : '#a85a3a');
+      for (let i = 0; i < w + 6; i += 3) k.P(x - 3 + i, y - 26 + (i % 2), '#c27050');
+      k.R(x + 11, y - 25, 10, 5, C.k1); k.R(x + 12, y - 24, 8, 3, C.k3); k.R(x + 13, y - 23, 5, 1, C.s3); k.R(x + 17, y - 24, 2, 3, C.k1);
+      [[w + 1, 0], [w + 3, 1]].forEach(([a, b]) => { k.line(x + a, y - 1, x + a + 3, y - 16 - b, C.k1); k.line(x + a + 1, y - 1, x + a + 4, y - 16 - b, C.k3); });
+      k.R(x - 6, y - 4, 6, 1, C.k3); k.R(x - 6, y - 3, 1, 3, C.k1); k.R(x - 1, y - 3, 1, 3, C.k1); });
     // the post office: a little house with an envelope over the door
     k.house(POST[0], POST[1], 36, 'red', { lit: true });
     k.add(POST[1] + 1, () => { const x = POST[0] + 13, y = POST[1] - 26; k.R(x, y, 10, 7, '#f4ecdc'); k.R(x, y, 10, 1, '#fffaf0'); k.line(x, y, x + 5, y + 4, '#a8978a'); k.line(x + 9, y, x + 4, y + 4, '#a8978a'); k.R(x + 9, y, 1, 7, '#c9b9a0'); k.R(x, y + 6, 10, 1, '#c9b9a0'); });
@@ -238,7 +250,7 @@
       </div>
       <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${v.coins}</b></span><button class="vguide vpanel" id="vguide" data-v="guide"></button></div>
       <div class="vhud vbr"><button class="vpill vgrown grownup" data-hold="parent"><span class="fillbar"></span>Grown-ups: hold</button></div>
-      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="orchard">🍎 Help Rosa<span>Pick apples, earn coins</span></button>${jobOpen('market') ? '<button class="big-btn" data-v="market">🥧 Help Mr. Pip<span>Count his coins back</span></button>' : ''}<button class="big-btn" data-v="bakery">🍞 Help Bea<span>Bake buns</span></button><button class="big-btn" data-v="post">📦 Help Mo<span>Deliver the mail</span></button><button class="big-btn" data-v="fish">🎣 Go fishing<span>Sell fish for coins</span></button><button class="big-btn alt" data-v="build">🔨 Fix up your yard<span>Spend your coins</span></button></div>`}
+      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="orchard">🍎 Help Rosa<span>Pick apples, earn coins</span></button>${jobOpen('market') ? '<button class="big-btn" data-v="market">🥧 Help Mr. Pip<span>Count his coins back</span></button>' : ''}<button class="big-btn" data-v="bakery">🍞 Help Bea<span>Bake buns</span></button><button class="big-btn" data-v="post">📦 Help Mo<span>Deliver the mail</span></button>${placeOpen('workshop') ? '<button class="big-btn" data-v="workshop">🔨 Help Tom<span>Build with big numbers</span></button>' : ''}${placeOpen('notes') ? '<button class="big-btn" data-v="notes">📜 Read the notes<span>Story problems</span></button>' : ''}<button class="big-btn" data-v="fish">🎣 Go fishing<span>Sell fish for coins</span></button><button class="big-btn alt" data-v="build">🔨 Fix up your yard<span>Spend your coins</span></button></div>`}
       <div class="vfade" id="vfade"></div>
     </main>`;
     fit();
@@ -300,7 +312,9 @@
     // the day is hers: build, or keep helping (whoever she's helped least)
     if (v.coins >= 6) return { ...yard, label: 'Free time' };
     const mo = { job: 'post', text: 'Help Mo deliver the mail', say: 'Mo has packages to deliver. Tap Mo!', mark: [MO[0] + 4, MO[1] - 20], go: () => walkTo('post', toPost) };
-    const friends = [[rosa, v.orchardRounds || 0], [bea, v.bakeryRounds || 0], [mo, v.postRounds || 0], ...(jobOpen('market') ? [[pip, v.marketRounds || 0]] : [])];
+    const tom = { job: 'workshop', text: 'Help Tom in his workshop', say: 'Tom needs help building. Tap Tom!', mark: [TOM[0] + 4, TOM[1] - 20], go: () => walkTo('workshop', () => toPlace('workshop')) };
+    const notes = { job: 'notes', text: 'Answer a note on the board', say: 'Your neighbors pinned notes on the board. Tap it!', mark: [BOARD[0] + 9, BOARD[1] - 26], go: () => walkTo('board', () => toPlace('notes')) };
+    const friends = [[rosa, v.orchardRounds || 0], [bea, v.bakeryRounds || 0], [mo, v.postRounds || 0], ...(jobOpen('market') ? [[pip, v.marketRounds || 0]] : []), ...(placeOpen('workshop') ? [[tom, v.workshopRounds || 0]] : []), ...(placeOpen('notes') ? [[notes, v.notesRounds || 0]] : [])];
     return { ...friends.sort((a, b) => a[1] - b[1])[0][0], label: 'Free time' };
   }
   function mapOverlays() {
@@ -333,6 +347,8 @@
       k.R(x + 1, y - 19, 7, 4, '#f4efe2'); k.R(x + 1, y - 19, 7, 1, '#ffffff'); k.R(x + 1, y - 15, 7, 1, '#cfc6b4'); } });
     items.push({ y: MO[1], box: [MO[0] - 2, MO[1] - 17, 13, 18], draw: () => { const [x, y] = MO; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, MO_LOOK, { flip: true, blink: ((t + 2600) % 4700) < 120, wave: (t % 6100) < 1100 && (mission() || {}).job === 'post' });
       k.R(x + 1, y - 16, 7, 2, '#3a5aa8'); k.R(x, y - 14, 9, 1, '#2b2b3a'); } });
+    if (placeOpen('workshop')) items.push({ y: TOM[1], box: [TOM[0] - 2, TOM[1] - 17, 13, 18], draw: () => { const [x, y] = TOM; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, TOM_LOOK, { flip: true, blink: ((t + 2100) % 4400) < 120, wave: (t % 6300) < 1100 && (mission() || {}).job === 'workshop' });
+      k.R(x + 1, y - 16, 7, 2, '#6a5a4a'); k.R(x, y - 14, 9, 1, '#4a3e34'); k.R(x + 2, y - 9, 5, 2, '#9a5a2a'); } });
     items.push({ y: PIP[1], box: [PIP[0] - 2, PIP[1] - 17, 13, 18], draw: () => { const [x, y] = PIP; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, PIP_LOOK, { flip: true, blink: ((t + 1700) % 4300) < 120, wave: (t % 5600) < 1100 && (mission() || {}).job === 'market' });
       k.R(x + 2, y - 10, 5, 2, '#e8e8f0'); k.P(x + 4, y - 8, '#e8e8f0'); } });
     // things she just built pop in
@@ -447,6 +463,7 @@
     if (inRect(x, y, ORCHARD) || Math.hypot(x - ROSA[0] - 4, y - ROSA[1] + 8) < 10) return walkTo('orchard', toOrchard);
     if (inRect(x, y, [STALL[0] - 4, STALL[1] - 26, 42, 30]) || Math.hypot(x - PIP[0] - 4, y - PIP[1] + 8) < 10) return walkTo('market', marketTap);
     if (inRect(x, y, [BAKERY[0] - 4, BAKERY[1] - 40, 46, 42]) || Math.hypot(x - BEA[0] - 4, y - BEA[1] + 8) < 10) return walkTo('bakery', toBakery);
+    if (inRect(x, y, [SHOP[0] - 6, SHOP[1] - 28, 44, 30]) || Math.hypot(x - TOM[0] - 4, y - TOM[1] + 8) < 10) return walkTo('workshop', () => toPlace('workshop'));
     if (inRect(x, y, [POST[0] - 4, POST[1] - 40, 46, 42]) || Math.hypot(x - MO[0] - 4, y - MO[1] + 8) < 10) return walkTo('post', toPost);
     if (c && c.area === 'plot') { ui.pulseYard = false; return walkTo('yard', () => enterBuild(placedAt(c) ? c : null)); }
     if (inRect(x, y, [BOARD[0] - 4, BOARD[1] - 24, 28, 26])) return walkTo('board', openBoard);
@@ -479,12 +496,13 @@
       : `<div class="vnote"><b>${ordersDone() ? "Today's orders are done! ⭐" : "Today's orders"}</b>${list}
           <button class="big-btn" data-b="lesson">${lesson && lesson.got >= lesson.need ? "Do Dot's lesson again" : "Start Dot's lesson"}</button></div>
         ${evening ? '<button class="btn secondary" data-b="evening">🌙 Evening review · 5 minutes</button>' : ''}
+        ${placeOpen('notes') ? '<button class="btn secondary" data-b="notes">📜 Notes from the village</button>' : ''}
         <button class="btn secondary" data-b="today">📚 Practice everything</button>
         <button class="btn secondary" data-b="skills">🎯 Pick a skill to practice</button>`}
       <button class="btn secondary" data-b="close">Back to the village</button></div>`;
     document.body.appendChild(card);
     card.addEventListener('click', e => { const b = e.target.closest('[data-b]'); if (!b) { if (e.target === card) card.remove(); return; } card.remove(); stopLoop();
-      ({ placement: () => EM.startSession('placement'), lesson: () => EM.startSession('lesson'), today: () => EM.startSession('daily'), evening: () => EM.startSession('evening'), skills: () => EM.go('skills'), close: () => startLoop(drawMap) })[b.dataset.b](); });
+      ({ notes: () => enterPlace('notes'), placement: () => EM.startSession('placement'), lesson: () => EM.startSession('lesson'), today: () => EM.startSession('daily'), evening: () => EM.startSession('evening'), skills: () => EM.go('skills'), close: () => startLoop(drawMap) })[b.dataset.b](); });
   }
 
   // ---------- build mode ----------
@@ -928,6 +946,124 @@
     },
   };
   const jobOpen = id => JOBS[id].skills.some(s => EM.isOpen(s));
+
+  // =====================================================================
+  // places: Tom's workshop (column math) and the notes on the board (story problems). These are practice's own
+  // multi-step problems, with their pictures, steps, help and scratchpad, run inside a village frame: a close-up of
+  // the place behind, the problem on a paper note, a coin for each one solved without help, Tom's hello, and a
+  // surprise after three rounds. app.js runs the problems (EM.startSession('workshop' | 'notes')); this is the place.
+  // =====================================================================
+  const TOM_LOOK = { hair: '#9a5a2a', skin: '#e0a882', skinD: '#c08a6c', shirt: '#b88a5a', shirtD: '#8a6040', long: false };
+  const PLACES = {
+    workshop: { npc: 'Tom', chibi: 'tom', title: "Tom's workshop", order: 'Tom is building', marks: 'plank', goal: 3, skills: ['regroup', 'trade'], rounds: 'workshopRounds', node: 'workshop', mapCam: [186, 70, 96], log: 'Building with Tom',
+      done: 'Tom finished building!', paid: n => `Tom paid you ${n} coins.`, closed: "That's Tom's workshop. He builds with big numbers. It opens when you learn to trade tens!",
+      right: ['Measured just right!', 'That plank fits!', 'Perfect cut!', 'Nice building!'], still: workshopStill },
+    notes: { npc: 'The village', title: 'Notes from the village', order: 'Help with the notes', marks: 'paper', goal: 4, skills: ['words'], rounds: 'notesRounds', node: 'board', mapCam: [188, 100, 96], log: 'Story problems on the board',
+      done: 'Every note is answered!', paid: n => `Your neighbors left ${n} coins on the board.`, closed: "The notes need story problems. They open soon!",
+      right: ['Note answered!', 'They will be so glad!', 'That helps a lot!', 'You figured it out!'], still: notesStill },
+  };
+  const placeOpen = id => PLACES[id].skills.some(s => EM.isOpen(s));
+  // the cast of the village's story problems: her neighbors, and village things
+  const STORY_CAST = () => ({ who: ['Rosa', 'Bea', 'Mo', 'Mr. Pip', 'Tom', String((S().avatar && S().avatar.name) || 'Mia')], things: ['apples', 'buns', 'pies', 'fish', 'letters', 'packages', 'flowers', 'shells', 'acorns', 'pebbles'], colored: ['flowers', 'shells', 'pebbles', 'ribbons', 'buttons'] });
+  const placeArt = {};
+  function frameArt(id) {
+    if (placeArt[id]) return placeArt[id];
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), k = px.kit(g);
+    PLACES[id].still(g, k); k.bake(W, H);
+    const big = document.createElement('canvas'); big.width = W * 4; big.height = H * 4; const bg = big.getContext('2d'); bg.imageSmoothingEnabled = false; bg.drawImage(c, 0, 0, big.width, big.height);
+    return (placeArt[id] = big.toDataURL('image/png'));
+  }
+  function faceArt(chibi) {
+    const c = document.createElement('canvas'), ch = px.CHIBI[chibi](); c.width = 16; c.height = 13; px.kit(c.getContext('2d')).chibi(0, ch.rows.length, ch.rows, ch.mat, { noShadow: true });
+    const big = document.createElement('canvas'); big.width = 16 * 6; big.height = 13 * 6; const g = big.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(c, 0, 0, big.width, big.height); return big.toDataURL();
+  }
+  // the notes' badge: a pinned note
+  function noteArt() {
+    const c = document.createElement('canvas'); c.width = 16; c.height = 13; const k = px.kit(c.getContext('2d'));
+    k.R(3, 2, 11, 11, '#a8978a'); k.R(2, 1, 11, 11, '#fdf3c8'); k.R(2, 1, 11, 1, '#ffffff'); [4, 6, 8, 10].forEach((y, i) => k.R(4, y, i % 2 ? 5 : 7, 1, '#a8978a')); k.R(7, 0, 2, 2, '#d84a4a'); k.P(7, 0, '#ff9a8a');
+    const big = document.createElement('canvas'); big.width = 96; big.height = 78; const g = big.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(c, 0, 0, 96, 78); return big.toDataURL();
+  }
+  // what app.js needs to frame a session here
+  function frame(id) {
+    const P = PLACES[id];
+    return { id, title: P.title, order: P.order, marks: P.marks, goal: P.goal, got: 0, art: frameArt(id), face: P.chibi ? faceArt(P.chibi) : noteArt(), right: P.right, coin: COIN(), cast: id === 'notes' ? STORY_CAST() : null };
+  }
+  function pay(n = 1) { V().coins += n; EM.save(); }
+  function toPlace(id) {
+    const P = PLACES[id];
+    if (!placeOpen(id)) return say(P.closed);
+    ui.busy = true; her.path = [];
+    tweenCam(camAround(...P.mapCam), 800, () => { const f = document.getElementById('vfade'); if (f) f.classList.add('on'); setTimeout(() => { ui.busy = false; enterPlace(id); }, 260); });
+  }
+  function enterPlace(id) {
+    stopLoop();
+    const met = V().met = V().met || {};
+    if (!met[id] && MEET[id]) { met[id] = Date.now(); EM.save(); return hello(id, () => EM.startSession(id)); }
+    EM.startSession(id);
+  }
+  // the first visit: the villager's hello, over the place itself
+  function hello(id, then) {
+    const P = PLACES[id], ov = document.createElement('div'); ov.className = 'vover vhello'; ov.style.backgroundImage = `url(${frameArt(id)})`;
+    ov.innerHTML = `<div class="vcard"><div class="vcard-art"><img class="vface" src="${P.chibi ? faceArt(P.chibi) : noteArt()}" alt=""></div><p>${esc(MEET[id])}</p><div class="vrow"><button class="big-btn" data-ov="go">Let's go!</button></div></div>`;
+    document.body.appendChild(ov); EM.speech && EM.speech.say(MEET[id]);
+    ov.addEventListener('click', e => { if (!e.target.closest('[data-ov]')) return; ov.remove(); EM.speech && EM.speech.stop(); then(); });
+  }
+  // back from a place: a full round pays out its thanks (and after three, a surprise); otherwise just home
+  function placeDone(fr, ms) {
+    const P = PLACES[fr.id], v = V();
+    addOrderTime(ms); mode = 'map'; ui.from = P.node; ui.arrived = false; ui.next = null;
+    if (fr.got >= fr.goal) {
+      v[P.rounds] = (v[P.rounds] || 0) + 1; EM.save();
+      const g = giftDue(fr.id);
+      ui.next = () => { sfx('yours'); celebrate(P.done, `${P.paid(fr.got)} You have ${v.coins} coins.${g ? '' : untilGift(fr.id)}`, () => { if (g) giveGift(g, () => {}, fr.id); }, g ? [['Yay!', 'keep']] : [['Yay!', 'keep'], ['Spend them', 'tobuild']]); };
+    } else if (fr.got) ui.next = () => say(`You earned ${fr.got} coin${fr.got === 1 ? '' : 's'}. Come back any time!`);
+  }
+  // the workshop, close up: plank walls, a window, tools on the wall, a workbench with a plank on it, wood shavings
+  function workshopStill(g, k) {
+    g.fillStyle = '#6a4a38'; g.fillRect(0, 0, W, H);
+    for (let x = 0; x < W; x += 12) { k.R(x, 0, 12, 150, (x / 12) % 3 === 1 ? '#8a6248' : (x / 12) % 3 === 2 ? '#7e5840' : '#946a4e'); k.R(x, 0, 1, 150, '#5a3e30'); for (let y = 6 + (x * 7) % 23; y < 150; y += 31) { k.R(x + 4, y, 3, 1, '#6e4c3a'); k.P(x + 5, y + 1, '#6e4c3a'); } }
+    k.R(0, 24, W, 6, '#5a3e30'); k.R(0, 24, W, 1, '#b08a68'); k.R(0, 29, W, 1, '#3e2a22');
+    // the window, with the village outside
+    { const x = 196, y = 40, w = 70, h = 46; k.R(x - 3, y - 3, w + 6, h + 6, '#4a3228'); k.R(x, y, w, h, '#bcdcf0'); k.R(x, y + h - 14, w, 14, '#8cc07a'); k.R(x, y + h - 14, w, 1, '#a8d290'); k.R(x + 8, y + h - 24, 14, 10, '#d9c4a0'); k.R(x + 6, y + h - 28, 18, 4, '#c06456'); k.R(x + 44, y + h - 26, 4, 12, '#6e4c3a'); for (let i = 0; i < 9; i++) k.R(x + 38 + Math.round(Math.sin(i) * 2), y + h - 34 + i, 16 - Math.abs(i - 4) * 2, 1, i < 3 ? '#a6cf86' : '#7aa863');
+      k.R(x, y + 8, 18, 3, '#ffffff'); k.R(x + 4, y + 6, 10, 2, '#ffffff'); k.R(x + w / 2 - 1, y, 3, h, '#4a3228'); k.R(x, y + h / 2 - 1, w, 3, '#4a3228'); k.R(x - 5, y + h + 3, w + 10, 4, '#a07a5a'); k.R(x - 5, y + h + 3, w + 10, 1, '#c8a27e'); }
+    // tools on the wall: a saw, two hammers, a ruler, a coil of rope
+    k.R(16, 48, 150, 3, '#4a3228');
+    { const x = 22, y = 54; k.R(x, y, 34, 12, '#c9ced8'); for (let i = 0; i < 34; i += 2) k.P(x + i, y + 12, '#9aa0ae'); k.R(x, y, 34, 1, '#eef0f6'); k.R(x + 34, y - 2, 9, 14, '#a85a3a'); k.R(x + 37, y + 2, 3, 6, '#6a4a38'); }
+    [[70, 52], [86, 52]].forEach(([x, y], i) => { k.R(x + 3, y, 2, 22 - i * 3, '#c8935e'); k.R(x + 3, y, 1, 22 - i * 3, '#e2b07a'); k.R(x, y, 8, 5, '#7e8694'); k.R(x, y, 8, 1, '#b8bec8'); });
+    { const x = 104, y = 54; k.R(x, y, 6, 34, '#f2c94c'); for (let j = 0; j < 34; j += 3) k.R(x, y + j, j % 9 ? 2 : 4, 1, '#6a4a10'); }
+    { const cx = 136, cy = 66; for (let r = 10; r > 3; r -= 2) for (let a = 0; a < 40; a++) { const an = a / 40 * Math.PI * 2; k.P(Math.round(cx + Math.cos(an) * r), Math.round(cy + Math.sin(an) * r * .9), r % 4 ? '#d9b878' : '#b8945a'); } }
+    // a shelf with jars of nails
+    k.R(16, 98, 120, 3, '#a07a5a'); k.R(16, 98, 120, 1, '#c8a27e'); [[22, '#cfe0ea'], [40, '#e8d8b0'], [58, '#cfe0ea'], [100, '#e2c890']].forEach(([x, c]) => { k.R(x, 86, 10, 12, c); k.R(x, 84, 10, 2, '#6a4a38'); k.R(x + 2, 92, 6, 4, '#8a8a96'); k.R(x + 1, 87, 2, 8, '#ffffff'); });
+    k.R(76, 88, 16, 10, '#b88a5a'); k.R(76, 88, 16, 1, '#d8b080');
+    // the floor
+    for (let y = 150; y < H; y += 7) { k.R(0, y, W, 7, (y / 7) % 2 ? '#b88a62' : '#a87c56'); k.R(0, y, W, 1, '#8a6244'); for (let x = (y * 13) % 40; x < W; x += 47) k.R(x, y + 1, 1, 6, '#8a6244'); }
+    for (let n = 0; n < 60; n++) { const x = Math.floor(px.hash(n, 3, 71) * W), y = 152 + Math.floor(px.hash(n, 4, 71) * (H - 154)); k.P(x, y, n % 3 ? '#e8cc98' : '#f4e0b4'); if (n % 4 === 0) k.P(x + 1, y, '#e8cc98'); }
+    // the workbench, with a plank and shavings on it
+    k.add(150, () => { const x = 24, y = 124, w = 252; k.R(x, y, w, 7, '#c8935e'); k.R(x, y, w, 1, '#e8b880'); k.R(x, y + 6, w, 1, '#7e5638'); k.R(x, y + 7, w, 4, '#a8764a'); k.R(x, y + 10, w, 1, '#6e4a30');
+      [x + 6, x + w - 14].forEach(a => { k.R(a, y + 11, 8, 30, '#8a6040'); k.R(a, y + 11, 2, 30, '#a8764a'); }); k.R(x + 6, y + 30, w - 12, 4, '#7e5638');
+      k.R(x + 60, y - 5, 90, 5, '#e2b07a'); k.R(x + 60, y - 5, 90, 1, '#f4cc94'); k.R(x + 60, y - 1, 90, 1, '#a87c56'); for (let i = 70; i < 150; i += 19) k.R(x + i, y - 4, 6, 1, '#c8935e');
+      [[x + 160, y - 3], [x + 168, y - 2], [x + 30, y - 2]].forEach(([a, b]) => { k.R(a, b, 5, 2, '#f4dcaa'); k.P(a + 1, b - 1, '#f4dcaa'); });
+      k.R(x + 190, y - 9, 16, 9, '#7e8694'); k.R(x + 190, y - 9, 16, 2, '#b8bec8'); k.R(x + 196, y - 13, 4, 4, '#5a606c'); }, false);
+    // planks leaning in the corner
+    [0, 6, 11].forEach((d, i) => { const x = 280 + d; k.add(150, () => { k.line(x, 150, x + 10, 34, '#7e5638'); k.line(x + 1, 150, x + 11, 34, i % 2 ? '#d8a670' : '#c8935e'); k.line(x + 2, 150, x + 12, 34, '#e2b07a'); k.line(x + 3, 150, x + 13, 34, '#a8764a'); }, false); });
+    return [];
+  }
+  // the notice board, close up: a big cork board crowded with the village's notes, under its little roof
+  function notesStill(g, k) {
+    px.ground(g, W, H, {});
+    [[20, 60], [282, 70], [40, 200], [262, 200]].forEach(([x, y], i) => k.tree(x, y, { r: 12 + (i % 2), far: y < 100 }));
+    k.add(170, () => {
+      const x = 22, y = 22, w = 256, h = 140;
+      k.R(x + 10, y + h, 8, 40, '#6e4c3a'); k.R(x + w - 18, y + h, 8, 40, '#6e4c3a'); k.R(x + 10, y + h, 2, 40, '#8a6248'); k.R(x + w - 18, y + h, 2, 40, '#8a6248');
+      for (let j = 0; j < 10; j++) k.R(x - 10 + j, y - 16 + j, w + 20 - 2 * j, 1, j === 9 ? '#5a2e2e' : j % 2 ? '#a84a3e' : '#c06456');
+      k.R(x - 4, y - 6, w + 8, h + 10, '#6e4c3a'); k.R(x - 4, y - 6, w + 8, 2, '#946a4e'); k.R(x, y, w, h, '#c8a070');
+      for (let n = 0; n < 500; n++) k.P(x + Math.floor(px.hash(n, 7, 81) * w), y + Math.floor(px.hash(n, 8, 81) * h), n % 2 ? '#b88e60' : '#d8b484');
+      const notes = [[8, 8, 50, 40, '#f7ecd0'], [66, 14, 44, 36, '#ffe9a0'], [118, 6, 56, 44, '#d9ecff'], [182, 12, 64, 40, '#f7ecd0'], [12, 60, 54, 46, '#ffd9e4'], [74, 62, 48, 40, '#f7ecd0'], [132, 58, 52, 50, '#e2f2d0'], [192, 62, 56, 44, '#ffe9a0'], [26, 112, 40, 24, '#d9ecff'], [168, 114, 50, 22, '#f7ecd0']];
+      notes.forEach(([a, b, nw, nh, c], i) => { const X = x + a, Y = y + b; k.R(X + 2, Y + 2, nw, nh, 'rgba(60,40,20,.25)'); k.R(X, Y, nw, nh, c); k.R(X, Y, nw, 1, '#ffffff');
+        for (let l = 8; l < nh - 4; l += 6) k.R(X + 5, Y + l, nw - 10 - ((l * 7 + i * 5) % 14), 1, '#a8978a'); k.R(X + nw / 2 - 1, Y - 1, 3, 3, ['#d84a4a', '#3d6bd6', '#2e7d4f', '#e2ae52'][i % 4]); k.P(X + nw / 2 - 1, Y - 1, '#ffffff'); });
+    });
+    return [];
+  }
   function drawHer(k, t, [x, y], O, hop) { const l = look(), c = px.CHIBI.her(l, l.long); k.chibi(x, y, c.rows, c.mat, { blink: (t % 3600) < 120, bob: O.phase === 'right' ? hop : 0 }); }
   function drawNpc(k, t, J, O, hop) { const c = px.CHIBI[J.chibi](); k.chibi(J.npcAt[0], J.npcAt[1], c.rows, c.mat, { flip: true, blink: ((t + 900) % 4100) < 120, bob: O.phase === 'right' ? hop : 0 }); }
 
@@ -944,21 +1080,26 @@
     orchard: "Hi! I'm Rosa. Apples are falling everywhere! Help me count them, and I'll pay you a coin for each one. Fill my baskets three times and I'll have a surprise for you.",
     bakery: "Hi! I'm Bea, the baker. Every tray holds ten buns. When I bake some, you bake the same, or one more. Count them up for me and I'll pay you a coin each time. Help me three times and I'll have a surprise.",
     post: "Hi, I'm Mo, the mail carrier! Every package has its house number on the label, written in number discs. Read them for me and I'll pay you a coin for each one. Help me three times and I'll have a surprise.",
+    workshop: "Hi! I'm Tom, the carpenter. I build fences and benches and barns, and every plank has to be just the right length. That takes big numbers! Help me with my sums, and I'll pay you a coin for each one. Help me three times and I'll have a surprise.",
+    notes: "Look! Your neighbors pinned notes on the board. Each one is a story problem they need help with. Every note you answer earns a coin. Answer them three times and the village has a surprise for you.",
     market: "Hello! I'm Mr. Pip. I buy a pie every day, but I always mix up my coins. Help me count my coins back, and there's a coin in it for you. Help me three times and I'll have a surprise.",
   };
   const GIFT = { orchard: { item: 'appletree', title: 'Rosa gave you an apple tree!', text: 'Grown from her very best apples. It\'s waiting in your yard tray.' },
     bakery: { item: 'cake', title: 'Bea baked you a cake!', text: 'A cake of your very own. It\'s waiting in your yard tray.' },
     post: { item: 'mailbox', title: 'Mo gave you a mailbox!', text: 'Now you can get letters too. It\'s waiting in your yard tray.' },
+    workshop: { item: 'wheelbarrow', title: 'Tom built you a wheelbarrow!', text: 'He made it from the planks you measured. It\'s waiting in your yard tray.' },
+    notes: { item: 'kite', title: 'The village made you a kite!', text: 'Everyone helped: Rosa, Bea, Mo, Mr. Pip and Tom. It\'s waiting in your yard tray.' },
     market: { item: 'kitten', title: 'Mr. Pip gave you a kitten!', text: 'One of his cat\'s kittens needs a home. It\'s waiting in your yard tray.' } };
-  const giftDue = id => (V()[JOBS[id].rounds] || 0) >= 3 && !(V().gifted || {})[id] ? GIFT[id] : null;
-  function giveGift(g, next) {
-    const v = V(); (v.gifted = v.gifted || {})[O.id] = Date.now(); (v.gifts = v.gifts || {})[g.item] = (v.gifts[g.item] || 0) + 1; EM.save(); sfx('unlock');
+  const PLACE = id => JOBS[id] || PLACES[id];
+  const giftDue = id => (V()[PLACE(id).rounds] || 0) >= 3 && !(V().gifted || {})[id] ? GIFT[id] : null;
+  function giveGift(g, next, id = O.id) {
+    const v = V(); (v.gifted = v.gifted || {})[id] = Date.now(); (v.gifts = v.gifts || {})[g.item] = (v.gifts[g.item] || 0) + 1; EM.save(); sfx('unlock');
     const ov = document.createElement('div'); ov.className = 'vover';
     ov.innerHTML = `<div class="vcard"><div class="vcard-art"><img class="vgift" src="${itemIcon(g.item)}" alt=""></div><h2>${esc(g.title)}</h2><p>${esc(g.text)}</p><div class="vrow"><button class="big-btn" data-ov="tobuild">Put it in my yard</button><button class="big-btn alt" data-ov="keep">Keep going</button></div></div>`;
     document.body.appendChild(ov); EM.speech && EM.speech.say(g.title);
     ov.addEventListener('click', e => { const b = e.target.closest('[data-ov]'); if (!b) return; ov.remove(); if (b.dataset.ov === 'tobuild') return leaveJob(() => enterBuild(null)); next(); });
   }
-  const untilGift = id => { const left = 3 - (V()[JOBS[id].rounds] || 0); return left > 0 && !(V().gifted || {})[id] ? ` ${left} more until ${JOBS[id].npc}'s surprise!` : ''; };
+  const untilGift = id => { const left = 3 - (V()[PLACE(id).rounds] || 0), who = PLACE(id).npc; return left > 0 && !(V().gifted || {})[id] ? ` ${left} more until ${who === 'The village' ? "the village's" : `${who}'s`} surprise!` : ''; };
   function startJob(id) {
     mode = 'job';
     O = { id, J: JOBS[id], queue: [], i: -1, picked: 0, goal: 5, started: Date.now(), stats: { items: 0, fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, times: [], fastKeys: [], learned: [] }, input: '', phase: 'pick', drops: [], shown: [0, 0], said: '' };
@@ -1215,6 +1356,8 @@
       case 'market': return walkTo('market', marketTap);
       case 'post': return walkTo('post', toPost);
       case 'bakery': return walkTo('bakery', toBakery);
+      case 'workshop': return walkTo('workshop', () => toPlace('workshop'));
+      case 'notes': return walkTo('board', () => toPlace('notes'));
       case 'jhear': return mode === 'fish' ? fishHear() : jobHear();
       case 'jidk': return mode === 'fish' ? fIdk() : oIdk();
       case 'fidk': return fIdk();
@@ -1230,5 +1373,5 @@
       out.push(o ? { day: d, done: o.list.filter(x => x.got >= x.need).length, n: o.list.length, ms: o.ms || 0, today: true } : l ? { day: d, ...l } : { day: d, done: 0, n: 0, ms: 0 }); }
     return out;
   }
-  EM.village = { render, openBoard, orderHistory, checkUnlocks, meadowProgress, mission: () => mission(), orders: () => orders(), ordersDone, orderProgress, addOrderTime, jobSkills, backdrop, state: V, _fish: () => F, _orch: () => O, _job: () => O, _mode: () => mode, _her: () => her, _ui: () => ui, _scene: () => scene };
+  EM.village = { frame, pay, placeDone, placeOpen, render, openBoard, orderHistory, checkUnlocks, meadowProgress, mission: () => mission(), orders: () => orders(), ordersDone, orderProgress, addOrderTime, jobSkills, backdrop, state: V, _fish: () => F, _orch: () => O, _job: () => O, _mode: () => mode, _her: () => her, _ui: () => ui, _scene: () => scene };
 })();

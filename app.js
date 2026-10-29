@@ -23,7 +23,10 @@
     // screens that aren't in the village yet sit over a soft view of it, so she never leaves her world
     const inworld = ['practice', 'summary', 'skills', 'break'].includes(screen) && EM.village && S.avatar;
     document.body.classList.toggle('inworld', !!inworld);
-    if (inworld) { try { document.body.style.setProperty('--world', `url(${EM.village.backdrop()})`); } catch (e) {} }
+    // in a village place (Tom's workshop, the notes), the place itself is behind the problem, crisp
+    const framed = !!(inworld && screen === 'practice' && R && R.frame);
+    document.body.classList.toggle('framed', framed);
+    if (inworld) { try { document.body.style.setProperty('--world', `url(${framed ? R.frame.art : EM.village.backdrop()})`); } catch (e) {} }
     if (EM.scratch) EM.scratch.sync(R, screen);
     fitEqs();
   }
@@ -193,6 +196,14 @@
     if (rest.length) blocks.unshift({ name: 'Quick facts', cap: 2 * k, build: () => factQueueItems(rest, 12) });
     return blocks;
   }
+  // a village place (Tom's workshop, the notes on the board): practice's own problems for those skills, plenty of
+  // them, since the round ends when she has solved the place's goal without help
+  function placeItems(kind) {
+    const ids = (kind === 'notes' ? ['words'] : ['regroup', 'trade']).filter(EM.isOpen); if (!ids.length) return [];
+    let pick = EM.pickProcSkills(ids, 10); if (!pick.length) pick = Array.from({ length: 10 }, (_, i) => ids[i % ids.length]);
+    EM.storyCast = R.frame && R.frame.cast;
+    try { return pick.map(id => { const rec = EM.skillRec(id); return EM.procItem(id, rec.level, EM.procTier(id, rec.level)); }); } finally { EM.storyCast = null; }
+  }
   function startSession(kind, opt = {}) {
     EM.speech.prime();
     let blocks = [];
@@ -200,8 +211,10 @@
     else if (kind === 'skill') { const sk = EM.SK[opt.id]; blocks = [{ name: sk.name, cap: 5, build: () => sk.kind === 'fact' ? factQueueItems([sk.id], 20) : { items: procQueueItems([sk.id], 12), spare: [] } }]; }
     else if (kind === 'evening') blocks = [{ name: 'Review', cap: 5, build: () => factQueueItems(openIds('A'), 20, { dueOnly: true }) }];
     else if (kind === 'lesson') blocks = planLesson();
+    else if (kind === 'workshop' || kind === 'notes') blocks = [{ name: kind === 'notes' ? 'Village notes' : "Tom's workshop", cap: 9, build: () => ({ items: placeItems(kind), spare: [] }) }];
     else blocks = planDaily();
-    R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : kind === 'lesson' ? "Dot's lesson" : "Today's practice", blocks, bi: -1, started: Date.now(),
+    const frame = (kind === 'workshop' || kind === 'notes') && EM.village ? EM.village.frame(kind) : null;
+    R = { kind, title: kind === 'placement' ? 'Placement' : kind === 'skill' ? EM.SK[opt.id].name : kind === 'evening' ? 'Evening review' : kind === 'lesson' ? "Dot's lesson" : frame ? frame.title : "Today's practice", frame, blocks, bi: -1, started: Date.now(),
       stats: { fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, relooks: 0, items: 0, times: [], learned: [], fastKeys: [], tricks: {}, how: { knew: 0, trick: 0, counted: 0 },
         byKind: { fact: { fast: 0, slow: 0, wrong: 0, idk: 0 }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } }, est: { round: { ok: 0, n: 0 }, combine: { ok: 0, n: 0 }, sam: { ok: 0, n: 0 } }, taught: { n: 0, ok: 0, caught: 0, dotWrong: 0 }, slips: 0, slipKeys: [], compChecks: [], colFacts: [], column: { items: 0, clean: 0, factSlip: 0, regroupMiss: 0 } }, missed: {}, yoursNow: [], yoursKeys: [], planted: 0, plantedKeys: [], howCount: 0, clipPlayed: false, idkCount: 0, missStreak: 0, knownBefore: EM.countCollected() };
     screen = 'practice';
@@ -250,7 +263,7 @@
 
   function beginItem() {
     clearTimeout(R.flashT); clearTimeout(R.speechT);
-    if (R.idx >= R.queue.length || (R.idx > 0 && blockTimeUp())) return endOfBlock();
+    if (R.idx >= R.queue.length || (R.idx > 0 && blockTimeUp()) || (R.frame && R.frame.got >= R.frame.goal)) return endOfBlock();
     const it = R.queue[R.idx];
     clearTimeout(R.showT);
     R.cur = it; R.step = 0; R.phase = 'ask'; R.helpStage = 0; R.helpTries = 0; R.input = ''; R.lock = false; R.msg = null; R.trick = null; R.stepRes = []; R.relooked = false;
@@ -452,6 +465,9 @@
       });
     }
     if (graded) { R.stats[outcome]++; R.stats.byKind[it.kind][outcome]++; if (outcome === 'fast' || outcome === 'slow') R.stats.times.push(ms); }
+    // in a village place, each problem solved without help pays a coin (and fills a mark)
+    const paid = R.frame && graded && (outcome === 'fast' || outcome === 'slow') && R.frame.got < R.frame.goal;
+    if (paid) { R.frame.got++; EM.village.pay(1); }
     if (R.kind !== 'placement') saveInflight();
     if (it.mode === 'reask' && (outcome === 'fast' || outcome === 'slow')) { const m = R.missed[it.key]; if (m && !m.learned) { m.learned = true; R.stats.learned.push({ label: it.label, idk: m.idk }); } }
     if (graded) R.missStreak = (outcome === 'wrong' || outcome === 'idk') ? R.missStreak + 1 : 0;
@@ -470,11 +486,12 @@
       if (R.kind === 'placement') { showMsg('good', outcome === 'fast' ? '⚡' : '✓'); return later(after, 500); }
       if (it.mode === 'reask') { showMsg('good', pick(['✓ You remembered!', '✓ Got it this time!'])); EM.sfx.right(); mood('proud'); return later(after, 900); }
       if (it.mode === 'rehearse') { showMsg('good', outcome === 'fast' ? pick(['⚡ Again! Getting quicker.', '⚡ You remembered it!']) : '✓ Got it again!'); EM.sfx.right(); mood('happy'); return later(after, 800); }
-      if (quietYours) { showMsg('good', `⭐ ${esc(it.label)} is yours!`); EM.sfx.fast(); mood('happy'); }
+      if (paid) { showMsg('good', `${R.frame.coin} +1 · ${esc(pick(R.frame.right))}`); EM.sfx.fast(); mood('happy'); bumpFrame(); }
+      else if (quietYours) { showMsg('good', `⭐ ${esc(it.label)} is yours!`); EM.sfx.fast(); mood('happy'); }
       else if (rescued) { showMsg('good', `💧 Rescued! ${esc(it.label)} is back.`); EM.sfx.fast(); mood('happy'); }
       else if (outcome === 'fast') { showMsg('good', pick(['⚡ You knew it!', '⚡ Quick!', '⚡ Zoom!'])); EM.sfx.fast(); mood('happy'); }
       else { showMsg('good', pick(['✓ Right! You figured it out.', '✓ Yes! You worked it out.'])); EM.sfx.right(); mood('proud'); }
-      if (multi && it.done) { showMsg('good', `✓ ${it.done.html}`); EM.speech.say(it.done.say); }
+      if (multi && it.done) { showMsg('good', `${paid ? `${R.frame.coin} +1 · ` : '✓ '}${it.done.html}`); EM.speech.say(it.done.say); }
       const delay = multi ? 2200 : quietYours || rescued ? 1100 : outcome === 'fast' ? 700 : 1100;
       later(() => {
         if (becameYours) return celebrateYours(it, () => maybeHow(it, outcome, after));
@@ -588,6 +605,8 @@
     delete S.inflight;
     if (answered) EM.logSession(sessionRecord()); else EM.save();
     if (R.kind === 'placement' && (answered >= 15 || R.idx >= R.queue.length)) { seedLevels(); S.placement.done = true; S.placement.at = Date.now(); EM.save(); }
+    // a village place: any newly opened skills first (over the place), then home to the village and its thanks
+    if (R.frame) { const fr = R.frame, ms = Date.now() - R.started; R.newSkills = answered ? EM.newlyOpened() : []; return unlockCeremony(R.newSkills, () => { EM.village.placeDone(fr, ms); screen = 'home'; render(); }); }
     if (R.kind === 'lesson' && EM.village) { EM.village.addOrderTime(Date.now() - R.started); if (answered >= 8 || (R.bi >= R.blocks.length - 1 && R.idx >= R.queue.length)) EM.village.orderProgress('lesson'); }
     R.newSkills = answered ? EM.newlyOpened() : [];
     if (answered && R.kind !== 'skill') { S.card = { date: Date.now(), html: EM.parent.grownupCard(R), seen: false }; EM.save(); }
@@ -639,12 +658,23 @@
     const body = it.kind === 'proc' && html.includes('<div class="eq">') ? html.replace('<div class="eq">', `<div class="visual">${vis}</div><div class="eq">`) : `${html}<div class="visual">${vis}</div>`;
     return `${it.mode === 'reask' && !help ? '<div class="tag">Try this one again</div>' : ''}${body}${speaker}${tricks}`;
   }
+  // a village place's top bar, like the jobs': back to the village, the order and its marks, her coins
+  function frameTop() {
+    const f = R.frame, marks = Array.from({ length: f.goal }, (_, i) => `<i class="${i < f.got ? 'on' : ''}"></i>`).join('');
+    return `<div class="topbar ftop"><button class="vpill jhome" data-act="leaveplace">🏠 Village</button>
+      <div class="vpill jorder">${f.face ? `<img class="fface" src="${f.face}" alt="">` : ''}<span><b>${esc(f.order)}</b><span class="jmarks ${f.marks}">${marks}</span></span></div>
+      <span class="vpill vcoins fcoins">${f.coin} <b>${EM.village.state().coins}</b></span>${D(R.mood || 'think', 44)}</div>`;
+  }
+  function bumpFrame() {
+    const f = R.frame; document.querySelectorAll('.ftop .jmarks i').forEach((el, i) => el.classList.toggle('on', i < f.got));
+    const c = document.querySelector('.ftop .fcoins'); if (c) { c.querySelector('b').textContent = EM.village.state().coins; c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
+  }
   function renderPractice() {
     const help = R.phase === 'help', hidden = (R.waitReady || R.waitTrick || R.waitSpeech) && !help;
-    $app.innerHTML = `<main class="wrap practice${help ? ' helping' : ''}">
-      <div class="topbar"><button class="icon-btn" data-act="quit" aria-label="Stop practice">✕</button>
+    $app.innerHTML = `<main class="wrap practice${help ? ' helping' : ''}${R.frame ? ` framed in-${R.frame.id}` : ''}">
+      ${R.frame ? frameTop() : `<div class="topbar"><button class="icon-btn" data-act="quit" aria-label="Stop practice">✕</button>
         <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(Math.min(1, R.idx / Math.max(1, R.planned)) * 100)}"><i style="width:${Math.min(100, R.idx / Math.max(1, R.planned) * 100)}%"></i></div>
-        <span class="blockname">${esc(R.blocks[R.bi].name)}${R.blocks.length > 1 ? ` ${R.bi + 1}/${R.blocks.length}` : ''}</span>${D(R.mood || 'think', 44)}</div>
+        <span class="blockname">${esc(R.blocks[R.bi].name)}${R.blocks.length > 1 ? ` ${R.bi + 1}/${R.blocks.length}` : ''}</span>${D(R.mood || 'think', 44)}</div>`}
       <div class="stage">
         ${stageHTML()}
         <div class="msg ${R.msg ? R.msg.kind : ''}" aria-live="polite">${R.msg ? R.msg.html : ''}</div>
@@ -751,6 +781,7 @@
       case 'relook': return relook();
       case 'speak': { const st = curStep(); const h = R.phase === 'help' && R.msg ? R.msg.html.replace(/<[^>]+>/g, '') : (R.cur.kind === 'fact' ? st.say : st.say); return EM.speech.say(h); }
       case 'quit': return askQuit();
+      case 'leaveplace': return finishSession();
     }
   });
   document.addEventListener('click', e => {

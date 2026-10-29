@@ -80,6 +80,12 @@ const server = http.createServer((req, res) => { let p = decodeURIComponent(req.
       const it = EM.factItem(k, 'normal'); for (const stage of [1, 2]) { const say = bunWords(it.help(0, stage).say); add(say); leads.forEach(l => add(`${l} ${say}`)); } }
     ["Hi! I'm Bea, the baker. Every tray holds ten buns. When I bake some, you bake the same, or one more. Count them up for me and I'll pay you a coin each time. Help me three times and I'll have a surprise.",
       'Bea baked you a cake!', 'The buns are all baked!', 'Bea needs help in the bakery. Tap her!'].forEach(add);
+    // Tom's workshop and the notes on the board (the problems themselves are practice's own)
+    ["Hi! I'm Tom, the carpenter. I build fences and benches and barns, and every plank has to be just the right length. That takes big numbers! Help me with my sums, and I'll pay you a coin for each one. Help me three times and I'll have a surprise.",
+      "Look! Your neighbors pinned notes on the board. Each one is a story problem they need help with. Every note you answer earns a coin. Answer them three times and the village has a surprise for you.",
+      'Tom finished building!', 'Every note is answered!', 'Tom built you a wheelbarrow!', 'The village made you a kite!', 'Tom needs help building. Tap Tom!', 'Your neighbors pinned notes on the board. Tap it!',
+      "That's Tom's workshop. He builds with big numbers. It opens when you learn to trade tens!", 'The notes need story problems. They open soon!',
+      ...[1, 2, 3, 4].map(n => `You earned ${n} coin${n === 1 ? '' : 's'}. Come back any time!`)].forEach(add);
     // fishing's help, said as fish and spots
     const fishWords = t => String(t).replace(/\bdots\b/g, 'fish').replace(/\bdot\b/g, 'fish').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot').replace(/\bboxes\b/g, 'spots');
     const fleads = ['Whoa, too fast! It slipped away. Think first, then tap.', "Oops, it got away. Let's figure it out together.", "Good idea to ask. Let's look together."];

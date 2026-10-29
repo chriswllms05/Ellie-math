@@ -105,6 +105,15 @@ function audit() {
     await page.waitForFunction(() => EM.village._job() && EM.village._job().phase === 'ask' && !EM.village._job().waitSpeech, null, { timeout: 10000 }); await check('09f2-post', 400);
     await page.click('[data-v=jidk]'); await check('09f3-post-help', 700);
     await page.click('[data-v=leavejob]'); await page.waitForTimeout(1500);
+    // Tom's workshop and the notes: hello, the framed problem, its help
+    await page.evaluate(() => { ['words', 'regroup', 'trade'].forEach(id => { EM.skillRec(id).manual = true; (EM.S.unlockedSeen = EM.S.unlockedSeen || {})[id] = true; }); EM.save(); EM.go('home'); });
+    for (const id of ['workshop', 'notes']) {
+      await page.waitForSelector(`[data-v=${id}]`, { timeout: 30000 }); await page.waitForTimeout(600); await page.click(`[data-v=${id}]`);
+      await page.waitForSelector('.vhello', { timeout: 15000 }); await check(`09f4-${id}-hello`, 300); await page.click('.vhello [data-ov=go]');
+      await page.waitForSelector('.practice.framed', { timeout: 8000 }); await page.waitForFunction(() => { const R = EM._run(); return R && !R.lock && !R.waitSpeech; }, null, { timeout: 10000 }); await check(`09f5-${id}`, 400);
+      await page.click('[data-act=idk]'); await check(`09f6-${id}-help`, 700);
+      await page.click('[data-act=leaveplace]'); await page.waitForTimeout(1800);
+    }
     await page.evaluate(() => EM.village.openBoard()); await check('09g-board-orders');
     await page.click('[data-b=close]');
     await page.evaluate(() => { EM.village.orders().list.forEach(x => { x.got = x.need; }); EM.save(); EM.go('home'); });

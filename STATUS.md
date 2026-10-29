@@ -86,6 +86,13 @@ Dot now speaks with a recorded child voice (Azure neural voice "Ana", slightly f
 - Grown-up area → Voice: **Dot (recorded)** is the default and the first option; the iPad voices are still there.
 - To change lines or the voice: `node tools/voice/collect.js lines.json && node tools/voice/build.js lines.json` (needs the Azure key on the environment; only new lines are recorded). `tools/voice/coverage.js` checks nothing is missing.
 
+## Tom's workshop and the notes on the board (live)
+
+- **Tom's workshop (column math).** Tom, a carpenter in a flat cap and leather apron, has a workshop between the bakery and the notice board. Tap him (or **🔨 Help Tom**, once Regroup Tens and Ones or Column Add & Subtract is open). The first time, he says hello and promises a surprise. Then practice's own column and trading problems appear on a paper note pinned up in his workshop, with every step, picture and kind of help they have in practice (and the ✏️ Scratchpad once the steps fade). Each problem solved without help pays a coin and fills a plank mark; three fill his order and he says thanks back in the village. After three rounds he builds her a **wheelbarrow** for the yard.
+- **Notes from the village (story problems).** Tap the notice board (**📜 Notes from the village**) or **📜 Read the notes**. Each note is one of practice's bar-model story problems, starring her neighbors and village things: "Mo has 5 apples. Tom gives Mo 3 more…". Four answered notes complete a round; after three rounds the village gives her a **kite**.
+- **Same rules as the jobs:** only problems solved right without help pay; "I don't know" opens the usual help, and that problem is safe; **🏠 Village** goes home any time. They're graded exactly like practice (levels, review, the grown-up log). Not morning orders yet: they're there for free time, and Dot suggests whichever villager she's helped least. Dot's lesson still includes school work too.
+- **Grown-ups → In her village** lists them as 🔨 Tom (column math) and 📜 Notes (story problems).
+
 ## Bea's bakery and the scratchpad (live)
 
 - **Bea's bakery (doubles and near doubles).** Bea's bakery sits up a lane from the orchard. She and Ellie each bake a tray of buns, the same or one more: "You baked 6 buns, and I baked the same. How many buns in all?" The trays are trays of ten, so help can say "Double 6. Count both trays," and for a near double the one more bun blinks. Doubles and near doubles moved here from the orchard (Rosa keeps +1 +2, Ten and More, Facts to 10 and Make a 10). Bea's surprise after three rounds is a cake for the yard.

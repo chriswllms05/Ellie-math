@@ -320,6 +320,9 @@
       mat: { q: ramp('#3a5aa8'), k: ramp('#2b2b3a'), h: ramp('#3a2418'), s: ramp('#c98a6c'), y: ramp('#e2ae52'), d: ramp('#3a3a4e'), f: ramp('#6b4430') } }),
     pip: () => ({ rows: ['....ssss', '..sSssss', '.sSsssss', '.sssssss', 'wsssssss', 'wwssssss', 'wwsswess', 'wwsseess', 'wwscssss', '.wsswwww', '.wwwwwww', '..wwwwww', '...wwwww', '..bv.www', '.bvvvvbb', '.bvvVvbb', '.svvvvbb', '..vvvvvv', '.ppppppp', '.....pp.', '....fff.'],
       mat: { s: ramp('#f2c49c'), w: ramp('#e8e8f0'), v: ramp('#7a4a2a'), b: ramp('#c8d4ea'), p: ramp('#6a6a7a'), f: ramp('#6b4430') } }),
+    // Tom the carpenter: a flat cap, a beard, a leather apron over a checked shirt
+    tom: () => ({ rows: ['....qqqq', '..qqQQqq', '.qqQqqqq', 'kkkkkkkk', '.hhsssss', '.hsswess', '.hsseess', '.hscssss', '.hhhsssm', '..hhhhhh', '....hhhh', '..bbbbbb', '.bbaaaaa', '.bbaAaaa', '.sbaayaa', '..aaaaaa', '.ppppppp', '.....pp.', '....fff.'],
+      mat: { q: ramp('#6a5a4a'), k: ramp('#4a3e34'), h: ramp('#9a5a2a'), s: ramp('#e0a882'), b: ramp('#3f7a8a'), a: ramp('#b88a5a'), y: ramp('#8a8a96'), p: ramp('#4a4a5a'), f: ramp('#6b4430') } }),
     rosa: () => ({ rows: ['.....yyy', '...yYYyy', '..yYyyyy', '..rrrrrr', 'yyyyyyyy', '.hhhhhhh', '.hhsssss', '.hsswess', '.hsseess', '.hscssss', '.hhssssm', 'hhhhssss', 'hh....ss', '..bbbbbb', '.bbaaaaa', '.bbaAaaa', '.sbaaaaa', '..aaaaaa', '.ppppppp', '.....ss.', '....fff.'],
       mat: { y: ramp('#e2ae52'), r: ramp('#b84a3e'), h: ramp('#a84a2a'), s: ramp('#f2c49c'), b: ramp('#4f8a5b'), a: ramp('#f4efe2'), p: ramp('#4f8a5b'), f: ramp('#6b4430') } }),
   };
@@ -352,6 +355,8 @@
     { id: 'kitten', name: "Mr. Pip's kitten", cost: 0, paint: 'orange', gift: 'market' },
     { id: 'mailbox', name: "Mo's mailbox", cost: 0, paint: 'blue', gift: 'post' },
     { id: 'cake', name: "Bea's cake", cost: 0, paint: 'pink', gift: 'bakery' },
+    { id: 'wheelbarrow', name: "Tom's wheelbarrow", cost: 0, paint: 'red', gift: 'workshop' },
+    { id: 'kite', name: 'The village kite', cost: 0, paint: 'yellow', gift: 'notes' },
   ];
   const ITEM = Object.fromEntries(ITEMS.map(i => [i.id, i]));
   // x,y = top-left of the cell
@@ -372,6 +377,9 @@
       case 'kitten': sh(7, 6); sprite(x + 1, y + 4, ['..o...o.........', '.oOo.oOo........', '.oOOOOOo........', 'oOeOOOeOo.......', 'oOOOnOOOo.......', '.oOOOOOo....t...', '..oOOOOo.....t..', '.oOOOOOOo....t..', '.oOLLOOOOottt...', '.oOLLOOOOOOo....', '..oooooooooo....'], { o: pd, O: pb, L: pl, e: '#2b2433', n: '#f08a8a', t: pd }); break;
       case 'cake': sh(8, 6); R(x + 3, y + 13, 10, 1, C.k1); R(x + 7, y + 13, 2, 3, C.k2); sprite(x + 2, y + 3, ['.....yy.....', '.....r......', '..wwwwwwww..', '.wLLwwwwwww.', '.pppppppppp.', '.PPPPPPPPPP.', '.wwwwwwwwww.', '.pppppppppp.', '.dddddddddd.', '..........'], { y: '#ffe066', r: '#e8473f', w: '#fff7f0', L: '#ffffff', p: pb, P: pl, d: pd }); break;
       case 'mailbox': sh(8, 4); R(x + 7, y + 8, 2, 8, C.k2); R(x + 7, y + 8, 1, 8, C.k3); sprite(x + 3, y + 1, ['..bbbbbb..', '.bBBBBBBb.', 'bBLLBBBBBb', 'bBBBBBBBBb', 'bBBBBBBBBb', 'bbbbbbbbbb'], { b: pd, B: pb, L: pl }); R(x + 12, y, 1, 5, C.k1); R(x + 12, y, 3, 2, '#e8473f'); R(x + 5, y + 4, 4, 1, pd); break;
+      case 'wheelbarrow': sh(8, 7); sprite(x, y + 6, ['..............k', 'llllllllllkkk..', 'bbbbbbbbbb.....', '.bbbbbbbbb.....', '..ddddddd......', '..oOo...k......', '.oO.Oo..k......', '..oOo..........'], { l: pl, b: pb, d: pd, k: C.k1, o: C.s0, O: C.s2 }); break;
+      case 'kite': sh(8, 2); R(x + 7, y + 9, 1, 7, C.k1); sprite(x + 3, y, ['....b....', '...bbl...', '..bbbll..', '.bbbblll.', 'bbbbkllll', '.ddddbbb.', '..dddbb..', '...ddb...', '....k....'].map(r => r.padEnd(9, '.')), { b: pb, l: pl, d: pd, k: C.k1 });
+        [[5, 11], [9, 13]].forEach(([a, b]) => { P(x + a, y + b, '#e8473f'); P(x + a + 1, y + b, '#e8473f'); P(x + a - 1, y + b - 1, '#e8473f'); }); line(x + 7, y + 9, x + 5, y + 11, C.k3); line(x + 7, y + 12, x + 9, y + 13, C.k3); break;
       case 'flag': sh(5, 3); R(x + 4, y + 1, 1, 15, C.k1); P(x + 4, y, C.y4); sprite(x + 5, y + 2, ['FFFFFFFF', 'FLLFFFFd', 'FFFFFFd.', 'FFFFFFFF', 'dddddddd'], { F: pb, L: pl, d: pd }); break;
       case 'doghouse': sh(8, 8); sprite(x, y + 1, ['......rr........', '.....rRRr.......', '....rRRRRr......', '...rRLRRRRr.....', '..rRLRRRRRRr....', '.rrrrrrrrrrrr...', '..wwwwwwwwww....', '..wwwkkkkwww....', '..wwkkkkkkww....', '..wwkkkkkkww....', '..wwkkkkkkww....', '..WWWWWWWWWW....'], { r: pd, R: pb, L: pl, w: C.k3, W: C.k2, k: C.k0 });
         sprite(x + 10, y + 7, ['.ee...', 'eaaa..', 'aaaan.', 'aaaa..', '.a.a..'], { a: '#e8c08a', e: '#9a6a3a', n: '#2b2433' }); P(x + 12, y + 8, '#2b2433'); break;

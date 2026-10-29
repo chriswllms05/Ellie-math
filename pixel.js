@@ -172,6 +172,53 @@
     }); };
     // ---- Dot: a little glowing wisp with Dot's face ----
     k.dot = (cx, cy) => add(999, () => k.drawDot(cx, cy), false);
+    // ---- close-ups: people at 16x21, auto-shaded from a material map (outline and shade bottom right, light top left) ----
+    // rows are the left half (mirrored) or a full 16; mat maps a letter to a 4-color ramp [outline, shade, base, light];
+    // an uppercase letter forces that material's light. e w c m are eye, eye shine, cheek, mouth.
+    k.chibi = (x, y, rows, mat, opt = {}) => {
+      rows = rows.map(r => r.length >= 16 ? r : r + [...r].reverse().join('').replace(/ew/g, 'we'));
+      if (opt.flip) rows = rows.map(r => [...r].reverse().join('').replace(/we/g, 'ew'));
+      const n = rows.length, top = y - n - (opt.bob || 0), at = (i, j) => (j < 0 || j >= n || i < 0 || i >= 16) ? '.' : rows[j][i], solid = (i, j) => at(i, j) !== '.';
+      const FIX = { e: '#2b2433', w: '#ffffff', c: '#f2938a', m: '#a8433f' };
+      if (!opt.noShadow) shadowEll(x + 8, y, 7, 2);
+      for (let j = 0; j < n; j++) for (let i = 0; i < 16; i++) {
+        let ch = rows[j][i]; if (ch === '.') continue;
+        if (opt.blink && (ch === 'e' || ch === 'w') && at(i, j - 1).toLowerCase() !== 'e' && at(i, j - 1) !== 'w') ch = 's';
+        if (FIX[ch]) { P(x + i, top + j, FIX[ch]); continue; }
+        const lo = ch.toLowerCase(), ramp = mat[lo]; if (!ramp) continue;
+        let c = ramp[2];
+        if (ch !== lo) c = ramp[3];
+        else if (!solid(i + 1, j) || !solid(i, j + 1)) c = ramp[0];
+        else if (!solid(i - 1, j) || !solid(i, j - 1)) c = ramp[1];
+        else { let r = 0; while (at(i + r + 1, j).toLowerCase() === lo) r++; let l = 0; while (at(i - l - 1, j).toLowerCase() === lo) l++;
+          if (r <= 1 && l > 2) c = ramp[1]; else if (at(i, j + 1).toLowerCase() !== lo && lo !== 's') c = ramp[1]; else if (l === 0 && at(i, j - 1).toLowerCase() !== lo) c = ramp[3]; }
+        P(x + i, top + j, c);
+      }
+    };
+    k.apple = (x, y, kind = 'red') => sprite(x, y, ['..k..', '.rlr.', 'rLrrr', 'rrrrd', '.rdd.'], { k: C.k1, l: C.l3, ...APPLES[kind] });
+    // a woven basket, n apples heaped in it; x,y = bottom left, 22 wide
+    k.basket = (x, y, n, kind = 'red') => {
+      shadowEll(x + 11, y, 12, 2);
+      for (let i = 0; i < n; i++) { const row = Math.floor(i / 4), col = i % 4; k.apple(x + 3 + col * 4 + (row % 2) * 2, y - 15 - row * 3 + (col % 2), kind); }
+      for (let j = 0; j < 9; j++) { const ins = j > 6 ? j - 6 : 0; for (let i = ins; i < 22 - ins; i++) P(x + i, y - 9 + j, (i + (j >> 1)) % 3 === 0 ? C.k1 : j % 2 ? C.k2 : C.k3); }
+      R(x - 1, y - 10, 24, 2, C.k3); R(x - 1, y - 10, 24, 1, C.k4); R(x - 1, y - 8, 24, 1, C.k1);
+    };
+    // a crate of ten (two rows of 5), the orchard's ten-frame. cells: 'a' 'b' apple kinds, 'c' a moved apple (gold), 'e' empty
+    k.crate10 = (x, y, cells) => {
+      shadowEll(x + 19, y + 1, 20, 2);
+      R(x, y - 18, 38, 18, C.k1); R(x + 1, y - 17, 36, 16, C.k2); R(x + 1, y - 17, 36, 1, C.k3); R(x + 1, y - 9, 36, 1, C.k1);
+      for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) { const cx = x + 2 + c * 7, cy = y - 16 + r * 8, v = cells[r * 5 + c]; R(cx, cy, 6, 6, C.k0); if (v && v !== 'e') k.apple(cx, cy, v === 'a' ? 'red' : v === 'b' ? 'green' : 'gold'); }
+    };
+    // a wooden sign on two posts; returns its face [x, y, w, h] for the words drawn over it
+    k.sign = (x, y, w, h) => {
+      shadowEll(x + w / 2, y, w / 2 + 2, 2);
+      R(x + 6, y - 16, 3, 16, C.k1); R(x + w - 9, y - 16, 3, 16, C.k1); R(x + 6, y - 16, 1, 16, C.k2); R(x + w - 9, y - 16, 1, 16, C.k2);
+      const top = y - 16 - h; R(x, top, w, h, C.k1);
+      for (let j = 1; j < h - 1; j++) R(x + 1, top + j, w - 2, 1, j % 6 === 0 ? C.k2 : j % 6 === 1 ? C.k4 : C.d3);
+      for (let i = 0; i < 12; i++) P(x + 2 + Math.floor(hash(i, x, 3) * (w - 4)), top + 2 + Math.floor(hash(i, y, 4) * (h - 4)), C.d2);
+      [[2, 2], [w - 3, 2], [2, h - 3], [w - 3, h - 3]].forEach(([a, b]) => P(x + a, top + b, C.s2));
+      return [x + 1, top + 1, w - 2, h - 2];
+    };
     k.smoke = (x, y) => add(998, () => { [[0, 0, 2], [2, -5, 3], [0, -11, 3], [3, -17, 4]].forEach(([a, b, r], i) => { ell(x + a, y + b, r, r - (r > 2 ? 1 : 0), i > 2 ? 'rgba(255,255,255,.55)' : '#f3f1f6'); P(x + a + r - 1, y + b + 1, '#cfcbd8'); }); });
     return k;
   }
@@ -222,6 +269,18 @@
     const gr = c.createRadialGradient(CW / 2, CH / 2, CH * .4, CW / 2, CH / 2, CW * .75); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(30,20,45,.28)'); c.fillStyle = gr; c.fillRect(0, 0, CW, CH);
   }
 
+  const APPLES = { red: { r: '#e8473f', L: '#ffb0a0', d: '#a82a33' }, green: { r: '#8cc04a', L: '#d8f0a0', d: '#4f8a2a' }, gold: { r: '#f2c94c', L: '#fff0a0', d: '#c08636' } };
+  // a 4-color ramp from one color: [outline, shade, base, light]
+  const mix = (c, to, f) => { const a = c[0] === '#' ? hex(c) : c.match(/\d+/g).map(Number), b = hex(to); return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * f).toString(16).padStart(2, '0')).join(''); };
+  const ramp = c => [mix(c, '#1a1020', .62), mix(c, '#1a1020', .32), mix(c, '#000000', 0), mix(c, '#ffffff', .35)];
+  // close-up people: her (in her avatar's colors) and the villagers
+  const FACE = ['hhssssss', 'hhsswess', 'hhsseess', 'hhscssss', 'hhhssssm', 'hhhhssss', 'hhh...ss'], FACE_SHORT = ['hhssssss', 'hhsswess', 'hhsseess', 'hhscssss', '.hhssssm', '..hsssss', '......ss'];
+  const CHIBI = {
+    her: (look, long) => ({ rows: ['....hhhh', '..hhhhhh', '.hhHHhhh', '.hHhhhhh', 'hhhhhhhh', 'hhhhshss', ...(long ? FACE : FACE_SHORT), long ? 'hh.bbbbb' : '...bbbbb', long ? 'h.bBbbbb' : '..bBbbbb', '.bbbbbbb', '.sbbbbbb', '..pppppp', '.ppppppp', '.....ss.', '....fff.'],
+      mat: { h: ramp(look.hair), s: ramp(look.skin), b: ramp(look.shirt), p: ramp('#55467a'), f: ramp('#6b4430') } }),
+    rosa: () => ({ rows: ['.....yyy', '...yYYyy', '..yYyyyy', '..rrrrrr', 'yyyyyyyy', '.hhhhhhh', '.hhsssss', '.hsswess', '.hsseess', '.hscssss', '.hhssssm', 'hhhhssss', 'hh....ss', '..bbbbbb', '.bbaaaaa', '.bbaAaaa', '.sbaaaaa', '..aaaaaa', '.ppppppp', '.....ss.', '....fff.'],
+      mat: { y: ramp('#e2ae52'), r: ramp('#b84a3e'), h: ramp('#a84a2a'), s: ramp('#f2c49c'), b: ramp('#4f8a5b'), a: ramp('#f4efe2'), p: ramp('#4f8a5b'), f: ramp('#6b4430') } }),
+  };
   // Her avatar's colors, for her pixel self.
   function herLook() {
     const a = (EM.avatar && EM.avatar.get()) || {}, O = (EM.avatar && EM.avatar.OPTIONS) || {};
@@ -272,5 +331,5 @@
     }
   }
 
-  EM.px = { C, PAINT, ROOF, ITEMS, ITEM, hash, inEll, kit, ground, present, herLook, drawItem };
+  EM.px = { C, PAINT, ROOF, ITEMS, ITEM, hash, inEll, kit, ground, present, herLook, drawItem, CHIBI, ramp };
 })();

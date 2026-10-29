@@ -86,7 +86,18 @@ Dot now speaks with a recorded child voice (Azure neural voice "Ana", slightly f
 - Grown-up area → Voice: **Dot (recorded)** is the default and the first option; the iPad voices are still there.
 - To change lines or the voice: `node tools/voice/collect.js lines.json && node tools/voice/build.js lines.json` (needs the Azure key on the environment; only new lines are recorded). `tools/voice/coverage.js` checks nothing is missing.
 
-## The village comes alive, and it's home (built, not live yet)
+## Coins, Rosa's orchard, and Dot's guide (built, not live yet)
+
+- **Coins are the one kind of money.** Her fish became coins, one for one. Fishing now sells each fish for a coin; Rosa pays a coin for each apple job. Prices in the yard are in coins.
+- **The orchard (adding):** Rosa stands by her apple trees on the map. Tap her (or **🍎 Help Rosa**) and the camera moves in close. Apples drop into two baskets, hers and Rosa's, and Rosa asks "You picked 8. I picked 5. How many apples in all?" The sum is on a wooden sign in the orchard, and the number she types appears on it. Five right answers fill Rosa's baskets.
+- It runs on the real engine: the addition facts she has open (+1 +2, Doubles, Ten and More, Facts to 10, Near Doubles, Make a 10; no facts with a 0), graded with `gradeFact`. Only right, unrushed answers pay; misses come back a few apples later; the first question each round is read aloud, and its clock starts after Rosa finishes talking. Sessions show in the grown-up area as "Picking apples with Rosa".
+- **Help happens in the orchard.** "I don't know" or a miss turns the baskets into crates of ten: for 8 + 5, 8 red apples and 2 gold ones fill a crate, and 3 green ones sit in the next. Dot uses practice's own strategy words, with "frame" and "dots" said as "crate" and "apples".
+- **The job screen is built for a landscape iPad:** the scene fills the screen, numbers are under her right thumb, "hear it" and "I don't know" under her left, coins and the goal (apples that fill in) top left, back to the village top right.
+- **Dot's guide:** a "Next job" note pinned beside her coins, and a bouncing marker on the place: catch fish, buy something for your yard, read the note on the board, help Rosa, do today's practice. Tapping the note walks her there. Dot also says it when she comes back to the village, and when she taps Dot.
+- **Sharper pixels:** the village is drawn at the screen's real resolution, and when the camera rests, every scene pixel is the same whole number of screen pixels. Close-ups use bigger, shaded characters (she and Rosa are 16 x 21 pixels, with eye shine).
+- Words: "package", not "parcel"; "coins back", not "change". See "Words she knows" in `DESIGN-v2.md`.
+
+## The village comes alive, and it's home (live)
 
 After a weekend of use: the village felt like wallpaper, the home screen felt disconnected from it, and the copy didn't build any attachment. Changes:
 - **The village is home.** No world picker any more: a new player builds an avatar and arrives in the village. Today's practice, the evening review and "pick a skill" live on a **notice board** in the village (a "!" floats over it when something is waiting). Summaries return to the village. Grown-ups: press and hold the small button in the bottom-right corner.

@@ -45,18 +45,24 @@ const server = http.createServer((req, res) => { let p = decodeURIComponent(req.
     EM.SKILLS.forEach(sk => { add(`${sk.name}, next level!`); add(`New skill unlocked. ${sk.name}.`); });
     // village.js lines: the arrival story, planks, the board, Dot's hints, building, fishing
     ["Oh! You made it! I'm Dot. I've been waiting so long for someone new to come live here.", 'This little house is yours now. Look, I already lit the lamps for you.',
-      "And this is your yard. It's a bit empty... for now. You can fill it with anything you like.", 'Everyone here trades with fish. Catch fish in the pond, and you can trade them for flowers, a bench, even a wishing well.',
+      "And this is your yard. It's a bit empty... for now. You can fill it with anything you like.", 'Everyone here pays with coins. Catch fish in the pond and sell them. Then you can buy flowers, a bench, even a wishing well.', "That's Rosa's orchard. She always needs help picking apples, and she pays in coins too.",
       "And see that old bridge? It broke a long, long time ago. Nobody knows what's on the other side...", 'Every time you really learn a make 10 fact, we can fix one plank. Eight planks, and we can cross!',
       "Let's catch your very first fish. Tap the pond!", 'I pinned a note on the board for you. Tap it!', 'Tap the pond to catch some fish!', "Today's practice is on the board.",
       'The last plank!', 'The bridge is fixed! The meadow is open. Look, sheep!', 'The bridge is fixed! Tap the meadow to build there.',
-      'Fish are money here. Catch them at the pond!', 'Tap your yard to put things in it.', "Check the notice board for today's practice.",
-      'Flowers cost 2 fish. Pick them, then tap a spot in your yard.', "You need fish to buy things. Let's go fishing!", 'Your yard is starting to look like home!',
+      'Tap your yard to put things in it.', 'Rosa needs help in the orchard. Tap her!', 'Help Rosa or go fishing to earn coins.',
+      'Flowers cost 2 coins. Pick them, then tap a spot in your yard.', "You need coins to buy things. Let's go earn some!", 'Your yard is starting to look like home!',
       'Your yard is starting to look like home! One more thing: I pinned a note on the board for you.', 'Tap an empty spot.',
       'Whoa, too fast! It slipped away. Think first, then tap.', "Oops, it got away. Let's figure it out together.", "Good idea to ask. Let's look together.",
-      'Your very first fish!', 'Basket full! 5 fish!', 'Basket full! 3 fish!'].forEach(add);
+      'Your very first fish!', 'Basket full! 5 fish!', 'Basket full! 3 fish!', "Rosa's baskets are full!"].forEach(add);
     for (let n = 0; n <= 8; n++) { add(`A new plank! ${n} of 8. Every make 10 fact you know fixes one more.`); add(`${n} of 8 planks fixed. Every make 10 fact you really know fixes one more.`); add(`${n} of 8 bridge planks fixed. Make 10 facts fix them!`); }
-    for (const c of [2, 3, 4, 5, 6, 9, 10]) for (const n of [0, 1, 5, 12]) add(`That costs ${c} fish. You have ${n}. Let's catch more!`);
-    for (const n of [2, 7, 23]) add(`You have ${n} fish. Tap your yard to spend them!`);
+    for (const c of [2, 3, 4, 5, 6, 9, 10]) for (const n of [0, 1, 5, 12]) add(`That costs ${c} coins. You have ${n}. Let's earn more!`);
+    for (const n of [2, 7, 23]) add(`You have ${n} coins. Tap your yard to spend them!`);
+    // the orchard: Rosa's questions, and practice's help with frames and dots as crates and apples (see village.js)
+    const orchWords = t => String(t).replace(/\bframes\b/g, 'crates').replace(/\bframe\b/g, 'crate').replace(/\bdots\b/g, 'apples').replace(/\bdot\b/g, 'apple').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot');
+    const leads = ['Whoa, too fast! Think first, then tap.', "Not quite. Let's count them together.", "Good idea to ask. Let's look together."];
+    for (const k of Object.keys(EM.FACTS)) { const f = EM.FACTS[k]; if (f.type !== 'add' || !f.a || !f.b) continue;
+      add(`You picked ${f.a}. I picked ${f.b}. How many apples in all?`); add(`Your basket has ${f.a}. Mine has ${f.b}. How many apples altogether?`); add(`Yes! ${f.a} and ${f.b} make ${f.ans}.`);
+      const it = EM.factItem(k, 'normal'); for (const stage of [1, 2]) { const say = orchWords(it.help(0, stage).say); add(say); leads.forEach(l => add(`${l} ${say}`)); } }
     for (let a = 0; a <= 10; a++) { add(`Yes! ${a} and ${10 - a} make 10.`); add(`${a} + ${10 - a} = 10 is yours now!`); add(`This fish has ${a}. How many more make 10?`); add(`This fish has ${a}. How many more make 10? Tap the number, then the check.`); }
     const GROW = { garden: ['sprout', 'sprouts'], ocean: ['egg', 'eggs'], space: ['baby star', 'baby stars'], classroom: ['outline', 'outlines'] };
     const was = EM.S && EM.S.theme;

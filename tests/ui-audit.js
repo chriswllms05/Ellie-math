@@ -35,7 +35,8 @@ function audit() {
     const el = n.parentElement; if (!el || seen.has(el) || ['SCRIPT', 'STYLE', 'TITLE'].includes(el.tagName) || el.closest('svg')) continue; seen.add(el);
     if (!visible(el)) continue;
     const s = getComputedStyle(el), fg = parse(s.color); if (!fg) continue;
-    const { bg, overArt } = bgOf(el), f = blend(fg, bg);
+    let { bg, overArt } = bgOf(el); if (el.closest('.jsign') && !el.closest('.slot')) { bg = { r: 217, g: 177, b: 124, a: 1 }; overArt = false; } // the sign's wood is drawn on the canvas
+    const f = blend(fg, bg);
     const L1 = lum(f), L2 = lum(bg), ratio = (Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05);
     const size = parseFloat(s.fontSize), bold = Number(s.fontWeight) >= 700, large = size >= 24 || (size >= 18.6 && bold);
     const need = large ? 3 : 4.5, shadow = s.textShadow && s.textShadow !== 'none';
@@ -44,7 +45,7 @@ function audit() {
     if (r.right > innerWidth + 1 || r.left < -1) out.push({ kind: 'offscreen', text: t.slice(0, 60), sel: el.className || el.tagName });
   }
   // wide content cut off by its column (an equation pushing the answer box under the keypad)
-  document.querySelectorAll('.eq, .vq, .vnote, .vcard, .vpanel').forEach(el => { if (!visible(el)) return; const p = el.parentElement, r = el.getBoundingClientRect(), pr = p.getBoundingClientRect(); if (el.scrollWidth > el.clientWidth + 2 || r.right > pr.right + 2 || r.right > innerWidth + 1) out.push({ kind: 'clipped', text: el.textContent.trim().slice(0, 40), sel: el.className }); });
+  document.querySelectorAll('.eq, .vq, .vnote, .vcard, .vpanel, .jbub, .jsign').forEach(el => { if (!visible(el)) return; const p = el.parentElement, r = el.getBoundingClientRect(), pr = p.getBoundingClientRect(); if (el.scrollWidth > el.clientWidth + 2 || r.right > pr.right + 2 || r.right > innerWidth + 1) out.push({ kind: 'clipped', text: el.textContent.trim().slice(0, 40), sel: el.className }); });
   // tap targets: buttons smaller than 40x40 css px
   document.querySelectorAll('button, [data-act], [data-v], [data-b]').forEach(b => { if (!visible(b)) return; const r = b.getBoundingClientRect(); if ((r.width < 40 || r.height < 36) && b.textContent.trim().length < 30) out.push({ kind: 'small-target', text: (b.textContent.trim() || b.getAttribute('aria-label') || '').slice(0, 30), w: Math.round(r.width), h: Math.round(r.height), sel: b.className }); });
   return out;
@@ -68,7 +69,7 @@ function audit() {
     await check('01-avatar');
     await page.fill('#avName', 'Mia'); await page.click('[data-av-done]');
     await page.waitForSelector('.vdialog'); await check('02-story', 1500);
-    await page.evaluate(() => { EM.village.state().introDone = true; EM.village.state().fish = 40; EM.save(); EM.go('home'); });
+    await page.evaluate(() => { EM.village.state().introDone = true; EM.village.state().coins = 40; EM.save(); EM.go('home'); });
     await check('03-village', 900);
     await tapScene(150, 150); await page.waitForSelector('.vtray'); await check('04-build-tray', 1500);
     await page.click('[data-item=flowers]'); await tapScene(162, 150); await page.waitForTimeout(300); await page.click('[data-item=flowers]'); await tapScene(162, 150);
@@ -81,6 +82,10 @@ function audit() {
     await page.click('[data-v=fidk]'); await check('08-fishing-help');
     await page.evaluate(() => { const ans = EM.village._fish().f.ans; });
     await page.click('[data-v=stopfish]'); await page.waitForTimeout(1500);
+    await page.click('[data-v=orchard]'); await page.waitForSelector('.orchard', { timeout: 10000 });
+    await page.waitForFunction(() => EM.village._orch() && EM.village._orch().phase === 'ask' && !EM.village._orch().waitSpeech, null, { timeout: 10000 }); await check('09a-orchard', 400);
+    await page.click('[data-v=jidk]'); await check('09b-orchard-help', 700);
+    await page.click('[data-v=leavejob]'); await page.waitForTimeout(1500);
     // practice screens, placement, summary, break, skills, grown-ups
     const show = async (name, item, step = 0, help = 0, typed) => {
       await page.evaluate(({ item, step, help, typed }) => {

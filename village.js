@@ -1,7 +1,8 @@
-/* Ellie Math — her village (v2): the home of the app. A living pixel world she walks around in, a fishing job that runs
-   on the real fact engine, a yard she builds and paints, a bridge that gets one plank for every make-10 fact that becomes
-   hers, and a notice board with today's practice. See DESIGN-v2.md.
-   Fishing follows the v1 honesty rules: only right, unrushed answers catch a fish; "I don't know" is safe and opens help;
+/* Ellie Math — her village (v2): the home of the app. A living pixel world she walks around in, jobs that run on the
+   real fact engine (fishing at the pond, picking apples with Rosa in the orchard), a yard she builds and paints, a bridge
+   that gets one plank for every make-10 fact that becomes hers, and a notice board with today's practice. Coins are the
+   one kind of money. Dot keeps a "next job" note pinned up so she always knows what to do. See DESIGN-v2.md.
+   Jobs follow the v1 honesty rules: only right, unrushed answers pay; "I don't know" is safe and opens help;
    facts are graded with gradeFact exactly like practice. Building has no math in it.
    Drawing: the still world is baked once (with tall things cut out as occluders); everything that moves is drawn each
    frame on top, at the small pixel size, then scaled up crisply through a camera that can pan and zoom. */
@@ -10,7 +11,7 @@
   const EM = window.EM, px = EM.px, C = px.C;
   const W = 300, H = 210;
   const S = () => EM.S;
-  const V = () => { const s = S(); if (!s.village) s.village = { fish: 0, placed: [], open: {}, caught: 0, rounds: 0 }; const v = s.village; if (v.planks === undefined) v.planks = Math.min(8, meadowProgress().have); return v; };
+  const V = () => { const s = S(); if (!s.village) s.village = { coins: 0, placed: [], open: {}, caught: 0, rounds: 0 }; const v = s.village; if (v.coins === undefined) { v.coins = v.fish || 0; delete v.fish; } if (v.planks === undefined) v.planks = Math.min(8, meadowProgress().have); return v; };
   const esc = EM.esc, PAINTS = Object.keys(px.PAINT);
   const MEADOW_SKILL = 'm10', PLANKS = 8;
   const NAME = () => ((S() && S().name) || '').trim();
@@ -27,14 +28,15 @@
   const MEADOW = { x: 222, y: 10, cols: 4, rows: 2 };          // across the bridge
   const DOCK = [106, 137, 30, 9];
   const BOARD = [178, 110];                                     // notice board (left post x, base y)
-  const PATHS = [[118, 112, 116, 9], [134, 112, 9, 34], [244, 52, 9, 62]];
+  const PATHS = [[118, 112, 116, 9], [134, 112, 9, 34], [244, 52, 9, 62], [94, 112, 26, 9]];
+  const ORCHARD = [14, 44, 80, 62], ROSA = [82, 110];             // Rosa's orchard on the map, and where she stands
   const inRect = (x, y, [rx, ry, rw, rh]) => x >= rx && x < rx + rw && y >= ry && y < ry + rh;
   const area = id => id === 'meadow' ? MEADOW : YARD;
   const cellAt = (x, y) => { for (const id of ['plot', 'meadow']) { const a = area(id); if (id === 'meadow' && !V().open.meadow) continue; const cx = Math.floor((x - a.x) / 16), cy = Math.floor((y - a.y) / 16); if (cx >= 0 && cy >= 0 && cx < a.cols && cy < a.rows) return { area: id, cx, cy }; } return null; };
   const placedAt = c => V().placed.find(p => p.area === c.area && p.cx === c.cx && p.cy === c.cy);
-  // where she can walk: a route along the paths, plus free walking on grass
-  const ROUTE = [[114, 144], [138, 141], [138, 118], [166, 118], [190, 118], [244, 118], [248, 98], [248, 82]];
-  const STOP = { dock: 0, yard: 3, board: 4, home: 5, bridge: 7 };
+  // where she can walk: stops joined by paths (she takes the shortest way), plus free walking on grass
+  const NODES = { dock: [114, 144], bend: [138, 141], cross: [138, 118], yard: [166, 118], board: [190, 118], home: [244, 118], hill: [248, 98], bridge: [248, 82], orchard: [98, 116] };
+  const EDGES = [['dock', 'bend'], ['bend', 'cross'], ['cross', 'yard'], ['yard', 'board'], ['board', 'home'], ['home', 'hill'], ['hill', 'bridge'], ['cross', 'orchard']];
   const CAM_FULL = { x: 0, y: 0, w: W, h: H };
   const camAround = (cx, cy, w) => ({ x: Math.max(0, Math.min(W - w, cx - w / 2)), y: Math.max(0, Math.min(H - w * H / W, cy - w * H / W / 2)), w, h: w * H / W });
 
@@ -48,9 +50,19 @@
   const scaleFor = () => Math.max(3, Math.min(6, Math.round(coverSize().w * (window.devicePixelRatio || 1) / W)));
   function fit() { const st = document.getElementById('vstage'); if (!st) return; const c = coverSize(); Object.assign(st.style, { width: c.w + 'px', height: c.h + 'px', left: c.left + 'px', top: c.top + 'px' }); }
   window.addEventListener('resize', fit);
+  // the canvas is drawn at the screen's real pixel size
+  const bufSize = () => { const st = document.getElementById('vstage'), d = window.devicePixelRatio || 1; return st ? [Math.round(st.clientWidth * d), Math.round(st.clientHeight * d)] : [W, H]; };
+  // What the camera shows. At rest it snaps so every scene pixel is a whole number of screen pixels, all the same size:
+  // crisp pixel art at any zoom. While it moves, it glides.
+  function viewCam(sc, DW, DH) {
+    const c = sc.cam; if (sc.camTween) return c;
+    const ppx = Math.max(Math.round(DW / c.w), Math.ceil(DW / W), Math.ceil(DH / H)), w = DW / ppx, h = DH / ppx;
+    const x = Math.round(Math.max(0, Math.min(W - w, c.x + (c.w - w) / 2)) * ppx) / ppx, y = Math.round(Math.max(0, Math.min(H - h, c.y + (c.h - h) / 2)) * ppx) / ppx;
+    return { x, y, w, h };
+  }
   // scene point -> stage pixels, through the camera
-  const toStage = (x, y) => { const st = document.getElementById('vstage'); if (!st || !scene) return [0, 0]; const cam = scene.cam, w = st.clientWidth, h = st.clientHeight; return [(x - cam.x) / cam.w * w, (y - cam.y) / cam.h * h]; };
-  const toScene = (e) => { const st = document.getElementById('vstage'), r = st.getBoundingClientRect(), cam = scene.cam; return [cam.x + (e.clientX - r.left) / r.width * cam.w, cam.y + (e.clientY - r.top) / r.height * cam.h]; };
+  const toStage = (x, y) => { const st = document.getElementById('vstage'); if (!st || !scene) return [0, 0]; const cam = scene.view || scene.cam, w = st.clientWidth, h = st.clientHeight; return [(x - cam.x) / cam.w * w, (y - cam.y) / cam.h * h]; };
+  const toScene = (e) => { const st = document.getElementById('vstage'), r = st.getBoundingClientRect(), cam = scene.view || scene.cam; return [cam.x + (e.clientX - r.left) / r.width * cam.w, cam.y + (e.clientY - r.top) / r.height * cam.h]; };
   const place = (el, x, y) => { if (!el) return; const [sx, sy] = toStage(x, y); el.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px)`;
     // a speech bubble opens toward the side of the screen with room (and away from the build tray on the left)
     if (el.id === 'vbubble') { const st = document.getElementById('vstage'), r = st.getBoundingClientRect(), screenX = r.left + sx; el.classList.toggle('flip', screenX < window.innerWidth * (mode === 'build' ? .62 : .45)); } };
@@ -61,6 +73,9 @@
     if (opts.voice !== false && EM.speech) EM.speech.say(t);
   };
   const look = () => px.herLook();
+  let coinSrc = null;
+  const COIN = () => `<img class="vcoin" alt="coins" src="${coinSrc || (coinSrc = (() => { const c = document.createElement('canvas'); c.width = 8; c.height = 8; px.kit(c.getContext('2d')).sprite(0, 0, ['..oooo..', '.oyyyyo.', 'oyYYyyyo', 'oyYyyyyd', 'oyyyyyyd', 'oyyyyydd', '.oyyydd.', '..oooo..'], { o: '#8c5a28', y: '#f2c94c', Y: '#fff0a0', d: '#c08636' }); return c.toDataURL(); })())}">`;
+  function showCoins() { const el = document.getElementById('vcoins'); if (!el) return; const b = el.querySelector('b'), n = String(V().coins); if (b && b.textContent !== n) { b.textContent = n; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } }
   const sfx = n => { try { EM.sfx && EM.sfx[n] && EM.sfx[n](); } catch (e) {} };
 
   // ---------- the living scene: baked still layer + things that move ----------
@@ -97,16 +112,16 @@
       const k = sc.fk, tn = now();
       sc.particles = sc.particles.filter(p => { const a = (tn - p.t0) / 1000; if (a * 1000 > p.life) return false; const x = p.x + p.vx * a, y = p.y + p.vy * a + .5 * p.g * a * a; k.R(Math.round(x), Math.round(y), p.s, p.s, p.c); return true; });
       // to the screen, through the camera
-      const cv = document.getElementById('vcanvas'), DW = W * sc.S, DH = H * sc.S;
-      if (cv.width !== DW) { cv.width = DW; cv.height = DH; }
-      const dc = cv.getContext('2d'), cam = sc.cam, s = sc.S;
+      const cv = document.getElementById('vcanvas'), [DW, DH] = bufSize();
+      if (cv.width !== DW || cv.height !== DH) { cv.width = DW; cv.height = DH; }
+      const dc = cv.getContext('2d'), cam = sc.view = viewCam(sc, DW, DH), s = sc.S;
       dc.imageSmoothingEnabled = false; dc.globalCompositeOperation = 'source-over';
       dc.drawImage(sc.frame, cam.x, cam.y, cam.w, cam.h, 0, 0, DW, DH);
       dc.globalCompositeOperation = 'soft-light'; dc.drawImage(sc.light, cam.x * s, cam.y * s, cam.w * s, cam.h * s, 0, 0, DW, DH);
       dc.globalCompositeOperation = 'lighter'; dc.drawImage(sc.glow, cam.x * s, cam.y * s, cam.w * s, cam.h * s, 0, 0, DW, DH);
       if (sc.dotAt) { const [x, y] = sc.dotAt, gx = (x - cam.x) / cam.w * DW, gy = (y - cam.y) / cam.h * DH, r = 16 * DW / cam.w, q = dc.createRadialGradient(gx, gy, 0, gx, gy, r); q.addColorStop(0, 'rgba(255,190,110,.32)'); q.addColorStop(1, 'rgba(0,0,0,0)'); dc.fillStyle = q; dc.fillRect(gx - r, gy - r, 2 * r, 2 * r); }
       dc.globalCompositeOperation = 'source-over';
-      if (!sc.vig || sc.vig.width !== DW) { sc.vig = document.createElement('canvas'); sc.vig.width = DW; sc.vig.height = DH; const c = sc.vig.getContext('2d'), gr = c.createRadialGradient(DW / 2, DH / 2, DH * .4, DW / 2, DH / 2, DW * .75); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(30,20,45,.28)'); c.fillStyle = gr; c.fillRect(0, 0, DW, DH); }
+      if (!sc.vig || sc.vig.width !== DW || sc.vig.height !== DH) { sc.vig = document.createElement('canvas'); sc.vig.width = DW; sc.vig.height = DH; const c = sc.vig.getContext('2d'), gr = c.createRadialGradient(DW / 2, DH / 2, DH * .4, DW / 2, DH / 2, DW * .75); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(30,20,45,.28)'); c.fillStyle = gr; c.fillRect(0, 0, DW, DH); }
       dc.drawImage(sc.vig, 0, 0);
       if (sc.after) sc.after(tn);
     };
@@ -160,9 +175,12 @@
       if (laid < PLANKS) { k.R(x + 18, y + 6, 1, 10, C.k1); k.R(x + 15, y + 3, 9, 5, C.k3); k.R(x + 15, y + 3, 9, 1, C.k4); k.R(x + 16, y + 5, 7, 1, C.k1); } }, false);
     if (open) { const a = MEADOW, x0 = a.x - 4, y0 = a.y - 3, x1 = a.x + a.cols * 16 + 2, y1 = a.y + a.rows * 16 + 4; k.fence(x0, y0, x1, y0); k.fence(x0, y1, x1, y1); k.fence(x0, y0, x0, y1); k.fence(x1, y0, x1, y1); }
     { const a = YARD, x0 = a.x - 4, y0 = a.y - 3, x1 = a.x + a.cols * 16 + 2, y1 = a.y + a.rows * 16 + 4; k.fence(x0, y0, x1, y0); k.fence(x0, y1, x1, y1); k.fence(x1, y0, x1, y1); k.fence(x0, y0, x0, y0 + 14); k.fence(x0, y0 + 34, x0, y1); }
-    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [126, 26], [150, 20], [168, 30], [14, 74], [8, 108], [290, 100], [284, 140], [292, 196], [116, 206], [20, 206], [196, 204], [262, 206], [160, 74], [140, 64]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
-    [[106, 86], [206, 128], [60, 92], [276, 172], [130, 190], [222, 196]].forEach(([x, y]) => k.bush(x, y));
-    [[90, 104], [270, 120], [40, 196], [110, 198]].forEach(([x, y]) => k.rock(x, y));
+    // Rosa's orchard: two rows of apple trees, and her crate by the path
+    [[24, 66], [48, 62], [72, 66], [34, 92], [58, 90]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 2), apples: true }));
+    k.crate(90, 112, '#e8473f'); k.crate(70, 106, '#8cc04a');
+    [[10, 22], [28, 16], [46, 26], [66, 18], [86, 24], [106, 16], [126, 26], [150, 20], [168, 30], [8, 108], [290, 100], [284, 140], [292, 196], [116, 206], [20, 206], [196, 204], [262, 206], [160, 74], [140, 64]].forEach(([x, y], i) => k.tree(x, y, { r: 8 + (i % 3), apples: i % 5 === 2 }));
+    [[106, 86], [206, 128], [276, 172], [130, 190], [222, 196]].forEach(([x, y]) => k.bush(x, y));
+    [[270, 120], [40, 196], [110, 198]].forEach(([x, y]) => k.rock(x, y));
     [[18, 140], [21, 142], [112, 176], [115, 178], [100, 120]].forEach(([x, y]) => k.reeds(x, y));
     [[36, 142], [76, 168], [48, 178]].forEach(([x, y], i) => k.lily(x, y, i % 2 === 0));
     if (!open) [[212, 18], [236, 12], [270, 30], [284, 14], [258, 22]].forEach(([x, y]) => k.rock(x, y));
@@ -174,11 +192,12 @@
 
   // her, walking: position, route queue, frames
   const her = { x: 244, y: 118, path: [], flip: false, walkT: 0, then: null, hop: 0, wave: 0 };
-  function routeIndexNear(x, y) { let best = 0, bd = 1e9; ROUTE.forEach(([a, b], i) => { const d = Math.hypot(a - x, b - y); if (d < bd) { bd = d; best = i; } }); return best; }
+  function nodeNear(x, y) { let best = 'dock', bd = 1e9; for (const n in NODES) { const d = Math.hypot(NODES[n][0] - x, NODES[n][1] - y); if (d < bd) { bd = d; best = n; } } return best; }
   function walkTo(stop, then) {
-    const to = STOP[stop], from = routeIndexNear(her.x, her.y), pts = [];
-    if (Math.hypot(ROUTE[from][0] - her.x, ROUTE[from][1] - her.y) > 2) pts.push(ROUTE[from]);
-    if (from <= to) for (let i = from + 1; i <= to; i++) pts.push(ROUTE[i]); else for (let i = from - 1; i >= to; i--) pts.push(ROUTE[i]);
+    const from = nodeNear(her.x, her.y), prev = { [from]: null }, q = [from];
+    while (q.length) { const n = q.shift(); if (n === stop) break; EDGES.forEach(([a, b]) => { const m = a === n ? b : b === n ? a : null; if (m && !(m in prev)) { prev[m] = n; q.push(m); } }); }
+    const pts = []; for (let n = stop; n; n = prev[n]) pts.unshift(NODES[n]);
+    if (pts.length && Math.hypot(pts[0][0] - her.x, pts[0][1] - her.y) <= 2) pts.shift();
     her.path = pts.map(p => [...p]); her.then = then || null;
     if (!pts.length && then) { her.then = null; then(); }
   }
@@ -199,11 +218,11 @@
     $root.innerHTML = `<main class="village full ${build ? 'building' : ''} ${ui.story ? 'story' : ''}">
       <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas>
         <div class="vbubble" id="vbubble"></div>
-        <div class="vmark" id="vboardmark">!</div>
+        <div class="vmark" id="vmark">!</div>
       </div>
-      <div class="vhud vtl"><span class="vpill vfish" id="vfishcount">🐟 <b>${v.fish}</b></span></div>
+      <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${v.coins}</b></span><button class="vguide vpanel" id="vguide" data-v="guide"></button></div>
       <div class="vhud vbr"><button class="vpill vgrown grownup" data-hold="parent"><span class="fillbar"></span>Grown-ups: hold</button></div>
-      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="fish">🎣 Go fishing<span>Fish are money here</span></button><button class="big-btn alt" data-v="build">🔨 Fix up your yard<span>Spend fish on things you like</span></button></div>`}
+      ${build ? buildTray(items, sel) : `<div class="vhud vbl vactions"><button class="big-btn" data-v="orchard">🍎 Help Rosa<span>Pick apples, earn coins</span></button><button class="big-btn" data-v="fish">🎣 Go fishing<span>Sell fish for coins</span></button><button class="big-btn alt" data-v="build">🔨 Fix up your yard<span>Spend your coins</span></button></div>`}
       <div class="vfade" id="vfade"></div>
     </main>`;
     fit();
@@ -213,10 +232,25 @@
     startLoop(drawMap);
     if (!ui.arrived) { ui.arrived = true; arrive(); }
   }
-  function boardAlert() { const s = S(); if (!V().placed.length && !s.placement.done) return false; return !s.placement.done || !(EM.todayDone && EM.todayDone()); }
+  // ---------- Dot's guide: the one next thing to do, pinned at the top and marked on the map ----------
+  function mission() {
+    const v = V(), s = S(), done = EM.todayDone && EM.todayDone(), cheap = Math.min(...px.ITEMS.filter(i => !i.area || v.open[i.area]).map(i => i.cost));
+    const pond = { text: 'Catch fish at the pond', say: 'Tap the pond to catch some fish!', mark: [POND[0] + 30, POND[1] - 24], go: () => walkTo('dock', toFishing) };
+    const yard = { text: 'Buy something for your yard', say: `You have ${v.coins} coins. Tap your yard to spend them!`, mark: [YARD.x + 48, YARD.y - 8], go: () => walkTo('yard', () => enterBuild(null)) };
+    const rosa = { text: 'Help Rosa pick apples', say: 'Rosa needs help in the orchard. Tap her!', mark: [ROSA[0] + 4, ROSA[1] - 22], go: () => walkTo('orchard', toOrchard) };
+    const board = (text, say) => ({ text, say, mark: [BOARD[0] + 9, BOARD[1] - 26], go: () => walkTo('board', openBoard) });
+    if (!v.rounds && !v.placed.length) return pond;
+    if (!v.placed.length) return v.coins >= cheap ? yard : pond;
+    if (!s.placement.done) return board("Read Dot's note on the board", 'I pinned a note on the board for you. Tap it!');
+    if (!v.orchardRounds) return rosa;
+    if (!done) return board("Do today's practice", "Today's practice is on the board.");
+    return v.coins >= 6 ? yard : rosa;
+  }
   function mapOverlays() {
     place(document.getElementById('vbubble'), dot.x, dot.y - 9);
-    const m = document.getElementById('vboardmark'); if (m) { m.classList.toggle('on', boardAlert() && !ui.story && mode !== 'build'); place(m, BOARD[0] + 9, BOARD[1] - 26 - Math.round(Math.sin(now() / 300) * 1.5)); }
+    const m = mission(), show = m && !ui.story && mode !== 'build';
+    const mk = document.getElementById('vmark'); if (mk) { mk.classList.toggle('on', !!show); if (m) place(mk, m.mark[0], m.mark[1] - Math.round(Math.sin(now() / 300) * 1.5)); }
+    const g = document.getElementById('vguide'); if (g) { g.classList.toggle('on', !!show); const t = m ? m.text : ''; if (g.dataset.t !== t) { g.dataset.t = t; g.innerHTML = `${EM.theme.dot('happy', 40)}<span><small>Next job</small>${esc(t)}</span><b>›</b>`; } }
   }
   function drawMap(sc, k, t) {
     const dt = Math.min(.06, (t - (sc.lastT || t)) / 1000); sc.lastT = t;
@@ -234,6 +268,9 @@
     const walking = her.path.length > 0, wf = walking ? [0, 1, 0, 3][Math.floor(her.walkT / .11) % 4] : 0;
     const hop = her.hop > t ? Math.round(Math.sin((her.hop - t) / 400 * Math.PI) * 4) : 0;
     items.push({ y: her.y, box: [Math.round(her.x) - 1, Math.round(her.y) - 20, 11, 21], draw: () => { k.shadowEll(Math.round(her.x) + 4, Math.round(her.y), 4, 1); k.drawPerson(Math.round(her.x), Math.round(her.y), look(), { walk: wf, flip: her.flip, blink: !walking && (t % 3600) < 120, bob: hop, wave: her.wave > t }); } });
+    // Rosa by her orchard, in her straw hat; she waves when helping her is the next job
+    items.push({ y: ROSA[1], box: [ROSA[0] - 2, ROSA[1] - 19, 13, 20], draw: () => { const [x, y] = ROSA; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, ROSA_LOOK, { blink: (t % 3900) < 120, wave: (t % 5200) < 1100 && (mission() || {}).text === 'Help Rosa pick apples' });
+      k.R(x + 2, y - 18, 5, 2, '#e2ae52'); k.R(x + 2, y - 18, 3, 1, '#f8dc8a'); k.R(x, y - 16, 9, 1, '#c08636'); k.R(x + 2, y - 17, 5, 1, '#b84a3e'); } });
     // things she just built pop in
     (ui.popping || []).forEach(pp => { const a = Math.min(1, (t - pp.t0) / 380), s = a < .7 ? a / .7 * 1.15 : 1.15 - (a - .7) / .3 * .15, ar = area(pp.p.area), x = ar.x + pp.p.cx * 16, y = ar.y + pp.p.cy * 16;
       items.push({ y: y + 15, draw: () => { const c = pp.c || (pp.c = itemCanvas(pp.p.item, pp.p.paint)); const w = Math.max(1, Math.round(16 * s)); sc.frame.getContext('2d').drawImage(c, Math.round(x + 8 - w / 2), Math.round(y + 16 - w), w, w); } }); });
@@ -254,13 +291,10 @@
   function arrive() {
     const v = V();
     if (!v.introDone) return story();
-    if (ui.from === 'fish') { her.x = 114; her.y = 144; ui.from = null; }
+    if (ui.from) { [her.x, her.y] = NODES[ui.from === 'fish' ? 'dock' : 'orchard']; ui.from = null; }
     layPlanks(() => {
       if (ui.next) { const f = ui.next; ui.next = null; return f(); }
-      if (!S().placement.done && v.placed.length) say('I pinned a note on the board for you. Tap it!');
-      else if (!v.placed.length && v.fish >= 2) { say(`You have ${v.fish} fish. Tap your yard to spend them!`); ui.pulseYard = true; }
-      else if (!v.fish && !v.placed.length) { say('Tap the pond to catch some fish!'); ui.pulsePond = true; }
-      else if (EM.todayDone && !EM.todayDone() && S().placement.done) say("Today's practice is on the board.");
+      const m = mission(); if (m) say(m.say);
     });
   }
   // Lay any planks she has earned since she last looked, one at a time.
@@ -289,7 +323,8 @@
       { cam: CAM_FULL, dot: null, text: `Oh! You made it${n ? ', ' + n : ''}! I'm Dot. I've been waiting so long for someone new to come live here.`, say: "Oh! You made it! I'm Dot. I've been waiting so long for someone new to come live here." },
       { cam: camAround(246, 96, 120), dot: [222, 88], text: 'This little house is yours now. Look, I already lit the lamps for you.' },
       { cam: camAround(194, 160, 140), dot: [176, 124], text: "And this is your yard. It's a bit empty... for now. You can fill it with anything you like." },
-      { cam: camAround(84, 150, 140), dot: [104, 120], text: 'Everyone here trades with fish. Catch fish in the pond, and you can trade them for flowers, a bench, even a wishing well.' },
+      { cam: camAround(84, 150, 140), dot: [104, 120], text: 'Everyone here pays with coins. Catch fish in the pond and sell them. Then you can buy flowers, a bench, even a wishing well.' },
+      { cam: camAround(62, 84, 130), dot: [92, 84], text: "That's Rosa's orchard. She always needs help picking apples, and she pays in coins too." },
       { cam: camAround(248, 50, 130), dot: [226, 44], text: "And see that old bridge? It broke a long, long time ago. Nobody knows what's on the other side..." },
       { cam: camAround(248, 50, 130), dot: [226, 44], text: 'Every time you really learn a make 10 fact, we can fix one plank. Eight planks, and we can cross!' },
       { cam: CAM_FULL, dot: null, text: "Let's catch your very first fish. Tap the pond!", end: true },
@@ -332,6 +367,7 @@
     if (Math.hypot(x - (her.x + 4), y - (her.y - 8)) < 9) { her.hop = now() + 400; her.wave = now() + 900; return say(['Hi!', 'Wheee!', 'This is my village!'][Math.floor(Math.random() * 3)], { voice: false }); }
     if (Math.hypot(x - dot.x, y - dot.y) < 9) return say(dotHint());
     if (px.inEll(x, y, ...POND) || inRect(x, y, DOCK)) { ui.pulsePond = false; return walkTo('dock', () => toFishing()); }
+    if (inRect(x, y, ORCHARD) || Math.hypot(x - ROSA[0] - 4, y - ROSA[1] + 8) < 10) return walkTo('orchard', toOrchard);
     if (c && c.area === 'plot') { ui.pulseYard = false; return walkTo('yard', () => enterBuild(placedAt(c) ? c : null)); }
     if (inRect(x, y, [BOARD[0] - 4, BOARD[1] - 24, 28, 26])) return walkTo('board', openBoard);
     if (inRect(x, y, [232, 40, 40, 34])) return walkTo('bridge', () => { const p = meadowProgress(); say(V().open.meadow ? 'The bridge is fixed! Tap the meadow to build there.' : `${p.have} of ${PLANKS} planks fixed. Every make 10 fact you really know fixes one more.`); });
@@ -339,7 +375,8 @@
     if (inRect(x, y, [222, 72, 48, 42])) return walkTo('home', () => say('Home sweet home.', { voice: false }));
     if (!(px.inEll(x, y, ...POND) || inStream(x, y)) && y > 30 && y < H - 4 && x > 4 && x < W - 4) walkFree(x, y);
   }
-  function dotHint() { const v = V(), p = meadowProgress(); const hints = ['Fish are money here. Catch them at the pond!', 'Tap your yard to put things in it.', `${p.have} of ${PLANKS} bridge planks fixed. Make 10 facts fix them!`, "Check the notice board for today's practice."]; ui.hintI = ((ui.hintI || 0) + 1) % hints.length; return v.fish < 2 ? hints[0] : hints[ui.hintI]; }
+  // tapping Dot: the next job first, then other ideas
+  function dotHint() { const p = meadowProgress(), m = mission(); const hints = [m ? m.say : 'Tap your yard to put things in it.', 'Help Rosa or go fishing to earn coins.', `${p.have} of ${PLANKS} bridge planks fixed. Make 10 facts fix them!`]; ui.hintI = ((ui.hintI || 0) + 1) % hints.length; return hints[ui.hintI === 1 ? 0 : ui.hintI]; }
 
   // ---------- notice board ----------
   function openBoard() {
@@ -356,18 +393,18 @@
   }
 
   // ---------- build mode ----------
-  function enterBuild(sel) { mode = 'build'; B = { item: null, sel }; renderMap(); if (!V().placed.length) say(V().fish >= 2 ? 'Flowers cost 2 fish. Pick them, then tap a spot in your yard.' : "You need fish to buy things. Let's go fishing!"); }
-  function renderTray() { const old = document.querySelector('.vtray'), v = V(); if (!old) return; const items = px.ITEMS.filter(i => !i.area || v.open[i.area]); old.outerHTML = buildTray(items, B.sel && placedAt(B.sel)); const f = document.getElementById('vfishcount'); if (f) f.innerHTML = `🐟 <b>${v.fish}</b>`; }
+  function enterBuild(sel) { mode = 'build'; B = { item: null, sel }; renderMap(); if (!V().placed.length) say(V().coins >= 2 ? 'Flowers cost 2 coins. Pick them, then tap a spot in your yard.' : "You need coins to buy things. Let's go earn some!"); }
+  function renderTray() { const old = document.querySelector('.vtray'), v = V(); if (!old) return; const items = px.ITEMS.filter(i => !i.area || v.open[i.area]); old.outerHTML = buildTray(items, B.sel && placedAt(B.sel)); showCoins(); }
   function buildTray(items, sel) {
     if (sel) {
       const it = px.ITEM[sel.item];
       return `<div class="vtray vpanel"><div class="vtray-h"><img src="${itemIcon(sel.item, sel.paint)}" alt=""> <b>${esc(it.name)}</b> <button class="btn secondary small" data-v="deselect">Done</button></div>
         <div class="vhint">Pick a color</div><div class="vpaints">${PAINTS.map(c => `<button class="vpaint ${sel.paint === c ? 'on' : ''}" data-paint="${c}" style="background:${px.PAINT[c][1]}" aria-label="${c}"></button>`).join('')}</div>
-        <div class="vcol"><button class="btn secondary" data-v="move">↔ Move it</button><button class="btn secondary" data-v="putaway">↩ Put it away (get ${it.cost} 🐟 back)</button></div></div>`;
+        <div class="vcol"><button class="btn secondary" data-v="move">↔ Move it</button><button class="btn secondary" data-v="putaway">↩ Put it away (get ${it.cost} coins back)</button></div></div>`;
     }
     const v = V();
     return `<div class="vtray vpanel"><div class="vtray-h"><b>Your yard</b><button class="btn secondary small" data-v="done">Done</button></div><div class="vhint">Pick something, then tap a spot. Drag things to move them.</div>
-      <div class="vitems">${items.map(i => `<button class="vitem ${B.item === i.id ? 'on' : ''} ${v.fish < i.cost ? 'poor' : ''}" data-item="${i.id}"><img src="${itemIcon(i.id)}" alt=""><span>${esc(i.name)}</span><b>${i.cost} 🐟</b></button>`).join('')}</div></div>`;
+      <div class="vitems">${items.map(i => `<button class="vitem ${B.item === i.id ? 'on' : ''} ${v.coins < i.cost ? 'poor' : ''}" data-item="${i.id}"><img src="${itemIcon(i.id)}" alt=""><span>${esc(i.name)}</span><b>${i.cost} ${COIN()}</b></button>`).join('')}</div></div>`;
   }
   function popIn(p) { (ui.popping = ui.popping || []).push({ p, t0: now() }); scene.buildStill = (g, k) => buildMapStill(g, k, { skip: ui.popping.map(q => q.p) }); scene.rebake(); const a = area(p.area); burst(a.x + p.cx * 16 + 8, a.y + p.cy * 16 + 14, 12, ['#efd3a2', '#d9b17c', '#ffffff'], { up: true, spread: 2.4, speed: 34, life: 520 }); }
   function buildTap(c) {
@@ -378,10 +415,10 @@
     if (B.item) {
       if (there) { B.sel = c; B.item = null; return renderTray(); }
       const it = px.ITEM[B.item];
-      if (v.fish < it.cost) { say(`That costs ${it.cost} fish. You have ${v.fish}. Let's catch more!`); return; }
-      v.fish -= it.cost; const p = { item: it.id, paint: it.paint, ...c }; v.placed.push(p); EM.save(); sfx('right'); popIn(p);
+      if (v.coins < it.cost) { say(`That costs ${it.cost} coins. You have ${v.coins}. Let's earn more!`); return; }
+      v.coins -= it.cost; const p = { item: it.id, paint: it.paint, ...c }; v.placed.push(p); EM.save(); sfx('right'); popIn(p);
       const first = v.placed.length === 1;
-      if (v.fish < it.cost) B.item = null;
+      if (v.coins < it.cost) B.item = null;
       B.sel = null; renderTray();
       if (first) setTimeout(() => say(S().placement.done ? 'Your yard is starting to look like home!' : 'Your yard is starting to look like home! One more thing: I pinned a note on the board for you.', { ms: 4200 }), 500);
       return;
@@ -451,7 +488,7 @@
       <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas>
         <div class="vtag" id="vtag"></div><div class="vbubble" id="vbubble"></div>
       </div>
-      <div class="vhud vtl"><button class="vpill" data-v="stopfish">‹ Back to the village</button><span class="vpill vfish" id="vfishcount">🐟 <b>${V().fish}</b></span></div>
+      <div class="vhud vtl"><button class="vpill" data-v="stopfish">‹ Back to the village</button><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span></div>
       <div class="vq vpanel" id="vq"></div>
       <div class="vpadwrap vpanel" id="vpad"><div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-fd="${d}">${d}</button>`).join('')}<button data-v="fback" aria-label="Delete">⌫</button><button data-fd="0">0</button><button class="ok" data-v="fok" aria-label="Check">✓</button></div>
         <button class="idk" data-v="fidk">🙋 I don't know</button></div>
@@ -470,7 +507,7 @@
     pad.classList.toggle('busy', !asking);
     const idk = pad.querySelector('.idk'); if (idk) idk.style.visibility = help || !asking ? 'hidden' : 'visible';
     const tag = document.getElementById('vtag'); tag.textContent = f.a; tag.classList.toggle('on', F.phase === 'ask' || F.phase === 'help');
-    const fc = document.getElementById('vfishcount'); if (fc) fc.innerHTML = `🐟 <b>${V().fish}</b>`;
+    showCoins();
   }
   function fishOverlays() { place(document.getElementById('vtag'), BOB[0], BOB[1] - 6); place(document.getElementById('vbubble'), 136, 76 + Math.round(Math.sin(now() / 420) * 1.5)); }
   function drawFishing(sc, k, t) {
@@ -507,7 +544,7 @@
   // keys act the moment a finger lands (see app.js): a dropped tap feels like the game ignoring her
   function fType(d) { if (F.phase !== 'ask' && F.phase !== 'help') return nudge(); if (F.input.length >= 2) return; F.input = F.input === '0' ? d : F.input + d; F.tLast = performance.now(); const s = document.querySelector('.vq .slot'); if (s) s.textContent = F.input; }
   function fBack() { F.input = F.input.slice(0, -1); F.tLast = F.input ? performance.now() : null; const s = document.querySelector('.vq .slot'); if (s) s.innerHTML = F.input || '&nbsp;'; }
-  function nudge() { const p = document.querySelector('.vpadwrap .pad'); if (!p) return; p.classList.remove('nudge'); void p.offsetWidth; p.classList.add('nudge'); }
+  function nudge() { const p = document.querySelector('.vpadwrap .pad, .jpad'); if (!p) return; p.classList.remove('nudge'); void p.offsetWidth; p.classList.add('nudge'); }
   const graded = () => F.mode !== 'rehearse' && F.mode !== 'reask';
   function grade(outcome, ms) {
     F.stats.items++; F.stats[outcome]++;
@@ -526,7 +563,7 @@
     const ms = (F.tLast || tn) - (F.t0 || tn), gap = tn - (F.tLast || tn);
     if (ok) {
       const fast = ms <= EM.fastMs(F.item, 0) && gap <= CONFIRM_MS, g = grade(fast ? 'fast' : 'slow', ms);
-      F.caught++; V().fish++; V().caught = (V().caught || 0) + 1; EM.save();
+      F.caught++; V().coins++; floatText('+1', BASKET[0], BASKET[1] - 14, 'coin'); V().caught = (V().caught || 0) + 1; EM.save();
       F.phase = 'caught'; F.anim = { kind: 'caught', t0: now() }; F.leap = { t0: now() + 120, fast };
       burst(BOB[0], BOB[1], 16, [C.w4, '#ffffff', C.w3], { up: true, spread: 1.8, speed: 52, life: 650 });
       F.msg = fast ? '⚡ Got it! You just knew that one.' : 'Got one! Nice thinking.';
@@ -556,7 +593,7 @@
   function afterCatch() {
     if (F.caught === F.goal) {
       const first = !V().rounds; V().rounds = (V().rounds || 0) + 1; EM.save();
-      return celebrate(first ? 'Your very first fish!' : `Basket full! ${F.goal} fish!`, `You have ${V().fish} fish to spend.`, () => { F.caught = 0; F.inBasket = 0; F.goal = goal(); nextFish(); }, [['Keep fishing', 'keep'], [first ? 'Go spend them!' : 'Spend them', 'tobuild']]);
+      return celebrate(first ? 'Your very first fish!' : `Basket full! ${F.goal} fish!`, `Each fish sold for a coin. You have ${V().coins} coins to spend.`, () => { F.caught = 0; F.inBasket = 0; F.goal = goal(); nextFish(); }, [['Keep fishing', 'keep'], [first ? 'Go spend them!' : 'Spend them', 'tobuild']]);
     }
     nextFish();
   }
@@ -564,7 +601,7 @@
     const ov = document.createElement('div'); ov.className = 'vover';
     ov.innerHTML = `<div class="vcard"><div class="vcard-art">${EM.theme.dot('cheer', 72)}</div><h2>${esc(title)}</h2><p>${esc(text)}</p><div class="vrow">${(buttons || [['Yay!', 'keep']]).map(([t, a]) => `<button class="big-btn" data-ov="${a}">${esc(t)}</button>`).join('')}</div></div>`;
     document.body.appendChild(ov); EM.speech && EM.speech.say(title);
-    ov.addEventListener('click', e => { const b = e.target.closest('[data-ov]'); if (!b) return; ov.remove(); if (b.dataset.ov === 'tobuild') return leaveFishing(() => enterBuild(null)); then(); });
+    ov.addEventListener('click', e => { const b = e.target.closest('[data-ov]'); if (!b) return; ov.remove(); if (b.dataset.ov === 'tobuild') return leaveJob(() => enterBuild(null)); then(); });
   }
   function finishFishing() {
     if (!F) return;
@@ -574,18 +611,238 @@
       learned: [], fastKeys: st.fastKeys.slice(0, 40), byKind: { fact: { fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } } });
     F = null;
   }
-  // back to the village: fade, then the camera pulls out from the pond
-  function leaveFishing(next) {
-    finishFishing(); EM.speech && EM.speech.stop();
+  // back to the village from a job: fade, then the camera pulls out from where she was
+  function leaveJob(next) {
+    const from = O ? 'orchard' : 'fish';
+    finishFishing(); finishOrchard(); EM.speech && EM.speech.stop();
     const f = document.getElementById('vfade'); if (f) f.classList.add('on');
-    setTimeout(() => { mode = 'map'; scene = null; ui.from = 'fish'; ui.arrived = false; ui.next = next || null; renderMap(); scene.cam = camAround(112, 150, 96); tweenCam({ ...CAM_FULL }, 900); const f2 = document.getElementById('vfade'); if (f2) { f2.classList.add('on'); setTimeout(() => f2.classList.remove('on'), 40); } }, 260);
+    setTimeout(() => { mode = 'map'; scene = null; ui.from = from; ui.arrived = false; ui.next = next || null; renderMap(); scene.cam = from === 'orchard' ? camAround(60, 80, 96) : camAround(112, 150, 96); tweenCam({ ...CAM_FULL }, 900); const f2 = document.getElementById('vfade'); if (f2) { f2.classList.add('on'); setTimeout(() => f2.classList.remove('on'), 40); } }, 260);
   }
   function stopLoop() { loopId++; }
+
+  // =====================================================================
+  // the orchard: she and Rosa each pick apples, and she works out how many in all.
+  // The addition facts she has open, on the real fact engine. Help turns the baskets into crates of ten
+  // (the orchard's ten-frames) and uses the same strategies and class words as practice.
+  // =====================================================================
+  const ORCH_SKILLS = ['plus12', 'doubles', 'teens', 'to10', 'near', 'bridge'], ORCH_GOAL = 5;
+  const OCAM = { x: 0, y: 0, w: 236, h: 236 * H / W };              // the close-up: 236 scene pixels across
+  // placed to stay clear of the sides that a 4:3 iPad crops
+  const OHER = [16, 134], OROSA = [134, 136], OBASKET = [[38, 138], [102, 138]], SIGN = [39, 73, 78, 28];
+  const ROSA_LOOK = { hair: '#a84a2a', skin: '#f2c49c', skinD: '#d9997a', shirt: '#4f8a5b', shirtD: '#2f5a3b', long: true };
+  let O = null;
+  // help says "frame" and "dots" in practice; in the orchard they are crates and apples
+  const orchWords = t => String(t).replace(/\bframes\b/g, 'crates').replace(/\bframe\b/g, 'crate').replace(/\bdots\b/g, 'apples').replace(/\bdot\b/g, 'apple').replace(/empty boxes/g, 'empty spots').replace(/empty box/g, 'empty spot');
+  // the crates help draws: her apples red ('a'), Rosa's green ('b'), an apple moved to make 10 gold ('c')
+  function helpCrates(f) {
+    const { a, b } = f, A = a + b, fill = (n, c) => Array(Math.max(0, n)).fill(c), crate = (...parts) => [...parts.flat(), ...fill(10 - parts.flat().length, 'e')];
+    if (a === b || Math.abs(a - b) === 1) return [crate(fill(a, 'a')), crate(fill(b, 'b'))];
+    if (A > 10) { const herBig = a >= b, big = Math.max(a, b), small = Math.min(a, b), mine = herBig ? 'a' : 'b', other = herBig ? 'b' : 'a';
+      if (big === 10) return [crate(fill(10, mine)), crate(fill(small, other))];
+      return [crate(fill(big, mine), fill(10 - big, 'c')), crate(fill(small - (10 - big), other))]; }
+    return [crate(fill(a, 'a'), fill(b, 'b'))];
+  }
+  function buildOrchStill(g, k) {
+    const path = (x, y) => y > 146 && y < 160 + Math.sin(x / 30) * 2;
+    px.ground(g, W, H, { path, tall: (x, y) => y < 50 });
+    for (let i = 0; i < 7; i++) k.tree(10 + i * 44 + (i % 2) * 5, 52 + (i % 2) * 5, { r: 17 + (i % 3) });
+    k.add(70, () => [[8, 18], [30, 30], [20, 6], [60, 24], [76, 10], [100, 34], [112, 16], [150, 28], [140, 10], [180, 30], [196, 14], [228, 24], [250, 30], [274, 14], [290, 26]].forEach(([a, b]) => k.apple(a, b)), false);
+    k.add(140, () => [[160, 142], [4, 160], [150, 64], [64, 66], [210, 120]].forEach(([a, b]) => k.apple(a, b)), false);
+    for (let n = 0; n < 34; n++) { const x = Math.floor(px.hash(n, 3, 9) * W), y = 70 + Math.floor(px.hash(n, 4, 9) * 136); if (!path(x, y)) k.flowersGround(x, y, ['#ffffff', '#ffe066', '#ff9ac6', '#c7a6ff'][n % 4]); }
+    [[262, 120], [286, 150], [250, 196], [20, 200]].forEach(([x, y], i) => k.tree(x, y, { r: 12 + (i % 2) }));
+    [[200, 104], [178, 196], [120, 190]].forEach(([x, y]) => k.bush(x, y));
+    k.crate(170, 132, '#e8473f'); k.crate(179, 134, '#8cc04a');
+    k.add(118, () => k.sign(38, 118, 80, 30));
+    return [];
+  }
+  function toOrchard() {
+    ui.busy = true; her.path = [];
+    tweenCam(camAround(60, 80, 96), 800, () => { const f = document.getElementById('vfade'); if (f) f.classList.add('on'); setTimeout(() => { ui.busy = false; startOrchard(); }, 260); });
+  }
+  function startOrchard() {
+    mode = 'orchard';
+    O = { queue: [], i: -1, picked: 0, goal: ORCH_GOAL, started: Date.now(), stats: { items: 0, fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, times: [], fastKeys: [], learned: [] }, input: '', phase: 'pick', drops: [], shown: [0, 0], said: '' };
+    renderOrchard();
+    scene = makeScene('orchard', buildOrchStill); scene.cam = { ...CAM_FULL }; tweenCam({ ...OCAM }, 800);
+    scene.after = orchOverlays;
+    const fd = document.getElementById('vfade'); if (fd) requestAnimationFrame(() => setTimeout(() => fd.classList.remove('on'), 30));
+    startLoop(drawOrch);
+    nextApple();
+  }
+  function startOrchScene() { scene = makeScene('orchard', buildOrchStill); scene.cam = { ...OCAM }; scene.after = orchOverlays; startLoop(drawOrch); renderOrchWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
+  function orchRefill() {
+    const open = ORCH_SKILLS.filter(id => EM.isOpen(id));
+    O.queue.push(...EM.buildFactQueue(open.length ? open : ['doubles'], 14).queue.filter(e => { const f = EM.FACTS[e.key]; return f.type === 'add' && f.a > 0 && f.b > 0; }));
+  }
+  function nextApple() {
+    O.i++; if (O.i >= O.queue.length) orchRefill();
+    if (!O.queue[O.i]) O.queue.push(...EM.buildFactQueue(['doubles'], 6).queue);
+    const e = O.queue[O.i];
+    O.key = e.key; O.mode = e.mode; O.item = EM.factItem(e.key, e.mode); O.f = EM.FACTS[e.key];
+    O.input = ''; O.help = null; O.crates = null; O.t0 = null; O.tLast = null; O.waitSpeech = false; O.cheer = 0;
+    // apples drop from the trees into the two baskets, one at a time; the question starts when they've landed
+    O.phase = 'pick'; O.shown = [0, 0]; O.drops = [];
+    const t = now(), { a, b } = O.f;
+    for (let n = 0; n < a; n++) O.drops.push({ who: 0, t0: t + 250 + n * 110, x: 24 + Math.floor(px.hash(n, O.i, 5) * 40), y: 18 + Math.floor(px.hash(O.i, n, 6) * 22) });
+    for (let n = 0; n < b; n++) O.drops.push({ who: 1, t0: t + 330 + n * 110, x: 100 + Math.floor(px.hash(n, O.i, 7) * 40), y: 18 + Math.floor(px.hash(O.i, n, 8) * 22) });
+    O.lead = ''; O.said = '';
+    renderOrchWork();
+  }
+  function orchAsk() {
+    const { a, b } = O.f;
+    O.phase = 'ask';
+    O.said = O.i % 2 ? `Your basket has ${a}. Mine has ${b}. How many apples altogether?` : `You picked ${a}. I picked ${b}. How many apples in all?`;
+    renderOrchWork();
+    // her first question each round is read aloud; the clock waits until Rosa has finished talking
+    if (O.picked === 0 && EM.speech && EM.speech.enabled()) orchHear(); else O.t0 = performance.now();
+  }
+  function orchHear() {
+    if (!O || (O.phase !== 'ask' && O.phase !== 'help')) return;
+    const text = O.phase === 'help' ? `${O.lead} ${O.help.say}` : O.said, key = O.key;
+    if (O.phase === 'help' || O.input) { EM.speech && EM.speech.say(text); return; }
+    O.waitSpeech = true; renderOrchWork();
+    const release = () => { if (O && O.key === key && O.waitSpeech) { O.waitSpeech = false; O.t0 = performance.now(); renderOrchWork(); } };
+    (EM.speech ? EM.speech.say(text) : Promise.resolve()).then(release);
+    setTimeout(release, (EM.speech ? EM.speech.estimateMs(text) : 0) + 300);
+  }
+  function renderOrchard() {
+    const marks = Array.from({ length: ORCH_GOAL }, (_, i) => `<i class="${i < (O ? O.picked : 0) ? 'on' : ''}"></i>`).join('');
+    $root.innerHTML = `<main class="village full job orchard">
+      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas>
+        <div class="jsign" id="jsign"></div><div class="jbub" id="jbub"></div>
+        <div class="jtag" id="jtag0"></div><div class="jtag" id="jtag1"></div>
+      </div>
+      <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span><div class="jorder vpanel"><b>Rosa needs apples</b><div class="jmarks" id="jmarks">${marks}</div></div></div>
+      <div class="vhud vtr"><button class="jhome vpanel" data-v="leavejob">🏠 Village</button></div>
+      <div class="jpad vpanel" id="jpad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-fd="${d}">${d}</button>`).join('')}<button data-v="fback" aria-label="Delete">⌫</button><button data-fd="0">0</button><button class="ok" data-v="fok" aria-label="Check">✓</button></div>
+      <div class="jleft"><button class="jround" data-v="jhear" aria-label="Hear it again">🔊</button><button class="jidk" data-v="jidk">I don't know</button></div>
+      <div class="vfade on" id="vfade"></div>
+    </main>`;
+    fit();
+  }
+  // the sign, the speech bubble and the pad, without a full re-render (the scene keeps moving)
+  function renderOrchWork() {
+    const sign = document.getElementById('jsign'); if (!sign || !O) return;
+    const { a, b } = O.f, asking = O.phase === 'ask' || O.phase === 'help';
+    const sa = O.phase === 'pick' ? O.shown[0] : a, sb = O.phase === 'pick' ? O.shown[1] : b;
+    sign.innerHTML = `<span>${sa} + ${sb} =</span><span class="slot ${asking && !O.waitSpeech ? 'cursor' : ''}">${O.phase === 'right' || O.phase === 'solved' ? O.f.ans : esc(O.input)}</span>`;
+    sign.classList.toggle('right', O.phase === 'right' || O.phase === 'solved');
+    const bub = document.getElementById('jbub'), dotTalks = !!O.help || O.phase === 'solved';
+    const words = O.phase === 'help' ? `${O.lead ? `<b>${esc(O.lead)}</b> ` : ''}${O.help.html}` : O.phase === 'pick' ? '' : esc(O.said);
+    bub.innerHTML = words ? `<small>${dotTalks ? 'Dot' : 'Rosa'}</small>${words}` : ''; bub.classList.toggle('on', !!words); bub.classList.toggle('bydot', dotTalks);
+    const busy = !asking || O.waitSpeech;
+    document.getElementById('jpad').classList.toggle('busy', busy);
+    document.querySelector('.jidk').style.visibility = O.help || busy ? 'hidden' : 'visible';
+    ['jtag0', 'jtag1'].forEach((id, i) => { const el = document.getElementById(id); el.textContent = O.shown[i]; el.classList.toggle('on', !O.crates && O.shown[i] > 0); });
+    const m = document.getElementById('jmarks'); if (m) [...m.children].forEach((el, i) => el.classList.toggle('on', i < O.picked));
+    showCoins();
+  }
+  function orchOverlays() {
+    const st = document.getElementById('vstage'); if (!st || !O) return;
+    // the sign's words sit on its face, at whatever size the camera shows it
+    const sign = document.getElementById('jsign'), [x0, y0] = toStage(SIGN[0], SIGN[1]), [x1, y1] = toStage(SIGN[0] + SIGN[2], SIGN[1] + SIGN[3]);
+    Object.assign(sign.style, { transform: `translate(${x0.toFixed(1)}px, ${y0.toFixed(1)}px)`, width: `${(x1 - x0).toFixed(1)}px`, height: `${(y1 - y0).toFixed(1)}px` });
+    // the words fit the sign: as big as its height allows, smaller when a long sum needs the room
+    const fitKey = `${sign.textContent}|${Math.round(x1 - x0)}`;
+    if (sign.dataset.fit !== fitKey) { sign.dataset.fit = fitKey; let fs = (y1 - y0) * .56; sign.style.fontSize = `${fs}px`; const need = sign.scrollWidth, room = (x1 - x0) * .94; if (need > room) sign.style.fontSize = `${(fs * room / need).toFixed(1)}px`; }
+    // the bubble opens above whoever is talking, kept clear of the number pad
+    const bub = document.getElementById('jbub'), dotTalks = bub.classList.contains('bydot');
+    const [sx, sy] = dotTalks ? toStage(O.dotAt[0], O.dotAt[1] - 8) : toStage(OROSA[0] + 8, OROSA[1] - 23);
+    // and never over the sign's answer box: beside it if there's room, otherwise above it
+    const r = st.getBoundingClientRect(), padL = document.getElementById('jpad').getBoundingClientRect().left - r.left;
+    bub.style.width = ''; let w = bub.offsetWidth, left = Math.max(-r.left + 12, Math.min(sx - w * .55, padL - w - 14)), top = sy - bub.offsetHeight - 14;
+    if (left < x1 + 8 && left + w > x0 && top < y1 && top + bub.offsetHeight > y0) {
+      const room = padL - 14 - (x1 + 10);
+      if (room >= 230) { left = x1 + 10; if (room < w) { bub.style.width = `${room}px`; w = room; } top = sy - bub.offsetHeight - 14; }
+      else top = Math.min(top, y0 - bub.offsetHeight - 10);
+    }
+    bub.style.transform = `translate(${left.toFixed(1)}px, ${top.toFixed(1)}px)`; bub.style.setProperty('--tx', `${Math.max(18, Math.min(w - 36, sx - left - 11)).toFixed(0)}px`);
+    OBASKET.forEach(([bx, by], i) => place(document.getElementById(`jtag${i}`), bx + 11, by - 20 - Math.ceil(O.shown[i] / 4) * 3));
+  }
+  function drawOrch(sc, k, t) {
+    ambient(sc, k, t, { butterflies: [[60, 120, 20, 8, .6, '#ffe066'], [190, 90, 16, 10, .5, '#ff9ac6']] });
+    if (!O) return;
+    // apples falling into the baskets
+    O.drops = O.drops.filter(d => { const e = (t - d.t0) / 420; if (e < 0) return true; const [bx, by] = OBASKET[d.who], n = O.shown[d.who], tx = bx + 3 + (n % 4) * 4 + (Math.floor(n / 4) % 2) * 2, ty = by - 14 - Math.floor(n / 4) * 3;
+      if (e >= 1) { O.shown[d.who]++; renderOrchWork(); return false; } k.apple(Math.round(lerp(d.x, tx, e)), Math.round(lerp(d.y, ty, e * e)), d.who ? 'green' : 'red'); return true; });
+    if (O.phase === 'pick' && !O.drops.length) orchAsk();
+    // baskets, or the crates of ten while helping
+    const hop = O.cheer && t - O.cheer < 500 ? Math.round(Math.sin((t - O.cheer) / 500 * Math.PI) * 3) : 0;
+    if (O.crates) { const xs = O.crates.length === 1 ? [78] : [58, 100]; O.crates.forEach((c, i) => k.crate10(xs[i], 141, c.map(v => v === 'c' && Math.floor(t / 350) % 2 ? 'c' : v))); }
+    else OBASKET.forEach(([bx, by], i) => k.basket(bx, by - hop, O.shown[i], i ? 'green' : 'red'));
+    const look2 = look(), herC = px.CHIBI.her(look2, look2.long), rosa = px.CHIBI.rosa(), blink = (t % 3600) < 120;
+    k.chibi(OHER[0], OHER[1], herC.rows, herC.mat, { blink, bob: O.phase === 'right' ? hop : 0 });
+    k.chibi(OROSA[0], OROSA[1], rosa.rows, rosa.mat, { flip: true, blink: ((t + 900) % 4100) < 120, bob: O.phase === 'right' ? hop : 0 });
+    // Dot: beside her, or over the crates while helping
+    const to = O.crates || O.phase === 'solved' ? [O.crates && O.crates.length === 1 ? 126 : 150, 104] : [30, 100];
+    O.dotPos = O.dotPos || [...to]; O.dotPos[0] = lerp(O.dotPos[0], to[0], .12); O.dotPos[1] = lerp(O.dotPos[1], to[1], .12);
+    const dy = Math.round(Math.sin(t / 420) * 1.5); O.dotAt = [Math.round(O.dotPos[0]), Math.round(O.dotPos[1]) + dy]; sc.dotAt = O.dotAt;
+    k.drawDot(O.dotAt[0], O.dotAt[1], t, (t % 4200) < 130);
+    clouds(k, t);
+  }
+  function oType(d) { if ((O.phase !== 'ask' && O.phase !== 'help') || O.waitSpeech) return nudge(); if (O.input.length >= 2) return; O.input = O.input === '0' ? d : O.input + d; O.tLast = performance.now(); renderOrchWork(); }
+  function oBack() { O.input = O.input.slice(0, -1); O.tLast = O.input ? performance.now() : null; renderOrchWork(); }
+  const oGraded = () => O.mode !== 'rehearse' && O.mode !== 'reask';
+  function oGrade(outcome, ms) {
+    const st = O.stats; st.items++; st[outcome]++;
+    if (outcome === 'fast' || outcome === 'slow') st.times.push(ms);
+    if (outcome === 'fast') st.fastKeys.push(O.key);
+    return oGraded() ? EM.gradeFact(O.key, outcome, ms) : { becameYours: false };
+  }
+  function oOk() {
+    if ((O.phase !== 'ask' && O.phase !== 'help') || O.waitSpeech || !O.input) return O.input ? nudge() : null;
+    const typed = Number(O.input), ok = typed === O.f.ans, tn = performance.now(), { a, b, ans } = O.f;
+    if (O.help) { // in help: the right answer moves on, but pays nothing
+      if (ok) { O.phase = 'solved'; O.help = null; O.crates = null; O.said = `Yes! ${a} and ${b} make ${ans}.`; O.cheer = now(); renderOrchWork(); EM.speech && EM.speech.say(O.said); sfx('right'); return setTimeout(nextApple, 1900); }
+      if (O.help.stage === 1) return enterOrchHelp(2); O.input = ''; renderOrchWork(); return;
+    }
+    const ms = (O.tLast || tn) - (O.t0 || tn), gap = tn - (O.tLast || tn);
+    if (ok) {
+      const fast = ms <= EM.fastMs(O.item, 0) && gap <= CONFIRM_MS, g = oGrade(fast ? 'fast' : 'slow', ms);
+      O.picked++; V().coins++; V().apples = (V().apples || 0) + 1; EM.save();
+      O.phase = 'right'; O.cheer = now(); O.said = fast ? 'Wow, you just knew that! Here, a coin.' : 'Thank you! Here, a coin.';
+      burst(OBASKET[0][0] + 11, OBASKET[0][1] - 16, 10, ['#fff7c2', '#ffe27a', '#ffffff'], { up: true, spread: 2, speed: 40, life: 600 }); burst(OBASKET[1][0] + 11, OBASKET[1][1] - 16, 10, ['#fff7c2', '#ffe27a', '#ffffff'], { up: true, spread: 2, speed: 40, life: 600 });
+      floatText('+1', OROSA[0] + 8, OROSA[1] - 26, 'coin'); renderOrchWork(); sfx(fast ? 'fast' : 'right');
+      return setTimeout(() => {
+        if (g.becameYours) return celebrate(`${a} + ${b} = ${ans} is yours now!`, 'You knew it fast on two different days.', afterApple);
+        afterApple();
+      }, 1400);
+    }
+    const rushed = ms < EM.rushMs(O.item);
+    if (rushed) O.stats.rushed++;
+    oGrade('wrong', ms);
+    enterOrchHelp(1, rushed ? 'Whoa, too fast! Think first, then tap.' : "Not quite. Let's count them together.");
+  }
+  function oIdk() { if (!O || O.help || O.phase !== 'ask' || O.waitSpeech) return; oGrade('idk', 0); enterOrchHelp(1, "Good idea to ask. Let's look together."); }
+  function enterOrchHelp(stage, lead) {
+    // a fact she missed comes back a few apples later, like in practice (at most twice per fact)
+    if (stage === 1) { const n = (O.reasks = O.reasks || {})[O.key] || 0; if (n < 2) { O.reasks[O.key] = n + 1; O.queue.splice(Math.min(O.queue.length, O.i + 3), 0, { key: O.key, mode: 'reask' }); } }
+    const h = O.item.help(0, stage);
+    O.help = { stage, html: orchWords(h.html), say: orchWords(h.say) }; O.input = ''; O.phase = 'help'; O.crates = helpCrates(O.f);
+    if (lead) O.lead = lead; else if (stage === 2) O.lead = '';
+    renderOrchWork(); EM.speech && EM.speech.say(`${O.lead} ${O.help.say}`);
+  }
+  function afterApple() {
+    if (O.picked >= O.goal) {
+      V().orchardRounds = (V().orchardRounds || 0) + 1; EM.save();
+      return celebrate("Rosa's baskets are full!", `Rosa paid you ${O.goal} coins. You have ${V().coins} coins.`, () => { O.picked = 0; renderOrchWork(); nextApple(); }, [['Keep picking', 'keep'], ['Spend them', 'tobuild']]);
+    }
+    nextApple();
+  }
+  function finishOrchard() {
+    if (!O) return;
+    const st = O.stats;
+    if (st.items) EM.logSession({ date: Date.now(), kind: 'orchard', title: 'Picking apples with Rosa', items: st.items, fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk, rushed: st.rushed, relooks: 0,
+      minutes: Math.round((Date.now() - O.started) / 6000) / 10, avg: st.times.length ? Math.round(st.times.reduce((a, b) => a + b, 0) / st.times.length) : 0,
+      learned: [], fastKeys: st.fastKeys.slice(0, 40), byKind: { fact: { fast: st.fast, slow: st.slow, wrong: st.wrong, idk: st.idk }, proc: { fast: 0, slow: 0, wrong: 0, idk: 0 } } });
+    O = null;
+  }
 
   // ---------- entry ----------
   function render($app) {
     $root = $app;
     if (mode === 'fish' && F) { renderFishing(); scene = null; startFishingScene(); return; }
+    if (mode === 'orchard' && O) { renderOrchard(); scene = null; startOrchScene(); return; }
     // a story or cinematic cut short (say, by opening the grown-up area) must not leave the village ignoring taps
     mode = mode === 'build' ? 'build' : 'map'; scene = null; ui.arrived = false; ui.popping = []; ui.story = false; ui.busy = false; ui.dotTarget = null; ui.plankFly = null;
     renderMap();
@@ -593,21 +850,24 @@
   function startFishingScene() { scene = makeScene('fish', buildFishStill); scene.after = fishOverlays; startLoop(drawFishing); renderFishWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
 
   // ---------- taps ----------
-  // Pad keys act on pointerdown (see app.js); the click that follows is ignored.
+  // Pad keys act on pointerdown (see app.js); the click that follows is ignored. Both jobs share the pad's buttons.
   let padDownAt = -1e9;
+  const padJob = () => mode === 'fish' && F && document.querySelector('.village.fishing') ? { type: fType, ok: fOk, back: fBack } : mode === 'orchard' && O && document.querySelector('.village.orchard') ? { type: oType, ok: oOk, back: oBack } : null;
+  const padKey = (j, a) => a.dataset.fd ? j.type(a.dataset.fd) : a.dataset.v === 'fok' ? j.ok() : j.back();
+  const PADKEYS = ['.vpadwrap', '.jpad'].map(w => `${w} [data-fd], ${w} [data-v=fok], ${w} [data-v=fback]`).join(', ');
   document.addEventListener('pointerdown', e => {
-    if (!document.querySelector('.village.fishing') || !F) return;
-    const a = e.target.closest('.vpadwrap [data-fd], .vpadwrap [data-v=fok], .vpadwrap [data-v=fback]'); if (!a || e.button > 0) return;
+    const j = padJob(); if (!j) return;
+    const a = e.target.closest(PADKEYS); if (!a || e.button > 0) return;
     padDownAt = performance.now(); EM.speech && EM.speech.prime && EM.speech.prime();
-    if (a.dataset.fd) fType(a.dataset.fd); else if (a.dataset.v === 'fok') fOk(); else fBack();
+    padKey(j, a);
   });
   document.addEventListener('click', e => {
     if (!$root || !document.querySelector('.village')) return;
     const a = e.target.closest('[data-v],[data-item],[data-paint],[data-fd]');
     if (!a) return;
     EM.speech && EM.speech.prime && EM.speech.prime();
-    if (a.closest('.vpadwrap') && (a.dataset.fd || a.dataset.v === 'fok' || a.dataset.v === 'fback')) { if (performance.now() - padDownAt < 1500) return; if (a.dataset.fd) return fType(a.dataset.fd); return a.dataset.v === 'fok' ? fOk() : fBack(); }
-    if (a.dataset.item) { B.item = B.item === a.dataset.item ? null : a.dataset.item; B.sel = null; const it = px.ITEM[B.item]; if (it && V().fish < it.cost) say(`That costs ${it.cost} fish. You have ${V().fish}.`, { voice: false }); return renderTray(); }
+    if (a.matches(PADKEYS)) { if (performance.now() - padDownAt < 1500) return; const j = padJob(); return j && padKey(j, a); }
+    if (a.dataset.item) { B.item = B.item === a.dataset.item ? null : a.dataset.item; B.sel = null; const it = px.ITEM[B.item]; if (it && V().coins < it.cost) say(`That costs ${it.cost} coins. You have ${V().coins}.`, { voice: false }); return renderTray(); }
     if (a.dataset.paint) { const p = B.sel && placedAt(B.sel); if (p) { p.paint = a.dataset.paint; EM.save(); popIn(p); } return renderTray(); }
     const v = V();
     switch (a.dataset.v) {
@@ -616,13 +876,17 @@
       case 'done': mode = 'map'; B = { item: null, sel: null }; return renderMap();
       case 'deselect': B.sel = null; return renderTray();
       case 'move': { const p = B.sel && placedAt(B.sel); if (p) { B.moving = p; say('Tap an empty spot.'); } return; }
-      case 'putaway': { const p = B.sel && placedAt(B.sel); if (p) { v.placed.splice(v.placed.indexOf(p), 1); v.fish += px.ITEM[p.item].cost; EM.save(); const ar = area(p.area); burst(ar.x + p.cx * 16 + 8, ar.y + p.cy * 16 + 10, 10, ['#ffffff', '#efd3a2'], { speed: 30, life: 450 }); scene.buildStill = (g, k) => buildMapStill(g, k); scene.rebake(); } B.sel = null; return renderTray(); }
-      case 'stopfish': return leaveFishing();
+      case 'putaway': { const p = B.sel && placedAt(B.sel); if (p) { v.placed.splice(v.placed.indexOf(p), 1); v.coins += px.ITEM[p.item].cost; EM.save(); const ar = area(p.area); burst(ar.x + p.cx * 16 + 8, ar.y + p.cy * 16 + 10, 10, ['#ffffff', '#efd3a2'], { speed: 30, life: 450 }); scene.buildStill = (g, k) => buildMapStill(g, k); scene.rebake(); } B.sel = null; return renderTray(); }
+      case 'stopfish': case 'leavejob': return leaveJob();
+      case 'orchard': return walkTo('orchard', toOrchard);
+      case 'guide': { const m = mission(); if (m && !ui.story && !ui.busy) m.go(); return; }
+      case 'jhear': return orchHear();
+      case 'jidk': return oIdk();
       case 'fidk': return fIdk();
     }
   });
-  document.addEventListener('keydown', e => { if (mode !== 'fish' || !F || !document.querySelector('.fishing')) return; if (/^[0-9]$/.test(e.key)) fType(e.key); else if (e.key === 'Backspace') fBack(); else if (e.key === 'Enter') fOk(); });
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && document.getElementById('vcanvas') && scene) startLoop(scene.kind === 'fish' ? drawFishing : drawMap); });
+  document.addEventListener('keydown', e => { const j = padJob(); if (!j) return; if (/^[0-9]$/.test(e.key)) j.type(e.key); else if (e.key === 'Backspace') j.back(); else if (e.key === 'Enter') j.ok(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && document.getElementById('vcanvas') && scene) startLoop({ fish: drawFishing, orchard: drawOrch }[scene.kind] || drawMap); });
 
-  EM.village = { render, openBoard, checkUnlocks, meadowProgress, state: V, _fish: () => F, _mode: () => mode, _her: () => her, _ui: () => ui, _scene: () => scene };
+  EM.village = { render, openBoard, checkUnlocks, meadowProgress, mission: () => mission(), state: V, _fish: () => F, _orch: () => O, _mode: () => mode, _her: () => her, _ui: () => ui, _scene: () => scene };
 })();

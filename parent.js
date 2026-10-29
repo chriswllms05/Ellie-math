@@ -152,6 +152,20 @@
 
     const sessRows = S_.sessions.slice(-14).reverse().map(s => `<tr><td>${new Date(s.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td>${esc(s.title)}</td><td>${s.items}</td><td>${s.fast}</td><td>${s.slow}</td><td>${s.wrong}</td><td>${s.idk}</td><td>${s.rushed}</td><td>${sec(s.avg)}</td><td>${s.minutes || ''}</td></tr>`).join('');
 
+    // her village: the morning orders day by day, and which jobs she picks (her choices say what she finds fun)
+    function village() {
+      if (!EM.village || !EM.village.orderHistory) return '';
+      const hist = EM.village.orderHistory(7), since = Date.now() - 7 * 86400000, JOB = { orchard: '🍎 Rosa (adding)', market: "🥧 Mr. Pip (take away)", post: '📦 Mo (place value)', fishing: '🎣 Fishing (make 10)', lesson: "📋 Dot's lesson" };
+      const jobs = {}; S_.sessions.filter(x => x.date >= since && JOB[x.kind]).forEach(x => { const j = jobs[x.kind] = jobs[x.kind] || { n: 0, min: 0, items: 0 }; j.n++; j.min += x.minutes || 0; j.items += x.items || 0; });
+      const days = hist.map(d => { const w = new Date(d.day + 'T12:00').toLocaleDateString(undefined, { weekday: 'short' }); const mark = !d.n ? '–' : d.done >= d.n ? '✓' : d.ms >= 12 * 60000 ? '⏱' : `${d.done}/${d.n}`;
+        return `<div class="vday ${d.n && (d.done >= d.n || d.ms >= 12 * 60000) ? 'ok' : ''}"><b>${mark}</b><span>${w}${d.ms ? ` · ${Math.round(d.ms / 60000)} min` : ''}</span></div>`; }).join('');
+      const rows = Object.keys(JOB).filter(k => jobs[k]).map(k => `<tr><td>${JOB[k]}</td><td>${jobs[k].n}</td><td>${Math.round(jobs[k].min)} min</td><td>${jobs[k].items}</td></tr>`).join('');
+      return `<section><h2>In her village</h2>
+        <p style="color:var(--muted);margin-top:0">Morning orders each day: Rosa's apples, Mr. Pip's pies (5 fish until his stall opens), and Dot's lesson. ✓ all three done · ⏱ stopped at the 12-minute limit on a hard day.</p>
+        <div class="vdays">${days}</div>
+        ${rows ? `<table class="vjobs"><tr><th>This week</th><th>Times</th><th>Time</th><th>Answers</th></tr>${rows}</table><p style="font-size:14px;color:var(--muted)">Jobs count every answer toward her facts exactly like practice. What she picks in free time tells you what she enjoys.</p>` : '<p style="color:var(--muted)">No village jobs yet this week.</p>'}
+      </section>`;
+    }
     $app.innerHTML = `<main class="wrap parent">
       <div class="row"><h1>Grown-ups</h1><button class="btn secondary small" data-act="home">Done</button></div>
       ${S_.card && dayStr(S_.card.date) === dayStr(Date.now()) ? `<section class="todaycard"><h2>Today's card ${S_.card.seen ? '✓' : '📬'}</h2>${S_.card.html}</section>` : ''}
@@ -173,6 +187,7 @@
         <div class="cal">${cal}</div><p style="font-size:13px;color:var(--muted);margin-top:6px">Last 28 days. Green = practiced.</p>
       </section>
 
+      ${village()}
       <section><h2>This week's 3 things</h2><ol class="three">${threeThings(S_, wk)}</ol></section>
 
       <section><h2>Parent check (1 minute)</h2>
@@ -223,6 +238,7 @@
         <li><b>Procedures</b> (rounding, place value, estimating) count as solid when 8 of her last 10 unscaffolded tries were fast and right, across two days. The number line fades as she gets better.</li>
         <li><b>Guessing gets flagged.</b> Wrong answers in about a second count as rushed. She's told to slow down, and you see the count above.</li>
         <li><b>Finger counting</b> is a stage, not a sin. Quick Look flashes dots so counting fails and seeing wins. Naming her trick before typing nudges her toward strategies. "How did you know?" tells you both whether recall is real.</li>
+        <li><b>Her village.</b> The math happens in jobs for villagers: Rosa's orchard (adding), Mr. Pip's pie stall (take away), Mo's mail (place value), fishing (partners of 10). They run on the same fact engine and honesty rules as practice. Building and painting have no math in them, on purpose.</li>
         <li><b>Dimensions Math language</b>: number bonds, make 10, place-value discs, "nearer to," column regrouping.</li>
       </ul></details>
 

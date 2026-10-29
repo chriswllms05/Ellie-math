@@ -538,6 +538,12 @@ input, textarea { caret-color:var(--accent); }
 .vactions .big-btn span { color:#6f6557; }
 .vactions .big-btn.primary { background:#a84a28; color:#fff; box-shadow:0 5px 0 #6e2f18; }
 .vactions .big-btn.primary span { color:#fde8dc; }
+/* compact job buttons: Dot's note and the map lead the way; only the next job's button is big, colored and explained */
+.vactions { gap:8px; width:auto; min-width:min(230px, 24vw); }
+.vactions .big-btn { font-size:19px; padding:10px 16px; min-height:48px; text-align:left; display:flex; flex-direction:column; justify-content:center; }
+.vactions .big-btn span { display:none; }
+.vactions .big-btn.primary { font-size:22px; padding:14px 18px; }
+.vactions .big-btn.primary span { display:block; font-size:15px; }
 /* the market's chalkboard, Mr. Pip's pies, today's orders, a villager's gift */
 .jsign.chalk { color:#fdfbf2; text-shadow:0 2px 0 rgba(0,0,0,.25); } .jsign.chalk .slot { border-color:#e2c86a; }
 .jmarks.pie i.on { background:#e2ae52; box-shadow:inset -3px -3px 0 #b07a2a, inset 3px 3px 0 #f8dc8a; }
@@ -554,6 +560,10 @@ input, textarea { caret-color:var(--accent); }
 .jlabel.on { opacity:1; } .jlabel .eq { font-size:40px; } .jlabel .ask { font-size:22px; } .jlabel .q { color:#b4402f; }
 .jlabel { transform-origin:0 0; }
 .jtag.hit { background:#2e7d4f; border-color:#1d5233; color:#fff; animation:tagpop .35s cubic-bezier(.3,1.6,.6,1) both; } @keyframes tagpop { from { scale:.4 } to { scale:1 } }
+.vdays { display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; margin:8px 0 14px; }
+.vday { background:var(--surface); border:2px solid var(--rule); border-radius:12px; padding:8px 4px; text-align:center; } .vday b { display:block; font-size:22px; } .vday span { font-size:13px; color:var(--muted); }
+.vday.ok { border-color:var(--good); } .vday.ok b { color:var(--good); }
+.vjobs { width:100%; border-collapse:collapse; font-size:16px; } .vjobs th, .vjobs td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--rule); }
 .jmarks.mail i.on { background:#c89a64; box-shadow:inset -3px -3px 0 #9a6e40, inset 3px 3px 0 #e2bc88; }
 /* Dot's lesson and the other plain screens sit over a soft view of her village */
 body.inworld { background:transparent; }

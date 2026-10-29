@@ -251,6 +251,7 @@
     const v = V(), s = S(); if (!s || !s.placement.done) return null;
     const day = EM.dayStr(Date.now());
     if (!v.orders || v.orders.day !== day) {
+      if (v.orders && v.orders.list) { const o = v.orders, log = v.orderLog = v.orderLog || {}; log[o.day] = { done: o.list.filter(x => x.got >= x.need).length, n: o.list.length, ms: o.ms || 0 }; Object.keys(log).sort().slice(0, -30).forEach(d => delete log[d]); }
       v.orders = { day, list: [
         { id: 'orchard', text: 'Pick 5 apples with Rosa', short: "Rosa's apples", need: 5, got: 0 },
         jobOpen('market') ? { id: 'market', text: 'Sell 5 pies to Mr. Pip', short: "Mr. Pip's pies", need: 5, got: 0 } : { id: 'fish', text: 'Catch 5 fish', short: '5 fish', need: 5, got: 0 },
@@ -1167,5 +1168,12 @@
   document.addEventListener('keydown', e => { const j = padJob(); if (!j) return; if (/^[0-9]$/.test(e.key)) j.type(e.key); else if (e.key === 'Backspace') j.back(); else if (e.key === 'Enter') j.ok(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && document.getElementById('vcanvas') && scene) startLoop({ fish: drawFishing, job: drawJob }[scene.kind] || drawMap); });
 
-  EM.village = { render, openBoard, checkUnlocks, meadowProgress, mission: () => mission(), orders: () => orders(), ordersDone, orderProgress, addOrderTime, jobSkills, backdrop, state: V, _fish: () => F, _orch: () => O, _job: () => O, _mode: () => mode, _her: () => her, _ui: () => ui, _scene: () => scene };
+    // for the grown-up area: the last few days of orders (today's live, earlier days from the log)
+  function orderHistory(days = 7) {
+    const v = V(), out = [];
+    for (let i = days - 1; i >= 0; i--) { const d = EM.dayStr(Date.now() - i * 86400000), o = v.orders && v.orders.day === d ? v.orders : null, l = (v.orderLog || {})[d];
+      out.push(o ? { day: d, done: o.list.filter(x => x.got >= x.need).length, n: o.list.length, ms: o.ms || 0, today: true } : l ? { day: d, ...l } : { day: d, done: 0, n: 0, ms: 0 }); }
+    return out;
+  }
+  EM.village = { render, openBoard, orderHistory, checkUnlocks, meadowProgress, mission: () => mission(), orders: () => orders(), ordersDone, orderProgress, addOrderTime, jobSkills, backdrop, state: V, _fish: () => F, _orch: () => O, _job: () => O, _mode: () => mode, _her: () => her, _ui: () => ui, _scene: () => scene };
 })();

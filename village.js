@@ -121,12 +121,13 @@
       const dc = cv.getContext('2d'), cam = sc.view = viewCam(sc, DW, DH), s = sc.S;
       dc.imageSmoothingEnabled = false; dc.globalCompositeOperation = 'source-over';
       dc.drawImage(sc.frame, cam.x, cam.y, cam.w, cam.h, 0, 0, DW, DH);
-      dc.globalCompositeOperation = 'soft-light'; dc.drawImage(sc.light, cam.x * s, cam.y * s, cam.w * s, cam.h * s, 0, 0, DW, DH);
-      dc.globalCompositeOperation = 'lighter'; dc.drawImage(sc.glow, cam.x * s, cam.y * s, cam.w * s, cam.h * s, 0, 0, DW, DH);
+      // painted art carries its own light and colour: no wash or glows over it (they flatten it)
+      if (!sc.painted) { dc.globalCompositeOperation = 'soft-light'; dc.drawImage(sc.light, cam.x * s, cam.y * s, cam.w * s, cam.h * s, 0, 0, DW, DH);
+        dc.globalCompositeOperation = 'lighter'; dc.drawImage(sc.glow, cam.x * s, cam.y * s, cam.w * s, cam.h * s, 0, 0, DW, DH); }
       if (sc.dotAt) { const [x, y] = sc.dotAt, gx = (x - cam.x) / cam.w * DW, gy = (y - cam.y) / cam.h * DH, r = 16 * DW / cam.w, q = dc.createRadialGradient(gx, gy, 0, gx, gy, r); q.addColorStop(0, 'rgba(255,190,110,.32)'); q.addColorStop(1, 'rgba(0,0,0,0)'); dc.fillStyle = q; dc.fillRect(gx - r, gy - r, 2 * r, 2 * r); }
       dc.globalCompositeOperation = 'source-over';
       if (!sc.vig || sc.vig.width !== DW || sc.vig.height !== DH) { sc.vig = document.createElement('canvas'); sc.vig.width = DW; sc.vig.height = DH; const c = sc.vig.getContext('2d'), gr = c.createRadialGradient(DW / 2, DH / 2, DH * .4, DW / 2, DH / 2, DW * .75); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(30,20,45,.28)'); c.fillStyle = gr; c.fillRect(0, 0, DW, DH); }
-      dc.drawImage(sc.vig, 0, 0);
+      if (!sc.painted) dc.drawImage(sc.vig, 0, 0);
       if (sc.after) sc.after(tn);
     };
     requestAnimationFrame(tick);
@@ -771,9 +772,10 @@
   // orchard stays. See vault notes: base plate + kit, composed, then her, Rosa, the basket and apples as sprites.
   const ART = {}; let artReady = false;
   (function loadArt() {
-    const names = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow']; let left = names.length;
-    names.forEach(n => { const im = new Image(); im.onload = () => { ART[n] = im; if (--left === 0) { artReady = true; if (scene && scene.kind === 'job' && O && O.id === 'orchard') scene.rebake(); } }; im.src = `art/${n}.png?v=1`; });
+    const names = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow', 'bakery-scene', 'bea', 'tray', 'bun', 'dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5', 'dot-6']; let left = names.length;
+    names.forEach(n => { const im = new Image(); im.onload = () => { ART[n] = im; if (--left === 0) { artReady = true; if (scene && scene.kind === 'job' && paintedJob()) { scene.painted = true; scene.rebake(); const hz = document.querySelector('.vhaze'); if (hz) hz.className = 'vhaze off'; } } }; im.src = `art/${n}.png?v=1`; });
   })();
+  const paintedJob = () => !!(O && O.J.art && artReady);
   // her painted sprite in her own avatar's colours: the hair and shirt pixels take her colours, keeping their shading
   function herArt() {
     const l = look(), key = `${l.hair}|${l.shirt}`; if (herArt.key === key) return herArt.c;
@@ -792,21 +794,34 @@
     g.putImageData(d, 0, 0); herArt.key = key; herArt.c = c; return c;
   }
   // a basket of n apples: the first four sit inside the rim, the rest heap up out of it (relative to the basket's top-left)
-  const BASKET_SPOTS = [[3, 3], [8, 3], [13, 3], [17, 3], [5, 0], [10, -1], [15, 0], [7, -3], [12, -4], [10, -6]];
+  const BASKET_SPOTS = [[3, 4], [8, 4], [13, 4], [17, 4], [5, 1], [10, 0], [15, 1], [7, -2], [12, -3], [10, -5]];
   function drawBasketArt(cx, base, n, kind) {
     const c = scene.frame.getContext('2d'), B = ART.basket, A = ART[kind === 'yellow' ? 'apple-yellow' : 'apple-red'], x = Math.round(cx - B.width / 2), y = base - B.height;
     c.drawImage(B, x, y);
     for (let i = 0; i < Math.min(n, BASKET_SPOTS.length); i++) c.drawImage(A, x + BASKET_SPOTS[i][0], y + BASKET_SPOTS[i][1]);
-    c.drawImage(B, 0, 7, B.width, B.height - 7, x, y + 7, B.width, B.height - 7);       // the basket's front wall over the lowest apples
+    c.drawImage(B, 0, 9, B.width, B.height - 9, x, y + 9, B.width, B.height - 9);       // the front lip and wall (from row 9) over the lowest apples
+  }
+  // a tray of ten on the counter: buns sit in the cups; the one more bun (uppercase) blinks with a light rim
+  const trayCup = (x, base, n) => [x + 2 + (n % 5) * 7, base - 13 + Math.floor(n / 5) * 5];
+  function drawTrayArt(x, base, cells, ring) {
+    const c = scene.frame.getContext('2d'); c.drawImage(ART.tray, x, base - ART.tray.height);
+    cells.forEach((v, n) => { if (v === 'e') return; const [bx, by] = trayCup(x, base, n);
+      if (v === v.toUpperCase() && ring) { c.fillStyle = '#fff3b0'; c.fillRect(bx - 1, by - 1, 8, 6); }
+      c.drawImage(ART.bun, bx, by); });
+  }
+  // the painted Dot: her face follows the moment (cheer on a right answer, curious in help, a blink now and then)
+  function drawDotArt(at, t, O) {
+    const mood = O && O.phase === 'right' ? 3 : O && (O.crates || O.phase === 'help') ? 4 : O && O.phase === 'solved' ? 5 : (t % 4200) < 140 ? 2 : 1, im = ART[`dot-${mood}`];
+    scene.frame.getContext('2d').drawImage(im, Math.round(at[0] - im.width / 2), Math.round(at[1] - im.height / 2));
   }
   function drawSpriteArt(im, cx, base) { scene.frame.getContext('2d').drawImage(im, Math.round(cx - im.width / 2), Math.round(base - im.height)); }
   let O = null;
   const JOBS = {
     // the orchard: she and Rosa each pick apples; how many in all? (positions stay clear of the sides a 4:3 iPad crops)
     orchard: {
-      npc: 'Rosa', chibi: 'rosa', order: 'Rosa needs apples', marks: 'apple', node: 'orchard', mapCam: [60, 80, 96], rounds: 'orchardRounds', log: 'Picking apples with Rosa',
+      npc: 'Rosa', chibi: 'rosa', art: true, order: 'Rosa needs apples', marks: 'apple', node: 'orchard', mapCam: [60, 80, 96], rounds: 'orchardRounds', log: 'Picking apples with Rosa',
       skills: ['plus12', 'teens', 'to10', 'bridge'], fact: f => f.type === 'add' && f.a > 0 && f.b > 0,
-      her: [16, 134], npcAt: [134, 136], get head() { return artReady ? [142, 94] : [142, 113]; }, sign: [39, 73, 78, 28], get dotHome() { return artReady ? [22, 82] : [30, 100]; }, dotHelp: n => artReady ? (n === 1 ? [126, 96] : [124, 84]) : [n === 1 ? 126 : 150, 104],
+      her: [16, 134], npcAt: [134, 136], get head() { return artReady ? [142, 94] : [142, 113]; }, sign: [39, 73, 78, 28], get dotHome() { return artReady ? [24, 76] : [30, 100]; }, dotHelp: n => artReady ? (n === 1 ? [126, 92] : [122, 78]) : [n === 1 ? 126 : 150, 104],
       boxes: [[38, 138], [102, 138]],
       eq: (a, b) => `${a} + ${b} =`,
       ask: (f, i) => i % 2 ? `Your basket has ${f.a}. Mine has ${f.b}. How many apples altogether?` : `You picked ${f.a}. I picked ${f.b}. How many apples in all?`,
@@ -858,9 +873,9 @@
     // the bakery: Bea and she each bake a tray of buns, the same or one more (doubles and near doubles); the trays
     // are trays of ten, so help can say "double 6" and point at both
     bakery: {
-      npc: 'Bea', chibi: 'bea', order: 'Bea needs buns baked', marks: 'bun', node: 'bakery', mapCam: [136, 44, 96], rounds: 'bakeryRounds', log: 'Baking buns with Bea',
+      npc: 'Bea', chibi: 'bea', art: true, order: 'Bea needs buns baked', marks: 'bun', node: 'bakery', mapCam: [136, 44, 96], rounds: 'bakeryRounds', log: 'Baking buns with Bea',
       skills: ['doubles', 'near'], fact: f => f.type === 'add' && f.a > 0 && f.b > 0 && Math.abs(f.a - f.b) <= 1,
-      her: [16, 134], npcAt: [134, 136], head: [142, 113], sign: [39, 73, 78, 28], dotHome: [30, 100], dotHelp: () => [150, 100],
+      her: [16, 134], npcAt: [134, 136], get head() { return artReady ? [142, 96] : [142, 113]; }, sign: [39, 73, 78, 28], get dotHome() { return artReady ? [24, 76] : [30, 100]; }, dotHelp: () => artReady ? [122, 78] : [150, 100],
       trays: [[50, 142], [92, 142]],
       eq: (a, b) => `${a} + ${b} =`,
       ask: (f, i) => { const buns = n => `${n} bun${n === 1 ? '' : 's'}`; return f.a === f.b ? (i % 2 ? `I baked ${buns(f.b)}. You baked the same. How many buns in all?` : `You baked ${buns(f.a)}, and I baked the same. How many buns in all?`) : `You baked ${buns(f.a)}. I baked ${buns(f.b)}. How many buns in all?`; },
@@ -871,10 +886,11 @@
         return f.a < f.b ? [t(f.a), more(f.b)] : [more(f.a), t(f.b)]; },
       // Bea sets the buns out one at a time
       deal(f, i) { const t = now(), d = []; for (let n = 0; n < f.a; n++) d.push({ who: 0, t0: t + 250 + n * 100, x: 132, y: 112 }); for (let n = 0; n < f.b; n++) d.push({ who: 1, t0: t + 250 + (f.a + n) * 100, x: 132, y: 112 }); return d; },
-      land(who, n) { const [x, y] = this.trays[who]; return [x + 2 + (n % 5) * 7, y - 15 + Math.floor(n / 5) * 8]; },
-      falling: (k, x, y) => k.bun(x, y),
+      land(who, n) { const [x, y] = this.trays[who]; return artReady ? trayCup(x, y - 2, Math.min(n, 9)) : [x + 2 + (n % 5) * 7, y - 15 + Math.floor(n / 5) * 8]; },
+      falling: (k, x, y) => artReady ? scene.frame.getContext('2d').drawImage(ART.bun, x, y) : k.bun(x, y),
       tags(O) { return this.trays.map(([x, y], i) => ({ x: x + 19, y: y - 22, text: O.shown[i], on: O.shown[i] > 0 })); },
       still(g, k) {
+        if (artReady) { px.ground(g, W, H, {}); g.drawImage(ART['bakery-scene'], 0, 0); k.add(118, () => k.sign(38, 118, 80, 30)); return []; }
         const path = (x, y) => y > 146 && y < 160 + Math.sin(x / 30) * 2;
         px.ground(g, W, H, { path });
         k.house(-6, 52, 48, 'blue', { chimney: true, lit: true, far: true }); k.house(176, 52, 44, 'red', { far: true });
@@ -887,6 +903,10 @@
         return [];
       },
       draw(k, t, O, hop) {
+        if (artReady) { const cells = O.crates || [ten(fillN(O.shown[0], 'a')), ten(fillN(O.shown[1], 'a'))], ring = Math.floor(t / 350) % 2 === 0, b = O.phase === 'right' ? hop : 0;
+          this.trays.forEach(([x, y], i) => drawTrayArt(x, y - 2 - b, cells[i], ring));
+          k.shadowEll(this.her[0] + 8, this.her[1], 9, 2); k.shadowEll(this.npcAt[0] + 8, this.npcAt[1], 10, 2);
+          drawSpriteArt(herArt(), this.her[0] + 8, this.her[1] + 1 - b); drawSpriteArt(ART.bea, this.npcAt[0] + 8, this.npcAt[1] + 1 - b); return; }
         // the table, and the two trays (help marks the one more bun)
         k.R(44, 140, 92, 4, C.k3); k.R(44, 140, 92, 1, C.k4); k.R(44, 143, 92, 1, C.k1); k.R(48, 144, 3, 10, C.k1); k.R(129, 144, 3, 10, C.k1);
         const cells = O.crates || [ten(fillN(O.shown[0], 'a')), ten(fillN(O.shown[1], 'a'))];
@@ -1144,7 +1164,7 @@
     mode = 'job';
     O = { id, J: JOBS[id], queue: [], i: -1, picked: 0, goal: 5, started: Date.now(), stats: { items: 0, fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, times: [], fastKeys: [], learned: [] }, input: '', phase: 'pick', drops: [], shown: [0, 0], said: '' };
     renderJob();
-    scene = makeScene('job', (g, k) => O.J.still(g, k)); scene.cam = { ...CAM_FULL }; tweenCam({ ...JCAM }, 800);
+    scene = makeScene('job', (g, k) => O.J.still(g, k)); scene.painted = paintedJob(); scene.cam = { ...CAM_FULL }; tweenCam({ ...JCAM }, 800);
     scene.after = jobOverlays;
     const fd = document.getElementById('vfade'); if (fd) requestAnimationFrame(() => setTimeout(() => fd.classList.remove('on'), 30));
     startLoop(drawJob);
@@ -1153,7 +1173,7 @@
     if (!met[id]) { met[id] = Date.now(); EM.save(); O.phase = 'hello'; O.said = MEET[id]; renderJobWork(); EM.speech && EM.speech.say(MEET[id]); O.helloT = setTimeout(() => { if (O && O.phase === 'hello') nextQ(); }, Math.max(5500, (EM.speech ? EM.speech.estimateMs(MEET[id]) : 0) + 600)); return; }
     nextQ();
   }
-  function startJobScene() { scene = makeScene('job', (g, k) => O.J.still(g, k)); scene.cam = { ...JCAM }; scene.after = jobOverlays; startLoop(drawJob); renderJobWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
+  function startJobScene() { scene = makeScene('job', (g, k) => O.J.still(g, k)); scene.painted = paintedJob(); scene.cam = { ...JCAM }; scene.after = jobOverlays; startLoop(drawJob); renderJobWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
   function jobRefill() {
     const open = O.J.skills.filter(id => EM.isOpen(id));
     O.queue.push(...EM.buildFactQueue(open.length ? open : [O.J.skills[0]], 14).queue.filter(e => O.J.fact(EM.FACTS[e.key])));
@@ -1192,7 +1212,7 @@
   function renderJob() {
     const J = O.J, marks = Array.from({ length: O.goal }, (_, i) => `<i class="${i < O.picked ? 'on' : ''}"></i>`).join('');
     $root.innerHTML = `<main class="village full job ${O.id}">
-      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze deep"></div>
+      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze ${paintedJob() ? 'off' : 'deep'}"></div>
         <div class="jsign ${J.chalk ? 'chalk' : ''}" id="jsign"></div><div class="jbub" id="jbub"></div>
         ${Array.from({ length: J.tagCount || 2 }, (_, i) => `<div class="jtag" id="jtag${i}"></div>`).join('')}${J.label ? '<div class="jlabel" id="jlabel"></div>' : ''}
       </div>
@@ -1280,8 +1300,7 @@
     const to = O.crates || O.phase === 'solved' ? J.dotHelp(O.crates ? O.crates.length : 2) : J.dotHome;
     O.dotPos = O.dotPos || [...to]; O.dotPos[0] = lerp(O.dotPos[0], to[0], .12); O.dotPos[1] = lerp(O.dotPos[1], to[1], .12);
     const dy = Math.round(Math.sin(t / 420) * 1.5); O.dotAt = [Math.round(O.dotPos[0]), Math.round(O.dotPos[1]) + dy]; sc.dotAt = O.dotAt;
-    k.drawDot(O.dotAt[0], O.dotAt[1], t, (t % 4200) < 130);
-    clouds(k, t);
+    if (paintedJob()) drawDotArt(O.dotAt, t, O); else { k.drawDot(O.dotAt[0], O.dotAt[1], t, (t % 4200) < 130); clouds(k, t); }
   }
   function oType(d) { if ((O.phase !== 'ask' && O.phase !== 'help') || O.waitSpeech) return nudge(); if (O.input.length >= (O.J.maxLen || 2)) return; O.input = O.input === '0' ? d : O.input + d; O.tLast = performance.now(); renderJobWork(); }
   function oBack() { O.input = O.input.slice(0, -1); O.tLast = O.input ? performance.now() : null; renderJobWork(); }

@@ -90,6 +90,15 @@ Designed for the iPad on its side, held in two hands or flat on a table. Not the
 - **Top right: back to the village.**
 - **The villager speaks in a bubble** near them. The question itself is on the sign, label or board.
 
+### Scratchpad for multi-step problems
+
+Some jobs have problems with more than one step: two-step story problems (notice board), column adding and subtracting (workshop), and estimating (round, then add). While a skill is new, the screen walks her through each step; as she gets better, those supports fade, and that's when she'd reach for paper.
+
+- **Where:** only the notice board's story problems and the workshop's column math, and only once the on-screen steps have faded. Never for facts (they're about knowing it, and a scratchpad invites counting) and never for In Your Head (doing it in her head is the skill).
+- **How:** a panel that slides out beside the problem, not a pop-up over it, so she can see the problem while she works. A blank pad she draws on with her finger: a couple of colors and an eraser. Her class draws bars and writes columns, and this is where she can do the same.
+- **Fair timing:** the clock doesn't count against her while it's open. These skills aren't graded on speed.
+- **Private:** nothing she draws is saved, graded or shown to grown-ups. It's her paper.
+
 ### Words she knows
 
 Everything she reads or hears uses words an 8 or 9 year old uses every day. Class math words (make 10, partners, regroup) stay, because her class uses them.
@@ -192,7 +201,7 @@ If she fishes on her own, the rest of this holds. If she only builds, the jobs n
 
 ### Slice 2
 
-Morning orders: three villager requests a day (orchard, fishing, post office), and the first character with a want. Practice from the notice board moves into the jobs, so the plain practice screen retires.
+Morning orders: three villager requests a day (orchard, fishing, post office), and the first character with a want. Practice from the notice board moves into the jobs, so the plain practice screen retires. Story problems move to the notice board and column math to the workshop, with the scratchpad.
 
 ### Slice 3
 

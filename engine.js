@@ -324,6 +324,8 @@
     const order = new Map();
     const focus = S.focus || {}, isF = k => focus[k] > now;
     let keys = uniq([...skillIds.flatMap(id => EM.SK[id].facts), ...(opts.extraKeys || []), ...(opts.dueOnly ? [] : Object.keys(focus).filter(k => isF(k) && EM.FACTS[k]))]);
+    // a place that can only show some facts (the orchard has no take-away) picks only from those, so new facts still come in
+    if (opts.only) keys = keys.filter(opts.only);
     keys.forEach((k, i) => order.set(k, i));
     if (opts.dueOnly) keys = keys.filter(k => S.facts[k] && (S.facts[k].box < 1 || startOfDay(S.facts[k].due) <= now));
     const rec = k => S.facts[k];

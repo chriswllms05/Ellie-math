@@ -581,7 +581,8 @@
     startLoop(drawFishing);
     nextFish();
   }
-  function refill() { F.queue.push(...EM.buildFactQueue([MEADOW_SKILL], 14).queue); }
+  // a fish can't have 0 spots, and one with 10 needs none more: the pond asks 1 to 9 (practice still covers 0 and 10)
+  function refill() { F.queue.push(...EM.buildFactQueue([MEADOW_SKILL], 14, Date.now(), { only: k => EM.FACTS[k].a > 0 && EM.FACTS[k].a < 10 }).queue); }
   function nextFish() {
     F.i++; if (F.i >= F.queue.length) refill();
     const e = F.queue[F.i];
@@ -1116,7 +1117,7 @@
   function startJobScene() { scene = makeScene('job', (g, k) => O.J.still(g, k)); scene.cam = { ...JCAM }; scene.after = jobOverlays; startLoop(drawJob); renderJobWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
   function jobRefill() {
     const open = O.J.skills.filter(id => EM.isOpen(id));
-    O.queue.push(...EM.buildFactQueue(open.length ? open : [O.J.skills[0]], 14).queue.filter(e => O.J.fact(EM.FACTS[e.key])));
+    O.queue.push(...EM.buildFactQueue(open.length ? open : [O.J.skills[0]], 14, Date.now(), { only: k => O.J.fact(EM.FACTS[k]) }).queue);
   }
   function nextQ() {
     clearTimeout(O.helloT); O.i++; if (O.i >= O.queue.length && !O.J.proc) jobRefill();

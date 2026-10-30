@@ -29,7 +29,7 @@ async function setup(page, opts = {}) {
     Object.defineProperty(window, 'speechSynthesis', { value: undefined, configurable: true });
   }, { now: opts.now || new Date(2026, 9, 22, 16, 0, 0).getTime() });
   await page.route('**/voice/index.json', r => r.fulfill({ contentType: 'application/json', body: '{"packs":[],"clips":{}}' })); // no recorded voice either, so answers aren't held up by speech
-  page.on('pageerror', e => { failures++; log('  PAGE ERROR:', e.message); });
+  page.on('pageerror', e => { failures++; log('  PAGE ERROR:', e.message, (e.stack || '').split('\n').slice(1, 4).join(' | ')); });
   page.on('console', m => { if (m.type() === 'error') { failures++; log('  CONSOLE ERROR:', m.text()); } });
 }
 const state = page => page.evaluate(() => ({ screen: EM._screen(), R: (() => { const R = EM._run(); return R ? { phase: R.phase, waitReady: R.waitReady, waitTrick: R.waitTrick, waitSpeech: R.waitSpeech, lock: R.lock, step: R.step, ans: R.cur && R.cur.steps[R.step].ans, key: R.cur && R.cur.key, kind: R.cur && R.cur.kind, type: R.cur && R.cur.type, mode: R.cur && R.cur.mode, helpStage: R.helpStage, bi: R.bi } : null; })() }));

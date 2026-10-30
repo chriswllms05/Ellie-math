@@ -180,7 +180,8 @@
   }
   // ---------- the fine map (density MAPD): bare ground painted in tiles, every thing on it a fine piece ----------
   // MAPK: each piece's top-left offset from where the map code places it, and its size, in scene px (from the sheets)
-  const MAPD = 4, fineMapReady = () => mapArtReady && !!ART['m-tree'];
+  let fineLoaded = false;
+  const MAPD = 4, fineMapReady = () => mapArtReady && fineLoaded;   // every fine piece is in (the ground is drawn from one)
   const MAPK = {"house-blue": [-4.0, -45.36, 47.88, 47.82], "house-gold": [-4.16, -43.34, 44.26, 45.81], "house-red": [-3.84, -37.29, 44.32, 39.75], "shop": [-6.85, -27.32, 48.14, 34.72], "stall": [-2.38, -28.34, 36.86, 28.25], "dock": [-0.55, -3.97, 31.28, 20.36], "board": [-3.69, -21.19, 24.96, 24.75], "tree-apple": [-11.15, -24.83, 22.55, 25.87], "tree": [-11.0, -24.83, 24.02, 25.87], "bush": [-7.07, -8.34, 15.33, 10.16], "rock": [-0.57, -7.01, 8.54, 8.4], "reeds": [-4.02, -15.18, 8.78, 15.38], "lily-f": [-0.72, -0.93, 6.03, 5.65], "lily": [-0.71, -0.17, 5.65, 4.89], "crate-red": [-0.62, -8.59, 8.92, 9.3], "crate-yellow": [-0.51, -8.16, 8.88, 8.88], "crate-orange": [-0.46, -8.16, 8.88, 8.88], "barrel": [-0.4, -9.4, 8.07, 10.11], "fence-h": [-0.3, -6.93, 27.01, 8.5], "fence-v": [-0.07, -6.0, 2.85, 27.58], "pond-sign": [-1.45, -40.0, 74.35, 41.24], "pond-cottage": [-14.38, -44.99, 56.9, 48.12], "pond-dock": [0, -2, 70, 26.16]};
   function buildFineMap(g, k, opt, build, ground) {
     const v = V(), a = MEADOW, keep = v.open.meadow ? [a.x - 5, a.y - 4, a.cols * 16 + 9, a.rows * 16 + 9] : null;
@@ -1100,7 +1101,7 @@
       'big-playground', 'big-windmill', 'big-fountain', 'big-duckpond', 'big-treehouse', 'big-lamppost', 'big-bunting', 'fish-sunny', 'fish-rainbow', 'fish-koi', 'fish-moon', 'fish-jewel', 'fish-king',
       'c-pup-a', 'c-pup-b', 'c-pup-sit', 'c-bird-up', 'c-bird-down', 'c-bird-sit', 'c-bee-a', 'c-bee-b'];
     let left = names.length;
-    names.forEach(n => { const im = new Image(); im.d = MAPD; im.onload = () => { ART['m-' + n] = im; if (--left === 0 && scene && (scene.kind === 'map' || scene.kind === 'fish') && mapArtReady) { scene.setDensity(MAPD); } }; im.src = `art/m-${n}.png?v=1`; });
+    names.forEach(n => { const im = new Image(); im.d = MAPD; im.onload = () => { ART['m-' + n] = im; if (--left === 0) fineLoaded = true; if (left === 0 && scene && (scene.kind === 'map' || scene.kind === 'fish') && mapArtReady) { scene.setDensity(MAPD); } }; im.src = `art/m-${n}.png?v=1`; });
   })();
   (function loadArt() {
     const names = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow', 'bakery-scene', 'bea', 'tray', 'bun', 'post-street', 'mo', 'cart', 'parcel', 'market-scene', 'market-counter', 'pip', 'workshop-scene', 'tom', 'dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5', 'dot-6']; let left = names.length;

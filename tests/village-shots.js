@@ -20,6 +20,8 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     await page.addInitScript(() => { Object.defineProperty(window, 'speechSynthesis', { value: undefined, configurable: true }); });
     await page.route('**/voice/index.json', r => r.fulfill({ contentType: 'application/json', body: '{"packs":[],"clips":{}}' }));
     page.on('pageerror', e => { failures++; console.log('  PAGE ERROR:', e.message); });
+    // a village level-up can arrive between steps: say hooray and carry on
+    await page.addLocatorHandler(page.locator('.vlevelup [data-ov]'), async l => { await l.click(); });
     page.on('console', m => { if (m.type() === 'error') { failures++; console.log('  CONSOLE ERROR:', m.text()); } });
     await page.goto(`http://localhost:${server.address().port}/`);
     const shot = n => page.screenshot({ path: `${OUT}/village-${tag}-${n}.png` });
@@ -116,6 +118,8 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     for (const [item, cx, cy] of [['flowers', 0, 0], ['tree', 1, 0], ['bench', 2, 0], ['lantern', 3, 0], ['birdhouse', 4, 0], ['well', 5, 1], ['pumpkin', 0, 2], ['bush', 1, 2], ['doghouse', 3, 2], ['flag', 5, 0]]) { await page.click(`[data-item=${item}]`); await tapScene(...cell(cx, cy)); }
     for (const [item, cx, cy] of [['sheep', 0, 0], ['hay', 2, 0], ['scarecrow', 3, 1], ['sheep', 1, 1]]) { await page.click(`[data-item=${item}]`); await tapScene(...cell(cx, cy, 'meadow')); }
     await page.click('[data-v=done]'); await page.waitForTimeout(900);
+    for (let i = 0; i < 40 && await page.evaluate(() => (EM.village.state().levelUps || []).length > 0 || !!document.querySelector('.vlevelup')); i++) { await page.evaluate(() => document.querySelectorAll('.vlevelup [data-ov]').forEach(b => b.click())); await page.waitForTimeout(300); }
+    check(await page.evaluate(() => EM.village.state().stars > 0), 'building in the yard earns village stars');
     check((await page.evaluate(() => EM.village.state().placed.length)) === 14, 'built 14 things across the yard and the meadow');
     await shot('06-built');
 

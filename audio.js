@@ -231,5 +231,9 @@
     gentle: () => tone([[330, 0.18]]),
     state: () => (ctx ? ctx.state : 'not started'),
     tick: () => tone([[990, 0.05]]),
+    // a lightning streak: a quick bright run up; a new best: two bells; done in her head: a soft rising pair
+    zap: () => tone([[784, 0.07], [988, 0.07], [1175, 0.07], [1568, 0.22]]),
+    best: () => tone([[1319, 0.09], [1760, 0.2]]),
+    head: () => tone([[587, 0.1], [880, 0.18]]),
   };
 })();

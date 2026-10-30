@@ -358,6 +358,10 @@
     { id: 'sheep', name: 'Sheep', cost: 6, paint: 'white', area: 'meadow' },
     { id: 'hay', name: 'Haystack', cost: 4, paint: 'yellow', area: 'meadow' },
     { id: 'scarecrow', name: 'Scarecrow', cost: 5, paint: 'blue', area: 'meadow' },
+    // showpieces: big (2 by 2 spots), painted art, unlocked as the village grows
+    { id: 'duckpond', name: 'Duck pond', cost: 25, paint: 'blue', size: 2, level: 3 },
+    { id: 'treehouse', name: 'Treehouse', cost: 35, paint: 'green', size: 2, level: 5 },
+    { id: 'fountain', name: 'Fountain', cost: 50, paint: 'blue', size: 2, level: 7 },
     // gifts from the villagers: free, and only once they've given them to her
     { id: 'appletree', name: "Rosa's apple tree", cost: 0, paint: 'green', gift: 'orchard' },
     { id: 'kitten', name: "Mr. Pip's kitten", cost: 0, paint: 'orange', gift: 'market' },

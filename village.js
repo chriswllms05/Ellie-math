@@ -165,14 +165,20 @@
   // it did. The drawn map still runs underneath for its shapes: each tall thing is filled with the painting's own
   // pixels, so she walks behind houses and trees; the bridge planks, her yard, the meadow and the pies stay in code
   function buildPaintedMap(g, k, opt) {
-    const plate = ART['map-village'], open = !!V().open.meadow;
+    const a = MEADOW, keep = V().open.meadow ? [a.x - 5, a.y - 4, a.cols * 16 + 9, a.rows * 16 + 9] : null;
+    return paintOver(g, k, ART['map-village'], () => buildMapStill(g, k, { ...opt, drawn: true }), keep);
+  }
+  // draw a still with build() for its shapes, then lay the plate over it: each tall thing (depth-sorted so she can
+  // pass behind it) is filled with the plate's own pixels; anything build() adds through k.raw stays as drawn.
+  // keep: a rectangle of the drawn ground to keep (the open meadow's plot)
+  function paintOver(g, k, plate, build, keep) {
     const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H; const tg = tmp.getContext('2d');
     k.setSkin(f => () => { const to = k.g; tg.clearRect(0, 0, W, H); k.setCtx(tg); f(); k.setCtx(to); tg.globalCompositeOperation = 'source-in'; tg.drawImage(plate, 0, 0); tg.globalCompositeOperation = 'source-over'; to.drawImage(tmp, 0, 0); });
-    const pts = buildMapStill(g, k, { ...opt, drawn: true });
+    const pts = build();
     k.setSkin(null);
-    const a = MEADOW, mx = a.x - 5, my = a.y - 4, keep = open ? g.getImageData(mx, my, a.cols * 16 + 9, a.rows * 16 + 9) : null;
+    const kept = keep ? g.getImageData(...keep) : null;
     g.drawImage(plate, 0, 0);
-    if (keep) g.putImageData(keep, mx, my);
+    if (kept) g.putImageData(kept, keep[0], keep[1]);
     return pts;
   }
   function buildMapStill(g, k, opt = {}) {
@@ -356,6 +362,16 @@
     const items = [];
     const walking = her.path.length > 0, wf = walking ? [0, 1, 0, 3][Math.floor(her.walkT / .11) % 4] : 0;
     const hop = her.hop > t ? Math.round(Math.sin((her.hop - t) / 400 * Math.PI) * 4) : 0;
+    // the painted villagers (one sheet, so they share the painting's light); she takes her avatar's hair and shirt
+    if (mapArtReady) {
+      const c = sc.frame.getContext('2d'), P = (im, cx, base, flip, bob) => { const x = Math.round(cx - im.width / 2), y = Math.round(base - im.height - bob);
+        if (flip) { c.save(); c.translate(x + im.width, y); c.scale(-1, 1); c.drawImage(im, 0, 0); c.restore(); } else c.drawImage(im, x, y); };
+      const step = walking ? Math.floor(her.walkT / .14) % 2 : 0, m = mission() || {}, wave = (period, off, on) => on && ((t + off) % period) < 1100 ? Math.floor(t / 180) % 2 : 0;
+      items.push({ y: her.y, box: [Math.round(her.x) - 2, Math.round(her.y) - 20, 13, 21], draw: () => { k.shadowEll(Math.round(her.x) + 4, Math.round(her.y), 5, 1); P(herArt('map-her'), Math.round(her.x) + 4, Math.round(her.y) + 1, her.flip, step + hop); } });
+      const npc = (n, [x, y], on, off) => items.push({ y, box: [x - 3, y - 20, 15, 21], draw: () => { k.shadowEll(x + 4, y, 5, 1); P(ART['map-' + n], x + 4, y + 1, false, wave(5600, off, on)); } });
+      npc('rosa', ROSA, m.text === 'Help Rosa pick apples', 0); npc('bea', BEA, m.job === 'bakery', 3300); npc('mo', MO, m.job === 'post', 2600); npc('pip', PIP, m.job === 'market', 1700);
+      if (placeOpen('workshop')) npc('tom', TOM, m.job === 'workshop', 2100);
+    } else {
     items.push({ y: her.y, box: [Math.round(her.x) - 1, Math.round(her.y) - 20, 11, 21], draw: () => { k.shadowEll(Math.round(her.x) + 4, Math.round(her.y), 4, 1); k.drawPerson(Math.round(her.x), Math.round(her.y), look(), { walk: wf, flip: her.flip, blink: !walking && (t % 3600) < 120, bob: hop, wave: her.wave > t }); } });
     // Rosa by her orchard, in her straw hat; she waves when helping her is the next job
     items.push({ y: ROSA[1], box: [ROSA[0] - 2, ROSA[1] - 19, 13, 20], draw: () => { const [x, y] = ROSA; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, ROSA_LOOK, { blink: (t % 3900) < 120, wave: (t % 5200) < 1100 && (mission() || {}).text === 'Help Rosa pick apples' });
@@ -368,6 +384,7 @@
       k.R(x + 1, y - 16, 7, 2, '#6a5a4a'); k.R(x, y - 14, 9, 1, '#4a3e34'); k.R(x + 2, y - 9, 5, 2, '#9a5a2a'); } });
     items.push({ y: PIP[1], box: [PIP[0] - 2, PIP[1] - 17, 13, 18], draw: () => { const [x, y] = PIP; k.shadowEll(x + 4, y, 4, 1); k.drawPerson(x, y, PIP_LOOK, { flip: true, blink: ((t + 1700) % 4300) < 120, wave: (t % 5600) < 1100 && (mission() || {}).job === 'market' });
       k.R(x + 2, y - 10, 5, 2, '#e8e8f0'); k.P(x + 4, y - 8, '#e8e8f0'); } });
+    }
     // things she just built pop in
     (ui.popping || []).forEach(pp => { const a = Math.min(1, (t - pp.t0) / 380), s = a < .7 ? a / .7 * 1.15 : 1.15 - (a - .7) / .3 * .15, ar = area(pp.p.area), x = ar.x + pp.p.cx * 16, y = ar.y + pp.p.cy * 16;
       items.push({ y: y + 15, draw: () => { const c = pp.c || (pp.c = itemCanvas(pp.p.item, pp.p.paint)); const w = Math.max(1, Math.round(16 * s)); sc.frame.getContext('2d').drawImage(c, Math.round(x + 8 - w / 2), Math.round(y + 16 - w), w, w); } }); });
@@ -562,6 +579,10 @@
   const CONFIRM_MS = 2000, BOB = [118, 128], BASKET = [181, 93], HAND = [166, 101];
   const goal = () => V().rounds ? 5 : 3;  // her first round is short
   function buildFishStill(g, k) {
+    if (mapArtReady) return paintOver(g, k, ART['map-pond'], () => buildDrawnPond(g, k));
+    return buildDrawnPond(g, k);
+  }
+  function buildDrawnPond(g, k) {
     const water = (x, y) => px.inEll(x, y, 118, 132, 108, 60) || (y < 90 && Math.abs(x - (54 + Math.sin(y / 18) * 7)) <= 8);
     const path = (x, y) => inRect(x, y, [222, 98, 80, 10]) || inRect(x, y, [258, 60, 9, 40]);
     px.ground(g, W, H, { water, path });
@@ -591,7 +612,7 @@
     mode = 'fish';
     F = { queue: [], i: -1, caught: 0, goal: goal(), started: Date.now(), stats: { items: 0, fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, times: [], fastKeys: [], learned: [] }, input: '', phase: 'cast', anim: { t0: now(), kind: 'cast' }, fishPos: [40, 170], fishFlip: false };
     renderFishing(true);
-    scene = makeScene('fish', buildFishStill); addGlows(scene, [[247, 64, 7, 'rgba(255,180,90,.22)'], [266, 64, 7, 'rgba(255,180,90,.22)']]);
+    scene = makeScene('fish', buildFishStill); scene.painted = mapArtReady; addGlows(scene, [[247, 64, 7, 'rgba(255,180,90,.22)'], [266, 64, 7, 'rgba(255,180,90,.22)']]);
     scene.cam = camAround(150, 110, 230); tweenCam({ ...CAM_FULL }, 700);
     scene.after = fishOverlays;
     const fd = document.getElementById('vfade'); if (fd) { fd.classList.add('on'); requestAnimationFrame(() => setTimeout(() => fd.classList.remove('on'), 30)); }
@@ -631,7 +652,7 @@
   function renderFishing() {
     const goalN = F ? F.goal : goal(), marks = Array.from({ length: goalN }, (_, i) => `<i class="${F && i < F.caught ? 'on' : ''}"></i>`).join('');
     $root.innerHTML = `<main class="village full fishing job">
-      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze mid"></div>
+      <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze ${mapArtReady ? 'off' : 'mid'}"></div>
         <div class="jsign" id="jsign"></div><div class="vtag" id="vtag"></div><div class="jbub bydot" id="jbub"></div>
       </div>
       <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span><div class="jorder vpanel"><b>Make 10: catch fish</b><div class="jmarks fish" id="jmarks">${marks}</div></div></div>
@@ -683,7 +704,8 @@
     if (F.phase === 'caught' && F.leap) { const e = Math.min(1, (t - F.leap.t0) / 720), x = lerp(BOB[0], BASKET[0], e), y = lerp(BOB[1], BASKET[1], e) - Math.sin(e * Math.PI) * 46; k.drawFish(Math.round(x - 4), Math.round(y - 2), F.leap.fast ? '#f7c948' : '#f2a33a', false); if (Math.random() < .5) burst(x, y, 1, F.leap.fast ? ['#fff7c2', '#ffe27a'] : ['#ffffff'], { g: 20, speed: 8, life: 400 }); if (e >= 1 && !F.leap.landed) { F.leap.landed = true; F.inBasket = (F.inBasket || 0) + 1; burst(BASKET[0], BASKET[1], 10, ['#ffe066', '#ffffff', '#f2a33a'], { up: true, spread: 2, speed: 40, life: 600 }); floatText('+1 🐟', BASKET[0], BASKET[1] - 8, F.leap.fast ? 'fast' : ''); } }
     // her, the basket, Dot
     const items = [];
-    items.push({ y: 109, draw: () => { k.shadowEll(168, 109, 4, 1); k.drawPerson(164, 109, look(), { blink: (t % 3600) < 120, bob: F.phase === 'caught' && t - F.anim.t0 < 300 ? 1 : 0 }); } });
+    items.push({ y: 109, draw: () => { const bob = F.phase === 'caught' && t - F.anim.t0 < 300 ? 1 : 0; k.shadowEll(168, 109, 4, 1);
+      if (mapArtReady) { const im = herArt('map-her'); sc.frame.getContext('2d').drawImage(im, 168 - Math.floor(im.width / 2), 110 - im.height - bob); } else k.drawPerson(164, 109, look(), { blink: (t % 3600) < 120, bob }); } });
     items.push({ y: 103, draw: () => { const n = Math.min(F.inBasket || 0, 12); k.R(176, 96, 11, 6, C.k3); k.R(176, 96, 11, 1, C.k4); k.R(176, 101, 11, 1, C.k1); for (let x = 177; x < 187; x += 2) k.P(x, 98, C.k2); for (let i = 0; i < n; i++) { const fx = 177 + (i % 4) * 2, fy = 94 - Math.floor(i / 4) * 2; k.R(fx, fy, 3, 2, i % 3 === 2 ? '#7fb8e8' : '#f2a33a'); k.P(fx, fy, '#ffd08a'); } } });
     drawDepth(sc, items);
     const dy = Math.round(Math.sin(t / 420) * 1.5); sc.dotAt = [136, 84 + dy]; k.drawDot(136, 84 + dy, t, (t % 4200) < 130);
@@ -788,12 +810,12 @@
   // orchard stays. See vault notes: base plate + kit, composed, then her, Rosa, the basket and apples as sprites.
   const ART = {}; let artReady = false, mapArtReady = false;
   (function loadMapArt() {
-    const names = ['village'];
+    const names = ['village', 'pond', 'her', 'rosa', 'bea', 'mo', 'pip', 'tom'];
     let left = names.length;
-    names.forEach(n => { const im = new Image(); im.onload = () => { ART['map-' + n] = im; if (--left === 0) { mapArtReady = true; if (scene && scene.kind === 'map') { scene.painted = true; scene.rebake(); const hz = document.querySelector('.vhaze'); if (hz) hz.className = 'vhaze off'; } } }; im.src = `art/map-${n}.png?v=2`; });
+    names.forEach(n => { const im = new Image(); im.onload = () => { ART['map-' + n] = im; if (--left === 0) { mapArtReady = true; if (scene && (scene.kind === 'map' || scene.kind === 'fish')) { scene.painted = true; scene.rebake(); const hz = document.querySelector('.vhaze'); if (hz) hz.className = 'vhaze off'; } } }; im.src = `art/map-${n}.png?v=3`; });
   })();
   (function loadArt() {
-    const names = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow', 'bakery-scene', 'bea', 'tray', 'bun', 'dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5', 'dot-6']; let left = names.length;
+    const names = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow', 'bakery-scene', 'bea', 'tray', 'bun', 'post-street', 'mo', 'cart', 'parcel', 'dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5', 'dot-6']; let left = names.length;
     names.forEach(n => { const im = new Image(); im.onload = () => { ART[n] = im; if (--left === 0) { artReady = true; if (scene && scene.kind === 'job' && paintedJob()) { scene.painted = true; scene.rebake(); const hz = document.querySelector('.vhaze'); if (hz) hz.className = 'vhaze off'; } } }; im.src = `art/${n}.png?v=2`; });
   })();
   const paintedJob = () => !!(O && O.J.art && artReady);
@@ -805,12 +827,12 @@
     const d = g.getImageData(0, 0, c.width, c.height), p = d.data, hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
     const toRGB = s => s.startsWith('#') ? hex(s) : s.match(/\d+/g).map(Number);
     const hair = toRGB(l.hair), shirt = toRGB(l.shirt), lum = (r, g2, b) => 0.2126 * r + 0.7152 * g2 + 0.0722 * b;
-    const cls = (r, g2, b) => { const mx = Math.max(r, g2, b), mn = Math.min(r, g2, b), sat = mx ? (mx - mn) / mx : 0;
+    const cls = (r, g2, b, y) => { const mx = Math.max(r, g2, b), mn = Math.min(r, g2, b), sat = mx ? (mx - mn) / mx : 0;
       if (r > 140 && b > g2 + 15 && g2 < r - 40 && sat > 0.3) return 'shirt';             // the pink shirt (skin has less blue than green)
-      if (mx < 130 && r >= g2 && g2 >= b - 10 && sat > 0.25) return 'hair';              // the dark-brown hair
+      if (y < c.height * .7 && mx < 175 && r >= g2 && g2 >= b - 10 && sat > 0.25) return 'hair';   // the brown hair and its highlights, above her shoes
       return null; };
     const ref = { shirt: lum(...hex('#e46a9a')), hair: lum(...hex('#6b4a32')) };
-    for (let i = 0; i < p.length; i += 4) { if (p[i + 3] < 128) continue; const k = cls(p[i], p[i + 1], p[i + 2]); if (!k) continue;
+    for (let i = 0; i < p.length; i += 4) { if (p[i + 3] < 128) continue; const k = cls(p[i], p[i + 1], p[i + 2], Math.floor(i / 4 / c.width)); if (!k) continue;
       const t = k === 'shirt' ? shirt : hair, f = Math.min(1.6, lum(p[i], p[i + 1], p[i + 2]) / ref[k]);
       p[i] = Math.min(255, t[0] * f); p[i + 1] = Math.min(255, t[1] * f); p[i + 2] = Math.min(255, t[2] * f); }
     g.putImageData(d, 0, 0); herCache[key] = c; return c;
@@ -989,9 +1011,9 @@
     // the post office: Mo the mail carrier. Read the place-value discs on a package (or count on along the street) to
     // find which house it goes to. Place value, graded like practice's big-number skills.
     post: {
-      npc: 'Mo', chibi: 'mo', order: 'Mo needs help with the mail', marks: 'mail', node: 'post', mapCam: [150, 92, 96], rounds: 'postRounds', log: 'Delivering mail with Mo',
+      npc: 'Mo', chibi: 'mo', art: true, order: 'Mo needs help with the mail', marks: 'mail', node: 'post', mapCam: [150, 92, 96], rounds: 'postRounds', log: 'Delivering mail with Mo',
       skills: ['pv_build', 'pv_count'], proc: true, maxLen: 5, tagCount: 3,
-      her: [84, 144], npcAt: [158, 136], head: [166, 113], sign: [11, 81, 72, 24], dotHome: [44, 118], dotHelp: () => [146, 94],
+      her: [84, 144], get npcAt() { return artReady ? [146, 136] : [158, 136]; }, get head() { return artReady ? [154, 97] : [166, 113]; }, sign: [11, 81, 72, 24], dotHome: [44, 118], dotHelp: () => artReady ? [130, 92] : [146, 94],
       houses: [6, 64, 122], labelAt: [108, 100], labelW: 50,
       // three houses on the street: the right one and two that are easy to mix up with it (digits swapped, or one place off)
       setup(O) {
@@ -1006,9 +1028,11 @@
       label(O) { const st = O.item.steps[0]; if (O.help && O.help.vis) return O.help.vis; return O.item.skillId === 'pv_build' ? O.item.visFor(0) : st.html.replace(/<span class="slot[^"]*">(&nbsp;)?<\/span>/, '<b class="q">?</b>'); },
       deal() { return [{ who: 0, t0: now() + 200, x: -20, y: 108 }]; },
       land: () => [104, 104],
-      falling: (k, x, y) => k.package(x, y, 18, 12),
+      falling: (k, x, y) => artReady ? k.g.drawImage(ART.parcel, Math.round(x), Math.round(y)) : k.package(x, y, 18, 12),
       tags(O) { return O.houses.map((n, i) => ({ x: this.houses[i] + 22, y: 36, text: EM.fmt(n), on: true, hit: O.phase === 'right' || O.phase === 'solved' ? n === O.f.ans : false })); },
-      still(g, k) {
+      // the painted street (one painting, traced from the drawn one below, with an evening sky behind the roofs)
+      still(g, k) { return artReady ? paintOver(g, k, ART['post-street'], () => this.drawnStill(g, k)) : this.drawnStill(g, k); },
+      drawnStill(g, k) {
         px.ground(g, W, H, { path: (x, y) => y > 70 && y < 88 + Math.sin(x / 40) * 2, tall: (x, y) => y > 190 });
         this.houses.forEach((x, i) => k.house(x, 66, 44, ['red', 'blue', 'gold'][i], { chimney: i !== 1, lit: i === 1 }));
         k.house(180, 66, 44, 'red', { chimney: true });
@@ -1020,9 +1044,10 @@
         return [];
       },
       draw(k, t, O, hop) {
-        k.cart(88, 132);
-        if (O.phase !== 'pick') k.package(96 - (O.phase === 'right' ? hop : 0), 104, 18, 12);
-        k.package(118, 110, 12, 8); k.package(132, 108, 10, 9);
+        if (artReady) { k.shadowEll(118, 140, 30, 3); k.g.drawImage(ART.cart, 88, 108); if (O.phase !== 'pick') k.g.drawImage(ART.parcel, 96 - (O.phase === 'right' ? hop : 0), 104); }
+        else { k.cart(88, 132); if (O.phase !== 'pick') k.package(96 - (O.phase === 'right' ? hop : 0), 104, 18, 12); k.package(118, 110, 12, 8); k.package(132, 108, 10, 9); }
+        if (artReady) { const b = O.phase === 'right' ? hop : 0; k.shadowEll(this.her[0] + 8, this.her[1], 9, 2); k.shadowEll(this.npcAt[0] + 8, this.npcAt[1], 10, 2);
+          drawSpriteArt(herArt(), this.her[0] + 8, this.her[1] + 1 - b); drawSpriteArt(ART.mo, this.npcAt[0] + 8, this.npcAt[1] + 1 - b); return; }
         drawHer(k, t, this.her, O, hop); drawNpc(k, t, this, O, hop);
       },
     },
@@ -1401,7 +1426,7 @@
     mode = mode === 'build' ? 'build' : 'map'; scene = null; ui.arrived = false; ui.popping = []; ui.story = false; ui.busy = false; ui.dotTarget = null; ui.plankFly = null;
     renderMap();
   }
-  function startFishingScene() { scene = makeScene('fish', buildFishStill); scene.after = fishOverlays; startLoop(drawFishing); renderFishWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
+  function startFishingScene() { scene = makeScene('fish', buildFishStill); scene.painted = mapArtReady; scene.after = fishOverlays; startLoop(drawFishing); renderFishWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
 
   // ---------- taps ----------
   // Pad keys act on pointerdown (see app.js); the click that follows is ignored. Both jobs share the pad's buttons.

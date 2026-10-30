@@ -252,10 +252,10 @@ let failures = 0; const check = (c, m) => { console.log(c ? '  ok:' : '  FAIL:',
     await page.click('.vhello [data-ov=go]'); await page.waitForSelector('.practice.framed.in-workshop');
     check(await page.evaluate(() => ['regroup', 'trade'].includes(EM._run().cur.skillId) && document.body.classList.contains('framed')), "the workshop asks column math and trading tens, with the workshop behind");
     await page.waitForTimeout(800); await shot('07i1-workshop');
-    const wc0 = await page.evaluate(() => EM.village.state().coins);
+    const wc0 = await page.evaluate(() => EM.village.state().coins - (EM.village.state().tips || 0));   // villagers' tips aside
     while (await solve()) {}
     await page.waitForSelector('.vover', { timeout: 15000 }); await page.waitForTimeout(400);
-    const wv = await page.evaluate(() => ({ coins: EM.village.state().coins, rounds: EM.village.state().workshopRounds, text: document.querySelector('.vover').innerText, log: EM.S.sessions[EM.S.sessions.length - 1] }));
+    const wv = await page.evaluate(() => ({ coins: EM.village.state().coins - (EM.village.state().tips || 0), rounds: EM.village.state().workshopRounds, text: document.querySelector('.vover').innerText, log: EM.S.sessions[EM.S.sessions.length - 1] }));
     check(wv.coins === wc0 + 3 && wv.rounds === 1 && /Tom paid you 3 coins/.test(wv.text) && wv.log.kind === 'workshop', `three problems solved: Tom pays 3 coins and says thanks back in the village (${wv.coins - wc0} coins)`);
     await shot('07i2-tom-thanks'); await page.click('.vover [data-ov=keep]'); await page.waitForTimeout(600);
     await page.click('[data-v=notes]'); await page.waitForSelector('.vhello', { timeout: 15000 }); await page.click('.vhello [data-ov=go]'); await page.waitForSelector('.practice.framed.in-notes');

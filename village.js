@@ -629,14 +629,17 @@
   // =====================================================================
   const pet = { x: 0, y: 0, on: false, flip: false };
   function yardLife(sc, k, t, items) {
+    // a fine critter, by its bottom centre (flipped to face left); false when the art isn't in, so the drawn one shows
+    const critter = (n, cx, by, flip) => { const im = ART['m-c-' + n]; if (!im) return false; const w = im.width / MAPD, h = im.height / MAPD, g = k.g;
+      if (flip) { g.save(); g.translate(cx, 0); g.scale(-1, 1); g.drawImage(im, -w / 2, by - h, w, h); g.restore(); } else g.drawImage(im, cx - w / 2, by - h, w, h); return true; };
     const v = V(), c = sc.frame.getContext('2d'), at = p => { const a = area(p.area); return [a.x + p.cx * 16, a.y + p.cy * 16]; };
     const has = id => v.placed.find(p => p.item === id && (p.area !== 'meadow' || v.open.meadow));
     for (const p of v.placed) {
       if (p.area === 'meadow' && !v.open.meadow) continue;
       const [x, y] = at(p), ph = (p.cx * 7 + p.cy * 13) * 300;
       if (p.item === 'lantern') { const f = .55 + .25 * Math.sin((t + ph) / 140) * Math.sin((t + ph) / 370), g = c.createRadialGradient(x + 8, y + 4, 0, x + 8, y + 4, 10); g.addColorStop(0, `rgba(255,214,120,${.45 * f})`); g.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = g; c.fillRect(x - 2, y - 6, 20, 20); }
-      if (p.item === 'flowers' && ((t + ph) % 9000) < 6000) { const a = (t + ph) / 520, bx = x + 8 + Math.cos(a) * 6, by = y + 4 + Math.sin(a * 1.7) * 3; k.P(Math.round(bx), Math.round(by), '#2b2433'); k.P(Math.round(bx) + 1, Math.round(by), '#ffd23a'); if (Math.floor(t / 90) % 2) k.P(Math.round(bx), Math.round(by) - 1, 'rgba(255,255,255,.9)'); }
-      if (p.item === 'birdhouse') { const cyc = (t + ph) % 11000; if (cyc < 4000) { const e = cyc / 4000, a = e * Math.PI * 2, bx = x + 8 + Math.cos(a) * 14, by = y - 6 + Math.sin(a) * 5 - Math.sin(e * Math.PI) * 6, wing = Math.floor(t / 110) % 2; k.P(Math.round(bx), Math.round(by), '#5aa9e6'); k.P(Math.round(bx) - 1, Math.round(by) - wing, '#3d7fc0'); k.P(Math.round(bx) + 1, Math.round(by) - wing, '#3d7fc0'); } else if (cyc < 7000) { k.P(x + 8, y - 1, '#5aa9e6'); k.P(x + 9, y - 1, '#f2a33a'); } }
+      if (p.item === 'flowers' && ((t + ph) % 9000) < 6000) { const a = (t + ph) / 520, bx = x + 8 + Math.cos(a) * 6, by = y + 4 + Math.sin(a * 1.7) * 3; if (!critter(Math.floor(t / 70) % 2 ? 'bee-a' : 'bee-b', bx, by + 1.5, Math.sin(a) > 0)) k.P(Math.round(bx), Math.round(by), '#2b2433'); k.P(Math.round(bx) + 1, Math.round(by), '#ffd23a'); if (Math.floor(t / 90) % 2) k.P(Math.round(bx), Math.round(by) - 1, 'rgba(255,255,255,.9)'); }
+      if (p.item === 'birdhouse') { const cyc = (t + ph) % 11000; if (cyc < 4000) { const e = cyc / 4000, a = e * Math.PI * 2, bx = x + 8 + Math.cos(a) * 14, by = y - 6 + Math.sin(a) * 5 - Math.sin(e * Math.PI) * 6, wing = Math.floor(t / 110) % 2; if (!critter(wing ? 'bird-up' : 'bird-down', bx, by + 2.5, Math.sin(a) > 0)) k.P(Math.round(bx), Math.round(by), '#5aa9e6'); k.P(Math.round(bx) - 1, Math.round(by) - wing, '#3d7fc0'); k.P(Math.round(bx) + 1, Math.round(by) - wing, '#3d7fc0'); } else if (cyc < 7000) { if (!critter('bird-sit', x + 9, y + 1, false)) k.P(x + 8, y - 1, '#5aa9e6'); k.P(x + 9, y - 1, '#f2a33a'); } }
       if (p.item === 'duckpond' && ((t + ph) % 2600) < 30 && !p._r) { p._r = 1; (sc.ripples = sc.ripples || []).push({ x: x + 16 + (Math.random() - .5) * 10, y: y + 22, t0: t }); } else if (((t + ph) % 2600) >= 30) p._r = 0;
       if (p.item === 'fountain' && Math.random() < .25) burst(x + 16, y + 10, 1, ['#ffffff', '#bfe3ff', '#7fc4f0'], { up: true, spread: 1.2, speed: 22, life: 600, g: 60 });
       if (p.item === 'kitten' && ((t + ph) % 5000) < 800) { const w = Math.floor(t / 160) % 2; k.P(x + 12 + w, y + 9, '#f2a33a'); k.P(x + 13 + w, y + 8, '#f2a33a'); }
@@ -647,9 +650,9 @@
       const [hx, hy] = at(dog), tx = her.x + (her.flip ? 12 : -6), ty = her.y;
       if (!pet.on) Object.assign(pet, { x: hx + 8, y: hy + 15, on: true });
       const dx = tx - pet.x, dy = ty - pet.y, d = Math.hypot(dx, dy), moving = d > 6;
-      if (moving) { const sp = Math.min(d, (d > 40 ? 70 : 34) * (sc.dt || .016)); pet.x += dx / d * sp; pet.y += dy / d * sp; pet.flip = dx < 0; }
+      if (moving) { const sp = Math.min(d, (d > 40 ? 70 : 34) * (sc.dt || .016)); pet.x += dx / d * sp; pet.y += dy / d * sp; pet.flip = dx < 0; } else pet.flip = her.x + 4 < pet.x;
       const px_ = Math.round(pet.x), py = Math.round(pet.y), leg = moving ? Math.floor(t / 120) % 2 : 0, tail = Math.floor(t / (moving ? 90 : 220)) % 2;
-      items.push({ y: py, draw: () => { k.shadowEll(px_, py, 3, 1); const s = pet.flip ? -1 : 1, X = dx_ => px_ + dx_ * s;
+      items.push({ y: py, draw: () => { k.shadowEll(px_, py, 4, 1); if (critter(moving ? (Math.floor(t / 150) % 2 ? 'pup-a' : 'pup-b') : 'pup-sit', pet.x, pet.y + .5, pet.flip)) return; const s = pet.flip ? -1 : 1, X = dx_ => px_ + dx_ * s;
         const body = '#c98a4a', dark = '#8a5a2a', ear = '#6a4020';
         for (let i = -2; i <= 2; i++) { k.P(X(i), py - 3, body); k.P(X(i), py - 2, body); }
         k.P(X(3), py - 4, body); k.P(X(3), py - 3, body); k.P(X(4), py - 4, body); k.P(X(4), py - 3, '#2b2433'); k.P(X(3), py - 5, ear); k.P(X(4), py - 5, body);
@@ -678,7 +681,7 @@
       const key = proj ? 'p:' + proj.id : fresh.item; (seen[n] = seen[n] || []).push(key);
       const line = proj ? { playground: 'The kids love the playground you built!', windmill: 'That windmill! Thank you for helping build it.', festival: 'Best festival ever, thanks to you!' }[proj.id] : REACT[fresh.item];
       const tip = (v.tipDay || {})[n] !== day && Math.random() < .5;
-      if (tip) { (v.tipDay = v.tipDay || {})[n] = day; v.coins++; showCoins(); }
+      if (tip) { (v.tipDay = v.tipDay || {})[n] = day; v.coins++; v.tips = (v.tips || 0) + 1; showCoins(); }
       EM.save();
       floatText(`💬 ${line}`, x + 4, y - 24, 'react'); if (tip) setTimeout(() => { floatText('+1 🪙', x + 4, y - 14, 'coin'); sfx('right'); }, 900);
       return;
@@ -1094,7 +1097,8 @@
   (function loadFineMap() {
     const names = ['ground', 'pond-ground', 'tree', 'tree-apple', 'bush', 'rock', 'reeds', 'lily', 'lily-f', 'crate-red', 'crate-yellow', 'crate-orange', 'barrel', 'board', 'fence-h', 'fence-v',
       'house-blue', 'house-gold', 'house-red', 'shop', 'stall', 'dock', 'pond-cottage', 'pond-sign', 'pond-dock', 'v-her', 'v-rosa', 'v-bea', 'v-mo', 'v-pip', 'v-tom', 'fish-orange', 'fish-gold', 'fish-shadow', 'bobber', 'fish-basket',
-      'big-playground', 'big-windmill', 'big-fountain', 'big-duckpond', 'big-treehouse', 'big-lamppost', 'big-bunting', 'fish-sunny', 'fish-rainbow', 'fish-koi', 'fish-moon', 'fish-jewel', 'fish-king'];
+      'big-playground', 'big-windmill', 'big-fountain', 'big-duckpond', 'big-treehouse', 'big-lamppost', 'big-bunting', 'fish-sunny', 'fish-rainbow', 'fish-koi', 'fish-moon', 'fish-jewel', 'fish-king',
+      'c-pup-a', 'c-pup-b', 'c-pup-sit', 'c-bird-up', 'c-bird-down', 'c-bird-sit', 'c-bee-a', 'c-bee-b'];
     let left = names.length;
     names.forEach(n => { const im = new Image(); im.d = MAPD; im.onload = () => { ART['m-' + n] = im; if (--left === 0 && scene && (scene.kind === 'map' || scene.kind === 'fish') && mapArtReady) { scene.setDensity(MAPD); } }; im.src = `art/m-${n}.png?v=1`; });
   })();

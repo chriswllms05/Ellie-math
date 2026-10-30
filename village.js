@@ -1335,7 +1335,7 @@
   function startJobScene() { scene = makeScene('job', (g, k) => O.J.still(g, k), paintedJob() ? FINE : 1); scene.painted = paintedJob(); scene.cam = { ...JCAM }; scene.after = jobOverlays; startLoop(drawJob); renderJobWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
   function jobRefill() {
     const open = O.J.skills.filter(id => EM.isOpen(id));
-    O.queue.push(...EM.buildFactQueue(open.length ? open : [O.J.skills[0]], 14).queue.filter(e => O.J.fact(EM.FACTS[e.key])));
+    O.queue.push(...EM.buildFactQueue(open.length ? open : [O.J.skills[0]], 14, Date.now(), { only: k => O.J.fact(EM.FACTS[k]) }).queue);
   }
   function nextQ() {
     clearTimeout(O.helloT); O.i++; if (O.i >= O.queue.length && !O.J.proc) jobRefill();

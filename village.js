@@ -83,12 +83,16 @@
   const sfx = n => { try { EM.sfx && EM.sfx[n] && EM.sfx[n](); } catch (e) {} };
 
   // ---------- the living scene: baked still layer + things that move ----------
-  function makeScene(kind, buildStill) {
+  // D: pixel density. Everything is laid out in W x H scene pixels; a close-up with fine painted art (D 5) keeps its
+  // canvases D times larger, drawn through a D-scaled transform, so code-drawn things keep their size and art
+  // (drawn with put) keeps every fine pixel
+  function makeScene(kind, buildStill, D = 1) {
     const sc = { kind, S: scaleFor(), cam: { ...CAM_FULL }, camTween: null, particles: [], dyn: [], t0: now() };
-    const base = document.createElement('canvas'); base.width = W; base.height = H;
-    sc.base = base; sc.buildStill = buildStill; sc.rebake = () => { const g = base.getContext('2d'); g.clearRect(0, 0, W, H); const k = px.kit(g); sc.waterPts = sc.buildStill(g, k); sc.sprites = k.bake(W, H); };
-    sc.rebake();
-    sc.frame = document.createElement('canvas'); sc.frame.width = W; sc.frame.height = H; sc.fk = px.kit(sc.frame.getContext('2d'));
+    const base = document.createElement('canvas'); sc.base = base; sc.frame = document.createElement('canvas'); sc.buildStill = buildStill;
+    const scaled = c => { const g = c.getContext('2d'); g.setTransform(sc.D, 0, 0, sc.D, 0, 0); g.imageSmoothingEnabled = false; return g; };
+    sc.rebake = () => { const g = scaled(base); g.clearRect(0, 0, W, H); const k = px.kit(g); sc.waterPts = sc.buildStill(g, k); sc.sprites = k.bake(W, H); };
+    sc.setDensity = d => { sc.D = d; base.width = W * d; base.height = H * d; sc.frame.width = W * d; sc.frame.height = H * d; sc.fk = px.kit(scaled(sc.frame)); sc.rebake(); };
+    sc.setDensity(D);
     // soft light: warm wash and window glows, made once at full size; vignette is fixed to the screen
     const DW = W * sc.S, DH = H * sc.S;
     sc.light = document.createElement('canvas'); sc.light.width = DW; sc.light.height = DH;
@@ -110,7 +114,7 @@
       if (t - last < 30) return; last = t;
       const sc = scene; if (!sc) return;
       if (sc.camTween) { const tw = sc.camTween, k = Math.min(1, (now() - tw.t0) / tw.ms), e = ease(k); for (const key of ['x', 'y', 'w', 'h']) sc.cam[key] = lerp(tw.from[key], tw.to[key], e); if (k >= 1) { sc.camTween = null; tw.then && tw.then(); } }
-      const fc = sc.frame.getContext('2d'); fc.clearRect(0, 0, W, H); fc.drawImage(sc.base, 0, 0);
+      const fc = sc.frame.getContext('2d'); fc.clearRect(0, 0, W, H); fc.drawImage(sc.base, 0, 0, W, H);
       draw(sc, sc.fk, now());
       // particles
       const k = sc.fk, tn = now();
@@ -119,8 +123,9 @@
       const cv = document.getElementById('vcanvas'), [DW, DH] = bufSize();
       if (cv.width !== DW || cv.height !== DH) { cv.width = DW; cv.height = DH; }
       const dc = cv.getContext('2d'), cam = sc.view = viewCam(sc, DW, DH), s = sc.S;
-      dc.imageSmoothingEnabled = false; dc.globalCompositeOperation = 'source-over';
-      dc.drawImage(sc.frame, cam.x, cam.y, cam.w, cam.h, 0, 0, DW, DH);
+      // fine art is close to screen resolution: let the last small scale-up be smooth rather than uneven
+      dc.imageSmoothingEnabled = sc.D > 1; dc.imageSmoothingQuality = 'high'; dc.globalCompositeOperation = 'source-over';
+      dc.drawImage(sc.frame, cam.x * sc.D, cam.y * sc.D, cam.w * sc.D, cam.h * sc.D, 0, 0, DW, DH);
       // painted art carries its own light and colour: no wash or glows over it (they flatten it)
       if (!sc.painted) { dc.globalCompositeOperation = 'soft-light'; dc.drawImage(sc.light, cam.x * s, cam.y * s, cam.w * s, cam.h * s, 0, 0, DW, DH);
         dc.globalCompositeOperation = 'lighter'; dc.drawImage(sc.glow, cam.x * s, cam.y * s, cam.w * s, cam.h * s, 0, 0, DW, DH); }
@@ -814,16 +819,20 @@
     let left = names.length;
     names.forEach(n => { const im = new Image(); im.onload = () => { ART['map-' + n] = im; if (--left === 0) { mapArtReady = true; if (scene && (scene.kind === 'map' || scene.kind === 'fish')) { scene.painted = true; scene.rebake(); const hz = document.querySelector('.vhaze'); if (hz) hz.className = 'vhaze off'; } } }; im.src = `art/map-${n}.png?v=3`; });
   })();
+  // fine art: how many of its pixels make one scene pixel (the rest is 1)
+  const ARTD = { cart: 5, parcel: 5, her: 5, rosa: 5, bea: 5, mo: 5, 'post-street': 5, 'dot-1': 5, 'dot-2': 5, 'dot-3': 5, 'dot-4': 5, 'dot-5': 5, 'dot-6': 5, basket: 5, tray: 5, 'apple-red': 5, 'apple-yellow': 5, bun: 5, 'orchard-scene': 5, 'bakery-scene': 5, 'market-scene': 5, 'market-counter': 5, pip: 5, tom: 5, 'workshop-scene': 5 };
+  // the market counter's top-left in the scene (it is drawn in front of her each frame)
+  const MARKET_COUNTER = [18.9, 107.8];
   (function loadArt() {
-    const names = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow', 'bakery-scene', 'bea', 'tray', 'bun', 'post-street', 'mo', 'cart', 'parcel', 'dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5', 'dot-6']; let left = names.length;
-    names.forEach(n => { const im = new Image(); im.onload = () => { ART[n] = im; if (--left === 0) { artReady = true; if (scene && scene.kind === 'job' && paintedJob()) { scene.painted = true; scene.rebake(); const hz = document.querySelector('.vhaze'); if (hz) hz.className = 'vhaze off'; } } }; im.src = `art/${n}.png?v=2`; });
+    const names = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow', 'bakery-scene', 'bea', 'tray', 'bun', 'post-street', 'mo', 'cart', 'parcel', 'market-scene', 'market-counter', 'pip', 'workshop-scene', 'tom', 'dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5', 'dot-6']; let left = names.length;
+    names.forEach(n => { const im = new Image(); im.d = ARTD[n] || 1; im.onload = () => { ART[n] = im; if (--left === 0) { artReady = true; if (scene && scene.kind === 'job' && paintedJob()) { scene.painted = true; scene.setDensity(FINE); const hz = document.querySelector('.vhaze'); if (hz) hz.className = 'vhaze off'; } } }; im.src = `art/${n}.png?v=3`; });
   })();
-  const paintedJob = () => !!(O && O.J.art && artReady);
+  const paintedJob = () => !!(O && O.J.art && artReady), FINE = 5;   // close-ups with painted art draw at 5x density (about the iPad's own resolution there)
   // her painted sprite in her own avatar's colours: the hair and shirt pixels take her colours, keeping their shading
   const herCache = {};
   function herArt(src = 'her') {
     const l = look(), key = `${src}|${l.hair}|${l.shirt}`; if (herCache[key]) return herCache[key];
-    const im = ART[src], c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    const im = ART[src], c = document.createElement('canvas'); c.width = im.width; c.height = im.height; c.d = dOf(im); const g = c.getContext('2d'); g.drawImage(im, 0, 0);
     const d = g.getImageData(0, 0, c.width, c.height), p = d.data, hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
     const toRGB = s => s.startsWith('#') ? hex(s) : s.match(/\d+/g).map(Number);
     const hair = toRGB(l.hair), shirt = toRGB(l.shirt), lum = (r, g2, b) => 0.2126 * r + 0.7152 * g2 + 0.0722 * b;
@@ -840,25 +849,30 @@
   // a basket of n apples: the first four sit inside the rim, the rest heap up out of it (relative to the basket's top-left)
   const BASKET_SPOTS = [[3, 4], [8, 4], [13, 4], [17, 4], [5, 1], [10, 0], [15, 1], [7, -2], [12, -3], [10, -5]];
   function drawBasketArt(cx, base, n, kind) {
-    const c = scene.frame.getContext('2d'), B = ART.basket, A = ART[kind === 'yellow' ? 'apple-yellow' : 'apple-red'], x = Math.round(cx - B.width / 2), y = base - B.height;
-    c.drawImage(B, x, y);
-    for (let i = 0; i < Math.min(n, BASKET_SPOTS.length); i++) c.drawImage(A, x + BASKET_SPOTS[i][0], y + BASKET_SPOTS[i][1]);
-    c.drawImage(B, 0, 9, B.width, B.height - 9, x, y + 9, B.width, B.height - 9);       // the front lip and wall (from row 9) over the lowest apples
+    const c = scene.frame.getContext('2d'), B = ART.basket, A = ART[kind === 'yellow' ? 'apple-yellow' : 'apple-red'], bw = B.width / dOf(B), bh = B.height / dOf(B), x = Math.round(cx - bw / 2), y = base - bh;
+    put(c, B, x, y);
+    for (let i = 0; i < Math.min(n, BASKET_SPOTS.length); i++) put(c, A, x + BASKET_SPOTS[i][0], y + BASKET_SPOTS[i][1]);
+    const d = dOf(B), r = d > 1 ? 11 : 9; c.drawImage(B, 0, r * d, B.width, B.height - r * d, x, y + r, B.width / d, B.height / d - r);       // the front lip and wall over the lowest apples
   }
   // a tray of ten on the counter: buns sit in the cups; the one more bun (uppercase) blinks with a light rim
-  const trayCup = (x, base, n) => [x + 2 + (n % 5) * 7, base - 13 + Math.floor(n / 5) * 5];
+  // a bun's top-left in cup n (the fine tray's cups are 7.15 px apart, rows 5.7 apart)
+  const trayCup = (x, base, n) => dOf(ART.tray) > 1 ? [x + 1 + (n % 5) * 7.15, base - 15.2 + Math.floor(n / 5) * 5.7] : [x + 2 + (n % 5) * 7, base - 13 + Math.floor(n / 5) * 5];
   function drawTrayArt(x, base, cells, ring) {
-    const c = scene.frame.getContext('2d'); c.drawImage(ART.tray, x, base - ART.tray.height);
+    const c = scene.frame.getContext('2d'); put(c, ART.tray, x, base - ART.tray.height / dOf(ART.tray));
     cells.forEach((v, n) => { if (v === 'e') return; const [bx, by] = trayCup(x, base, n);
       if (v === v.toUpperCase() && ring) { c.fillStyle = '#fff3b0'; c.fillRect(bx - 1, by - 1, 8, 6); }
-      c.drawImage(ART.bun, bx, by); });
+      put(c, ART.bun, bx, by); });
   }
   // the painted Dot: her face follows the moment (cheer on a right answer, curious in help, a blink now and then)
   function drawDotArt(at, t, O) {
     const mood = O && O.phase === 'right' ? 3 : O && (O.crates || O.phase === 'help') ? 4 : O && O.phase === 'solved' ? 5 : (t % 4200) < 140 ? 2 : 1, im = ART[`dot-${mood}`];
-    scene.frame.getContext('2d').drawImage(im, Math.round(at[0] - im.width / 2), Math.round(at[1] - im.height / 2));
+    put(scene.frame.getContext('2d'), im, Math.round(at[0] - im.width / dOf(im) / 2), Math.round(at[1] - im.height / dOf(im) / 2));
   }
-  function drawSpriteArt(im, cx, base) { scene.frame.getContext('2d').drawImage(im, Math.round(cx - im.width / 2), Math.round(base - im.height)); }
+  // art carries its own density (im.d fine pixels per scene pixel); put draws it at its size in scene pixels, on the
+  // scene's grid
+  const dOf = im => im.d || 1, snap = v => { const D = (scene && scene.D) || 1; return Math.round(v * D) / D; };
+  function put(c, im, x, y) { c.drawImage(im, snap(x), snap(y), im.width / dOf(im), im.height / dOf(im)); }
+  function drawSpriteArt(im, cx, base) { put(scene.frame.getContext('2d'), im, cx - im.width / dOf(im) / 2, base - im.height / dOf(im)); }
   let O = null;
   const JOBS = {
     // the orchard: she and Rosa each pick apples; how many in all? (positions stay clear of the sides a 4:3 iPad crops)
@@ -889,10 +903,10 @@
       land(who, n) { const [bx, by] = this.boxes[who];
         if (artReady) { const s = BASKET_SPOTS[Math.min(n, BASKET_SPOTS.length - 1)]; return [bx + 11 - 11 + s[0], by + 2 - 21 + s[1]]; }
         return [bx + 3 + (n % 4) * 4 + (Math.floor(n / 4) % 2) * 2, by - 14 - Math.floor(n / 4) * 3]; },
-      falling: (k, x, y, who) => artReady ? scene.frame.getContext('2d').drawImage(ART[who ? 'apple-yellow' : 'apple-red'], x, y) : k.apple(x, y, who ? 'yellow' : 'red'),
+      falling: (k, x, y, who) => artReady ? put(scene.frame.getContext('2d'), ART[who ? 'apple-yellow' : 'apple-red'], x, y) : k.apple(x, y, who ? 'yellow' : 'red'),
       tags(O) { return this.boxes.map(([bx, by], i) => ({ x: bx + 11, y: artReady ? by - 24 - (O.shown[i] > 7 ? 7 : O.shown[i] > 4 ? 4 : 0) : by - 20 - Math.ceil(O.shown[i] / 4) * 3, text: O.shown[i], on: O.shown[i] > 0 })); },
       still(g, k) {
-        if (artReady) { px.ground(g, W, H, {}); g.drawImage(ART['orchard-scene'], 0, 0); k.add(118, () => k.sign(38, 118, 80, 30)); return []; }
+        if (artReady) { px.ground(g, W, H, {}); put(g, ART['orchard-scene'], 0, 0); k.add(118, () => k.sign(38, 118, 80, 30)); return []; }
         const path = (x, y) => y > 146 && y < 160 + Math.sin(x / 30) * 2;
         px.ground(g, W, H, { path, tall: (x, y) => y < 50 });
         for (let i = 0; i < 7; i++) k.tree(10 + i * 44 + (i % 2) * 5, 52 + (i % 2) * 5, { r: 17 + (i % 3), far: true });
@@ -931,10 +945,10 @@
       // Bea sets the buns out one at a time
       deal(f, i) { const t = now(), d = []; for (let n = 0; n < f.a; n++) d.push({ who: 0, t0: t + 250 + n * 100, x: 132, y: 112 }); for (let n = 0; n < f.b; n++) d.push({ who: 1, t0: t + 250 + (f.a + n) * 100, x: 132, y: 112 }); return d; },
       land(who, n) { const [x, y] = this.trays[who]; return artReady ? trayCup(x, y - 2, Math.min(n, 9)) : [x + 2 + (n % 5) * 7, y - 15 + Math.floor(n / 5) * 8]; },
-      falling: (k, x, y) => artReady ? scene.frame.getContext('2d').drawImage(ART.bun, x, y) : k.bun(x, y),
+      falling: (k, x, y) => artReady ? put(scene.frame.getContext('2d'), ART.bun, x, y) : k.bun(x, y),
       tags(O) { return this.trays.map(([x, y], i) => ({ x: x + 19, y: y - 22, text: O.shown[i], on: O.shown[i] > 0 })); },
       still(g, k) {
-        if (artReady) { px.ground(g, W, H, {}); g.drawImage(ART['bakery-scene'], 0, 0); k.add(118, () => k.sign(38, 118, 80, 30)); return []; }
+        if (artReady) { px.ground(g, W, H, {}); put(g, ART['bakery-scene'], 0, 0); k.add(118, () => k.sign(38, 118, 80, 30)); return []; }
         const path = (x, y) => y > 146 && y < 160 + Math.sin(x / 30) * 2;
         px.ground(g, W, H, { path });
         k.house(-6, 52, 48, 'blue', { chimney: true, lit: true, far: true }); k.house(176, 52, 44, 'red', { far: true });
@@ -960,9 +974,9 @@
     },
     // the market: Mr. Pip buys a pie and pays with a handful of coins; how many coins back? (take-away facts)
     market: {
-      npc: 'Mr. Pip', chibi: 'pip', order: 'Mr. Pip wants pies', marks: 'pie', node: 'market', mapCam: [262, 168, 96], rounds: 'marketRounds', log: 'Selling pies to Mr. Pip',
+      npc: 'Mr. Pip', chibi: 'pip', art: true, order: 'Mr. Pip wants pies', marks: 'pie', node: 'market', mapCam: [262, 168, 96], rounds: 'marketRounds', log: 'Selling pies to Mr. Pip',
       skills: ['tenminus', 'sub10', 'subteen'], fact: f => f.type === 'sub' && f.b > 0 && f.a > f.b,
-      her: [100, 120], npcAt: [138, 150], head: [146, 127], sign: [30, 121, 88, 16], dotHome: [14, 96], dotHelp: () => [158, 100], chalk: true,
+      her: [100, 120], npcAt: [138, 150], get head() { return artReady ? [146, 106] : [146, 127]; }, sign: [30, 121, 88, 16], dotHome: [14, 96], dotHelp: () => [158, 100], chalk: true,
       eq: (a, b) => `${a} − ${b} =`,
       ask: (f, i) => i % 2 ? `I have ${f.a} coins. One pie is ${f.b}. How many coins do I get back?` : `Here are ${f.a} coins. The pie costs ${f.b}. How many coins back?`,
       solved: f => `Yes! ${f.a} take away ${f.b} is ${f.ans}.`,
@@ -983,7 +997,9 @@
       land(who, n) { return this.pile(n); },
       falling: (k, x, y) => k.coin(x, y),
       tags(O) { return [{ x: 72, y: 100 - Math.ceil(O.shown[0] / 7) * 3, text: O.shown[0], on: O.shown[0] > 0 && !O.crates }, { x: 36, y: 100, text: `${O.f.b} coin${O.f.b === 1 ? "" : "s"}`, on: O.phase !== 'pick' }]; },
-      still(g, k) {
+      // the painted plaza with the stall (one picture); the counter is its own piece, drawn in front of her each frame
+      still(g, k) { if (!artReady) return this.drawnStill(g, k); put(g, ART['market-scene'], 0, 0); return []; },
+      drawnStill(g, k) {
         px.ground(g, W, H, { path: (x, y) => y > 56 && !(x < 6 && y > 150) });
         k.house(-6, 52, 44, 'blue', { chimney: true, far: true }); k.house(118, 48, 36, 'gold', { far: true }); k.house(176, 52, 48, 'red', { chimney: true, lit: true, far: true });
         k.barrel(44, 66); k.barrel(52, 68); k.crate(104, 64, '#e8473f'); k.crate(160, 68, '#f7c531'); k.barrel(220, 120); k.crate(206, 150, '#f7c531');
@@ -996,6 +1012,12 @@
         return [];
       },
       draw(k, t, O, hop) {
+        if (artReady) { const b = O.phase === 'right' ? hop : 0, ct = 118, c = k.g;
+          drawSpriteArt(herArt(), this.her[0] + 8, this.her[1] + 1 - b);
+          put(c, ART['market-counter'], MARKET_COUNTER[0], MARKET_COUNTER[1]);
+          if (O.crates) { const xs = O.crates.length === 1 ? [44] : [22, 61]; O.crates.forEach((cr, i) => k.tray10(xs[i], ct - 3, cr, Math.floor(t / 350) % 2 === 0)); }
+          else for (let n = 0; n < O.shown[0]; n++) { const [x, y] = this.pile(n); k.coin(x, y - (O.phase === 'right' ? hop : 0)); }
+          k.shadowEll(this.npcAt[0] + 8, this.npcAt[1], 10, 2); drawSpriteArt(ART.pip, this.npcAt[0] + 8, this.npcAt[1] + 1 - b); return; }
         drawHer(k, t, this.her, O, hop);
         // the counter in front of her, the pie with its price, his coins (or the trays while helping)
         const sx = 22, sw = 104, ct = 118;
@@ -1028,10 +1050,10 @@
       label(O) { const st = O.item.steps[0]; if (O.help && O.help.vis) return O.help.vis; return O.item.skillId === 'pv_build' ? O.item.visFor(0) : st.html.replace(/<span class="slot[^"]*">(&nbsp;)?<\/span>/, '<b class="q">?</b>'); },
       deal() { return [{ who: 0, t0: now() + 200, x: -20, y: 108 }]; },
       land: () => [104, 104],
-      falling: (k, x, y) => artReady ? k.g.drawImage(ART.parcel, Math.round(x), Math.round(y)) : k.package(x, y, 18, 12),
+      falling: (k, x, y) => artReady ? put(k.g, ART.parcel, x, y) : k.package(x, y, 18, 12),
       tags(O) { return O.houses.map((n, i) => ({ x: this.houses[i] + 22, y: 36, text: EM.fmt(n), on: true, hit: O.phase === 'right' || O.phase === 'solved' ? n === O.f.ans : false })); },
       // the painted street (one painting, traced from the drawn one below, with an evening sky behind the roofs)
-      still(g, k) { return artReady ? paintOver(g, k, ART['post-street'], () => this.drawnStill(g, k)) : this.drawnStill(g, k); },
+      still(g, k) { if (!artReady) return this.drawnStill(g, k); put(g, ART['post-street'], 0, 0); return []; },
       drawnStill(g, k) {
         px.ground(g, W, H, { path: (x, y) => y > 70 && y < 88 + Math.sin(x / 40) * 2, tall: (x, y) => y > 190 });
         this.houses.forEach((x, i) => k.house(x, 66, 44, ['red', 'blue', 'gold'][i], { chimney: i !== 1, lit: i === 1 }));
@@ -1044,7 +1066,7 @@
         return [];
       },
       draw(k, t, O, hop) {
-        if (artReady) { k.shadowEll(118, 140, 30, 3); k.g.drawImage(ART.cart, 88, 108); if (O.phase !== 'pick') k.g.drawImage(ART.parcel, 96 - (O.phase === 'right' ? hop : 0), 104); }
+        if (artReady) { k.shadowEll(118, 140, 30, 3); put(k.g, ART.cart, 85, 107); if (O.phase !== 'pick') put(k.g, ART.parcel, 96 - (O.phase === 'right' ? hop : 0), 104); }
         else { k.cart(88, 132); if (O.phase !== 'pick') k.package(96 - (O.phase === 'right' ? hop : 0), 104, 18, 12); k.package(118, 110, 12, 8); k.package(132, 108, 10, 9); }
         if (artReady) { const b = O.phase === 'right' ? hop : 0; k.shadowEll(this.her[0] + 8, this.her[1], 9, 2); k.shadowEll(this.npcAt[0] + 8, this.npcAt[1], 10, 2);
           drawSpriteArt(herArt(), this.her[0] + 8, this.her[1] + 1 - b); drawSpriteArt(ART.mo, this.npcAt[0] + 8, this.npcAt[1] + 1 - b); return; }
@@ -1075,12 +1097,17 @@
   const placeArt = {};
   function frameArt(id) {
     if (placeArt[id]) return placeArt[id];
+    const fine = artReady && ART[id + '-scene'];
+    if (fine) { const big = document.createElement('canvas'); big.width = W * 4; big.height = H * 4; const bg = big.getContext('2d'); bg.imageSmoothingQuality = 'high'; bg.drawImage(fine, 0, 0, big.width, big.height); return (placeArt[id] = big.toDataURL('image/png')); }
     const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), k = px.kit(g);
     PLACES[id].still(g, k); k.bake(W, H);
     const big = document.createElement('canvas'); big.width = W * 4; big.height = H * 4; const bg = big.getContext('2d'); bg.imageSmoothingEnabled = false; bg.drawImage(c, 0, 0, big.width, big.height);
     return (placeArt[id] = big.toDataURL('image/png'));
   }
   function faceArt(chibi) {
+    const fine = artReady && ART[chibi];
+    if (fine) { const big = document.createElement('canvas'); big.width = 96; big.height = 78; const g = big.getContext('2d'); g.imageSmoothingQuality = 'high';
+      const s = 78 / (fine.height * .62), dw = fine.width * s; g.drawImage(fine, 0, 0, fine.width, fine.height * .62, (96 - dw) / 2, 0, dw, 78); return big.toDataURL(); }   // the top half: head and shoulders
     const c = document.createElement('canvas'), ch = px.CHIBI[chibi](); c.width = 16; c.height = 13; px.kit(c.getContext('2d')).chibi(0, ch.rows.length, ch.rows, ch.mat, { noShadow: true });
     const big = document.createElement('canvas'); big.width = 16 * 6; big.height = 13 * 6; const g = big.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(c, 0, 0, big.width, big.height); return big.toDataURL();
   }
@@ -1211,7 +1238,7 @@
     mode = 'job';
     O = { id, J: JOBS[id], queue: [], i: -1, picked: 0, goal: 5, started: Date.now(), stats: { items: 0, fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, times: [], fastKeys: [], learned: [] }, input: '', phase: 'pick', drops: [], shown: [0, 0], said: '' };
     renderJob();
-    scene = makeScene('job', (g, k) => O.J.still(g, k)); scene.painted = paintedJob(); scene.cam = { ...CAM_FULL }; tweenCam({ ...JCAM }, 800);
+    scene = makeScene('job', (g, k) => O.J.still(g, k), paintedJob() ? FINE : 1); scene.painted = paintedJob(); scene.cam = { ...CAM_FULL }; tweenCam({ ...JCAM }, 800);
     scene.after = jobOverlays;
     const fd = document.getElementById('vfade'); if (fd) requestAnimationFrame(() => setTimeout(() => fd.classList.remove('on'), 30));
     startLoop(drawJob);
@@ -1220,7 +1247,7 @@
     if (!met[id]) { met[id] = Date.now(); EM.save(); O.phase = 'hello'; O.said = MEET[id]; renderJobWork(); EM.speech && EM.speech.say(MEET[id]); O.helloT = setTimeout(() => { if (O && O.phase === 'hello') nextQ(); }, Math.max(5500, (EM.speech ? EM.speech.estimateMs(MEET[id]) : 0) + 600)); return; }
     nextQ();
   }
-  function startJobScene() { scene = makeScene('job', (g, k) => O.J.still(g, k)); scene.painted = paintedJob(); scene.cam = { ...JCAM }; scene.after = jobOverlays; startLoop(drawJob); renderJobWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
+  function startJobScene() { scene = makeScene('job', (g, k) => O.J.still(g, k), paintedJob() ? FINE : 1); scene.painted = paintedJob(); scene.cam = { ...JCAM }; scene.after = jobOverlays; startLoop(drawJob); renderJobWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
   function jobRefill() {
     const open = O.J.skills.filter(id => EM.isOpen(id));
     O.queue.push(...EM.buildFactQueue(open.length ? open : [O.J.skills[0]], 14).queue.filter(e => O.J.fact(EM.FACTS[e.key])));

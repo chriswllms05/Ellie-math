@@ -90,7 +90,7 @@
     const sc = { kind, S: scaleFor(), cam: { ...CAM_FULL }, camTween: null, particles: [], dyn: [], t0: now() };
     const base = document.createElement('canvas'); sc.base = base; sc.frame = document.createElement('canvas'); sc.buildStill = buildStill;
     const scaled = c => { const g = c.getContext('2d'); g.setTransform(sc.D, 0, 0, sc.D, 0, 0); g.imageSmoothingEnabled = false; return g; };
-    sc.rebake = () => { const g = scaled(base); g.clearRect(0, 0, W, H); const k = px.kit(g); sc.waterPts = sc.buildStill(g, k); sc.sprites = k.bake(W, H); };
+    sc.rebake = () => { const g = scaled(base); g.clearRect(0, 0, W, H); const k = px.kit(g); sc.waterPts = sc.buildStill(g, k); sc.sprites = k.bake(W, H, sc.D); };
     sc.setDensity = d => { sc.D = d; base.width = W * d; base.height = H * d; sc.frame.width = W * d; sc.frame.height = H * d; sc.fk = px.kit(scaled(sc.frame)); sc.rebake(); };
     sc.setDensity(D);
     // soft light: warm wash and window glows, made once at full size; vignette is fixed to the screen
@@ -143,7 +143,7 @@
     items.sort((a, b) => a.y - b.y).forEach(it => {
       it.draw();
       if (!it.box) return; const [bx, by, bw, bh] = it.box;
-      for (const s of sc.sprites) if (s.y > it.y && s.x < bx + bw && s.x + s.w > bx && s.top < by + bh && s.top + s.h > by) fc.drawImage(s.c, s.x, s.top);
+      for (const s of sc.sprites) if (s.y > it.y && s.x < bx + bw && s.x + s.w > bx && s.top < by + bh && s.top + s.h > by) fc.drawImage(s.c, s.x, s.top, s.w, s.h);
     });
   }
 
@@ -170,8 +170,59 @@
   // it did. The drawn map still runs underneath for its shapes: each tall thing is filled with the painting's own
   // pixels, so she walks behind houses and trees; the bridge planks, her yard, the meadow and the pies stay in code
   function buildPaintedMap(g, k, opt) {
+    if (fineMapReady()) return buildFineMap(g, k, opt, () => buildMapStill(g, fineKit(k, true), { ...opt, drawn: true }), 'm-ground');
     const a = MEADOW, keep = V().open.meadow ? [a.x - 5, a.y - 4, a.cols * 16 + 9, a.rows * 16 + 9] : null;
     return paintOver(g, k, ART['map-village'], () => buildMapStill(g, k, { ...opt, drawn: true }), keep);
+  }
+  // ---------- the fine map (density MAPD): bare ground painted in tiles, every thing on it a fine piece ----------
+  // MAPK: each piece's top-left offset from where the map code places it, and its size, in scene px (from the sheets)
+  const MAPD = 4, fineMapReady = () => mapArtReady && !!ART['m-tree'];
+  const MAPK = {"house-blue": [-4.0, -45.36, 47.88, 47.82], "house-gold": [-4.16, -43.34, 44.26, 45.81], "house-red": [-3.84, -37.29, 44.32, 39.75], "shop": [-6.85, -27.32, 48.14, 34.72], "stall": [-2.38, -28.34, 36.86, 28.25], "dock": [-0.55, -3.97, 31.28, 20.36], "board": [-3.69, -21.19, 24.96, 24.75], "tree-apple": [-11.15, -24.83, 22.55, 25.87], "tree": [-11.0, -24.83, 24.02, 25.87], "bush": [-7.07, -8.34, 15.33, 10.16], "rock": [-0.57, -7.01, 8.54, 8.4], "reeds": [-4.02, -15.18, 8.78, 15.38], "lily-f": [-0.72, -0.93, 6.03, 5.65], "lily": [-0.71, -0.17, 5.65, 4.89], "crate-red": [-0.62, -8.59, 8.92, 9.3], "crate-yellow": [-0.51, -8.16, 8.88, 8.88], "crate-orange": [-0.46, -8.16, 8.88, 8.88], "barrel": [-0.4, -9.4, 8.07, 10.11], "fence-h": [-0.3, -6.93, 27.01, 8.5], "fence-v": [-0.07, -6.0, 2.85, 27.58], "pond-sign": [-1.45, -40.0, 74.35, 41.24], "pond-cottage": [-14.38, -44.99, 56.9, 48.12], "pond-dock": [0, -2, 70, 26.16]};
+  function buildFineMap(g, k, opt, build, ground) {
+    const v = V(), a = MEADOW, keep = v.open.meadow ? [a.x - 5, a.y - 4, a.cols * 16 + 9, a.rows * 16 + 9] : null;
+    const pts = build();
+    const D = scene ? scene.D : 1, kept = keep && ground === 'm-ground' ? g.getImageData(keep[0] * D, keep[1] * D, keep[2] * D, keep[3] * D) : null;
+    put(g, ART[ground], 0, 0);
+    if (kept) g.putImageData(kept, keep[0] * D, keep[1] * D);
+    return pts;
+  }
+  // place a fine piece for a map-code call at (ax, ay), scaled by s about that point; it sorts by ay like the drawn one
+  function finePiece(k, name, ax, ay, s = 1, shade = true, tall = true) {
+    const m = MAPK[name], im = ART['m-' + name]; if (!m || !im) return;
+    const [dx, dy, w, h] = m, x = ax + dx * s, y = ay + dy * s;
+    if (shade) k.shadow(() => { const c = k.g; c.fillStyle = 'rgba(40,46,74,.26)'; c.beginPath(); c.ellipse(ax + 2 * s, ay + .5, w * s * .42, 2.2 * s, 0, 0, Math.PI * 2); c.fill(); });
+    k.add(ay, () => k.g.drawImage(im, x, y, w * s, h * s), tall);
+  }
+  // the stand-in kit: the drawn map code runs as written, and each of its things becomes the fine piece; its own
+  // hand-drawn add()s (dock, workshop, stall, signs) are replaced by pieces, and k.raw() things stay drawn
+  function fineKit(k, village) {
+    const f = Object.create(k); let raw = false;
+    f.add = (y, fn, tall) => { if (raw) k.add(y, fn, tall); };
+    f.shadow = fn => { if (raw) k.shadow(fn); };
+    f.raw = fn => { raw = true; k.raw(fn); raw = false; };
+    f.flowersGround = () => {};
+    f.tree = (x, y, o = {}) => finePiece(k, o.apples ? 'tree-apple' : 'tree', x, y, (o.r || 9) / 9);
+    f.house = (x, y, w, roof) => finePiece(k, 'house-' + roof, x, y, w / (roof === 'blue' ? 40 : 36));
+    f.bush = (x, y) => finePiece(k, 'bush', x, y); f.rock = (x, y) => finePiece(k, 'rock', x, y, 1, false);
+    f.reeds = (x, y) => finePiece(k, 'reeds', x, y, 1, false); f.barrel = (x, y) => finePiece(k, 'barrel', x, y);
+    f.lily = (x, y, fl) => finePiece(k, fl ? 'lily-f' : 'lily', x, y, 1, false, false);
+    f.crate = (x, y, fill) => finePiece(k, fill === '#e8473f' ? 'crate-red' : fill === '#f7c531' ? 'crate-yellow' : 'crate-orange', x, y);
+    f.board = (x, y) => finePiece(k, 'board', x, y);
+    f.fence = (x0, y0, x1, y1) => { if (raw) return k.fence(x0, y0, x1, y1);
+      const hz = y0 === y1, m = MAPK[hz ? 'fence-h' : 'fence-v'], im = ART[hz ? 'm-fence-h' : 'm-fence-v']; if (!m || !im) return;
+      const [dx, dy, w, h] = m, len = hz ? x1 - x0 + 2 : y1 - y0 + 1;
+      for (let o = 0; o < len; o += hz ? w - 1 : h - 1) { const seg = Math.min(hz ? w : h, len - o), ax = hz ? x0 + o : x0, ay = hz ? y0 : y0 + o;
+        k.add(hz ? y0 + 1 : ay + seg, () => { const c = k.g, fr = seg / (hz ? w : h); hz ? c.drawImage(im, 0, 0, im.width * fr, im.height, ax + dx, ay + dy, seg, h) : c.drawImage(im, 0, 0, im.width, im.height * fr, ax + dx, ay + dy, w, seg); }); } };
+    // the one-off buildings, at the map's own anchors
+    if (village) { finePiece(k, 'shop', SHOP[0], SHOP[1]); finePiece(k, 'stall', STALL[0], STALL[1] + 4); finePiece(k, 'dock', DOCK[0], DOCK[1], 1, false, false); }
+    return f;
+  }
+  // the pond's own: its cottage with the fish sign, the big blank sign board, the long dock
+  function finePondKit(k) {
+    const f = fineKit(k, false);
+    f.house = (x, y) => finePiece(k, 'pond-cottage', x, y);
+    finePiece(k, 'pond-sign', 12, 72); finePiece(k, 'pond-dock', 156, 101, 1, false, false);
+    return f;
   }
   // draw a still with build() for its shapes, then lay the plate over it: each tall thing (depth-sorted so she can
   // pass behind it) is filled with the plate's own pixels; anything build() adds through k.raw stays as drawn.
@@ -282,7 +333,7 @@
       <div class="vfade" id="vfade"></div>
     </main>`;
     fit();
-    if (!scene || scene.kind !== 'map' || ui.rebuildMap) { scene = makeScene('map', (g, k) => buildMapStill(g, k, { planks: v.planks, skip: ui.popping ? ui.popping.map(p => p.p) : [] })); scene.painted = mapArtReady; ui.rebuildMap = false; addGlows(scene, [[240, 99, 7, 'rgba(255,180,90,.22)'], [259, 99, 7, 'rgba(255,180,90,.22)']]); }
+    if (!scene || scene.kind !== 'map' || ui.rebuildMap) { scene = makeScene('map', (g, k) => buildMapStill(g, k, { planks: v.planks, skip: ui.popping ? ui.popping.map(p => p.p) : [] }), fineMapReady() ? MAPD : 1); scene.painted = mapArtReady; ui.rebuildMap = false; addGlows(scene, [[240, 99, 7, 'rgba(255,180,90,.22)'], [259, 99, 7, 'rgba(255,180,90,.22)']]); }
     scene.after = mapOverlays;
     hookMapInput();
     startLoop(drawMap);
@@ -360,7 +411,7 @@
     dot.x = lerp(dot.x, dTarget[0], Math.min(1, dt * 2.6)); dot.y = lerp(dot.y, dTarget[1], Math.min(1, dt * 2.6));
     const dy = Math.round(Math.sin(t / 420) * 1.5), blinkDot = (t % 4200) < 130;
     sc.dotAt = [dot.x, dot.y + dy];
-    ambient(sc, k, t, { chimneys: [[258, 64]], fish: [[60, 158, 26, 12, .35, 0], [52, 148, 18, 8, -.5, 2], [70, 164, 34, 14, .25, 4]], butterflies: [[96, 96, 20, 8, .7, '#ffe066'], [190, 196, 26, 6, .55, '#ff9ac6'], [286, 120, 10, 14, .6, '#ffffff']] });
+    ambient(sc, fineMapReady() && ART['m-fish-orange'] ? fineFishKit(k) : k, t, { chimneys: [[258, 64]], fish: [[60, 158, 26, 12, .35, 0], [52, 148, 18, 8, -.5, 2], [70, 164, 34, 14, .25, 4]], butterflies: [[96, 96, 20, 8, .7, '#ffe066'], [190, 196, 26, 6, .55, '#ff9ac6'], [286, 120, 10, 14, .6, '#ffffff']] });
     // the pond glows while it's what she should tap
     if (ui.pulsePond) { const a = (Math.sin(t / 260) + 1) / 2; for (let i = 0; i < 48; i++) { const an = i / 48 * Math.PI * 2; if (i % 2) k.P(Math.round(POND[0] + Math.cos(an) * (POND[2] + 3 + a * 2)), Math.round(POND[1] + Math.sin(an) * (POND[3] + 3 + a * 2)), '#fff3b0'); } }
     if (ui.pulseYard) { const a = (Math.sin(t / 260) + 1) / 2, x0 = YARD.x - 2 - a, y0 = YARD.y - 2 - a, w = YARD.cols * 16 + 4 + 2 * a, h = YARD.rows * 16 + 4 + 2 * a; for (let i = 0; i < w; i += 2) { k.P(Math.round(x0 + i), Math.round(y0), '#fff3b0'); k.P(Math.round(x0 + i), Math.round(y0 + h), '#fff3b0'); } for (let i = 0; i < h; i += 2) { k.P(Math.round(x0), Math.round(y0 + i), '#fff3b0'); k.P(Math.round(x0 + w), Math.round(y0 + i), '#fff3b0'); } }
@@ -369,11 +420,12 @@
     const hop = her.hop > t ? Math.round(Math.sin((her.hop - t) / 400 * Math.PI) * 4) : 0;
     // the painted villagers (one sheet, so they share the painting's light); she takes her avatar's hair and shirt
     if (mapArtReady) {
-      const c = sc.frame.getContext('2d'), P = (im, cx, base, flip, bob) => { const x = Math.round(cx - im.width / 2), y = Math.round(base - im.height - bob);
-        if (flip) { c.save(); c.translate(x + im.width, y); c.scale(-1, 1); c.drawImage(im, 0, 0); c.restore(); } else c.drawImage(im, x, y); };
+      const c = sc.frame.getContext('2d'), P = (im, cx, base, flip, bob) => { const w = im.width / dOf(im), h = im.height / dOf(im), x = Math.round(cx - w / 2), y = Math.round(base - h - bob);
+        if (flip) { c.save(); c.translate(x + w, y); c.scale(-1, 1); c.drawImage(im, 0, 0, w, h); c.restore(); } else c.drawImage(im, x, y, w, h); };
+      const V_ = n => (fineMapReady() && artReady && mapSize(ART[n], n)) || ART['m-v-' + n] || ART['map-' + n];   // the close-up villagers, shrunk to map size, once they are in
       const step = walking ? Math.floor(her.walkT / .14) % 2 : 0, m = mission() || {}, wave = (period, off, on) => on && ((t + off) % period) < 1100 ? Math.floor(t / 180) % 2 : 0;
-      items.push({ y: her.y, box: [Math.round(her.x) - 2, Math.round(her.y) - 20, 13, 21], draw: () => { k.shadowEll(Math.round(her.x) + 4, Math.round(her.y), 5, 1); P(herArt('map-her'), Math.round(her.x) + 4, Math.round(her.y) + 1, her.flip, step + hop); } });
-      const npc = (n, [x, y], on, off) => items.push({ y, box: [x - 3, y - 20, 15, 21], draw: () => { k.shadowEll(x + 4, y, 5, 1); P(ART['map-' + n], x + 4, y + 1, false, wave(5600, off, on)); } });
+      items.push({ y: her.y, box: [Math.round(her.x) - 2, Math.round(her.y) - 20, 13, 21], draw: () => { k.shadowEll(Math.round(her.x) + 4, Math.round(her.y), 5, 1); P(fineMapReady() && artReady ? mapSize(herArt(), 'her|' + look().hair + look().shirt) : herArt(ART['m-v-her'] ? 'm-v-her' : 'map-her'), Math.round(her.x) + 4, Math.round(her.y) + 1, her.flip, step + hop); } });
+      const npc = (n, [x, y], on, off) => items.push({ y, box: [x - 3, y - 20, 15, 21], draw: () => { k.shadowEll(x + 4, y, 5, 1); P(V_(n), x + 4, y + 1, false, wave(5600, off, on)); } });
       npc('rosa', ROSA, m.text === 'Help Rosa pick apples', 0); npc('bea', BEA, m.job === 'bakery', 3300); npc('mo', MO, m.job === 'post', 2600); npc('pip', PIP, m.job === 'market', 1700);
       if (placeOpen('workshop')) npc('tom', TOM, m.job === 'workshop', 2100);
     } else {
@@ -400,6 +452,7 @@
     // build mode: the spots
     if (mode === 'build') for (const id of ['plot', 'meadow']) { if (id === 'meadow' && !V().open.meadow) continue; const a = area(id); for (let cy = 0; cy < a.rows; cy++) for (let cx = 0; cx < a.cols; cx++) { const x = a.x + cx * 16, y = a.y + cy * 16, sel = B.sel && B.sel.area === id && B.sel.cx === cx && B.sel.cy === cy, col = sel ? '#ffe066' : 'rgba(255,255,255,.55)'; for (let i = 0; i < 16; i += 2) { k.R(x + i, y, 1, 1, col); k.R(x + i, y + 15, 1, 1, col); k.R(x, y + i, 1, 1, col); k.R(x + 15, y + i, 1, 1, col); } if (sel) { k.R(x, y, 16, 1, col); k.R(x, y + 15, 16, 1, col); k.R(x, y, 1, 16, col); k.R(x + 15, y, 1, 16, col); } } }
     if (B.drag && B.drag.at) px.drawItem(k, B.drag.p.item, Math.round(B.drag.at[0] - 8), Math.round(B.drag.at[1] - 12), B.drag.p.paint);
+    if (fineMapReady() && ART['dot-1']) { const im = ART[blinkDot ? 'dot-2' : 'dot-1'], s = 15; sc.frame.getContext('2d').drawImage(im, dot.x - s / 2, dot.y + dy - s / 2, s, s); } else
     k.drawDot(Math.round(dot.x), Math.round(dot.y) + dy, t, blinkDot);
     clouds(k, t);
   }
@@ -584,6 +637,7 @@
   const CONFIRM_MS = 2000, BOB = [118, 128], BASKET = [181, 93], HAND = [166, 101];
   const goal = () => V().rounds ? 5 : 3;  // her first round is short
   function buildFishStill(g, k) {
+    if (fineMapReady()) return buildFineMap(g, k, {}, () => buildDrawnPond(g, finePondKit(k)), 'm-pond-ground');
     if (mapArtReady) return paintOver(g, k, ART['map-pond'], () => buildDrawnPond(g, k));
     return buildDrawnPond(g, k);
   }
@@ -617,7 +671,7 @@
     mode = 'fish';
     F = { queue: [], i: -1, caught: 0, goal: goal(), started: Date.now(), stats: { items: 0, fast: 0, slow: 0, wrong: 0, idk: 0, rushed: 0, times: [], fastKeys: [], learned: [] }, input: '', phase: 'cast', anim: { t0: now(), kind: 'cast' }, fishPos: [40, 170], fishFlip: false };
     renderFishing(true);
-    scene = makeScene('fish', buildFishStill); scene.painted = mapArtReady; addGlows(scene, [[247, 64, 7, 'rgba(255,180,90,.22)'], [266, 64, 7, 'rgba(255,180,90,.22)']]);
+    scene = makeScene('fish', buildFishStill, fineMapReady() ? MAPD : 1); scene.painted = mapArtReady; addGlows(scene, [[247, 64, 7, 'rgba(255,180,90,.22)'], [266, 64, 7, 'rgba(255,180,90,.22)']]);
     scene.cam = camAround(150, 110, 230); tweenCam({ ...CAM_FULL }, 700);
     scene.after = fishOverlays;
     const fd = document.getElementById('vfade'); if (fd) { fd.classList.add('on'); requestAnimationFrame(() => setTimeout(() => fd.classList.remove('on'), 30)); }
@@ -684,7 +738,18 @@
     showCoins();
   }
   function fishOverlays() { if (!F) return; place(document.getElementById('vtag'), BOB[0], BOB[1] - 6); const r = placeSign(FSIGN); placeBubble(FDOT[0], FDOT[1] - 8 + Math.round(Math.sin(now() / 420) * 1.5), r); }
-  function drawFishing(sc, k, t) {
+  // at the pond's fine density: painted fish, bobber and basket; the line, sparkles and ripples drawn fine, not in blocks
+  function fineFishKit(k) {
+    const f = Object.create(k), c = () => k.g, s = 1 / MAPD;
+    f.P = (x, y, col) => { c().fillStyle = col; c().fillRect(x + .5 - s, y + .5 - s, 2 * s, 2 * s); };
+    f.line = (x0, y0, x1, y1, col) => { const g = c(); g.strokeStyle = col; g.lineWidth = .4; g.beginPath(); g.moveTo(x0 + .5, y0 + .5); g.lineTo(x1 + .5, y1 + .5); g.stroke(); };
+    f.drawFish = (x, y, col, flip) => { const im = ART[String(col).startsWith('rgba(18') ? 'm-fish-shadow' : col === '#f7c948' ? 'm-fish-gold' : 'm-fish-orange'], w = 10, h = w * im.height / im.width, g = c();
+      g.save(); if (String(col).startsWith('rgba(18')) g.globalAlpha = .4; g.translate(x + 4, y + 2); if (!flip) g.scale(-1, 1); g.drawImage(im, -w / 2, -h / 2, w, h); g.restore(); };
+    f.sprite = (x, y, rows, map) => rows[0] === '.ww.' ? c().drawImage(ART['m-bobber'], x - .4, y - 2.6, 4.6, 6.9) : k.sprite(x, y, rows, map);
+    return f;
+  }
+  function drawFishing(sc, k0, t) {
+    const k = fineMapReady() && ART['m-fish-orange'] ? fineFishKit(k0) : k0;
     const a = F && F.anim, at = a ? t - a.t0 : 0;
     ambient(sc, k, t, { chimneys: [[267, 29]], fish: [[70, 150, 30, 12, .3, 0], [150, 168, 26, 8, -.4, 1], [60, 120, 20, 8, .45, 3]], butterflies: [[220, 140, 16, 8, .6, '#ffe066'], [40, 70, 20, 6, .5, '#ff9ac6']] });
     if (!F) return;
@@ -710,10 +775,13 @@
     // her, the basket, Dot
     const items = [];
     items.push({ y: 109, draw: () => { const bob = F.phase === 'caught' && t - F.anim.t0 < 300 ? 1 : 0; k.shadowEll(168, 109, 4, 1);
-      if (mapArtReady) { const im = herArt('map-her'); sc.frame.getContext('2d').drawImage(im, 168 - Math.floor(im.width / 2), 110 - im.height - bob); } else k.drawPerson(164, 109, look(), { blink: (t % 3600) < 120, bob }); } });
-    items.push({ y: 103, draw: () => { const n = Math.min(F.inBasket || 0, 12); k.R(176, 96, 11, 6, C.k3); k.R(176, 96, 11, 1, C.k4); k.R(176, 101, 11, 1, C.k1); for (let x = 177; x < 187; x += 2) k.P(x, 98, C.k2); for (let i = 0; i < n; i++) { const fx = 177 + (i % 4) * 2, fy = 94 - Math.floor(i / 4) * 2; k.R(fx, fy, 3, 2, i % 3 === 2 ? '#7fb8e8' : '#f2a33a'); k.P(fx, fy, '#ffd08a'); } } });
+      if (mapArtReady) { const im = fineMapReady() && artReady ? mapSize(herArt(), 'her|' + look().hair + look().shirt) : herArt(ART['m-v-her'] ? 'm-v-her' : 'map-her'), w = im.width / dOf(im), h = im.height / dOf(im); sc.frame.getContext('2d').drawImage(im, 168 - Math.floor(w / 2), 110 - h - bob, w, h); } else k.drawPerson(164, 109, look(), { blink: (t % 3600) < 120, bob }); } });
+    items.push({ y: 103, draw: () => { const n = Math.min(F.inBasket || 0, 12);
+      if (ART['m-fish-basket'] && fineMapReady()) { const g = k.g; for (let i = 0; i < Math.min(n, 6); i++) { const im = ART[i % 3 === 2 ? 'm-fish-gold' : 'm-fish-orange']; g.save(); g.translate(178 + (i % 3) * 3.4, 95.5 - Math.floor(i / 3) * 1.6); g.rotate(-.5 + (i % 3) * .5); g.drawImage(im, -2.5, -1.8, 5, 3.6); g.restore(); }
+        g.drawImage(ART['m-fish-basket'], 175, 95, 13, 8.7); return; } k.R(176, 96, 11, 6, C.k3); k.R(176, 96, 11, 1, C.k4); k.R(176, 101, 11, 1, C.k1); for (let x = 177; x < 187; x += 2) k.P(x, 98, C.k2); for (let i = 0; i < n; i++) { const fx = 177 + (i % 4) * 2, fy = 94 - Math.floor(i / 4) * 2; k.R(fx, fy, 3, 2, i % 3 === 2 ? '#7fb8e8' : '#f2a33a'); k.P(fx, fy, '#ffd08a'); } } });
     drawDepth(sc, items);
-    const dy = Math.round(Math.sin(t / 420) * 1.5); sc.dotAt = [136, 84 + dy]; k.drawDot(136, 84 + dy, t, (t % 4200) < 130);
+    const dy = Math.round(Math.sin(t / 420) * 1.5); sc.dotAt = [136, 84 + dy];
+    if (fineMapReady() && ART['dot-1']) { const mood = F.phase === 'caught' ? 3 : F.help ? 4 : (t % 4200) < 130 ? 2 : 1, s = 15; k.g.drawImage(ART['dot-' + mood], 136 - s / 2, 84 + dy - s / 2, s, s); } else k.drawDot(136, 84 + dy, t, (t % 4200) < 130);
     clouds(k, t);
   }
   // keys act the moment a finger lands (see app.js): a dropped tap feels like the game ignoring her
@@ -823,10 +891,27 @@
   const ARTD = { cart: 5, parcel: 5, her: 5, rosa: 5, bea: 5, mo: 5, 'post-street': 5, 'dot-1': 5, 'dot-2': 5, 'dot-3': 5, 'dot-4': 5, 'dot-5': 5, 'dot-6': 5, basket: 5, tray: 5, 'apple-red': 5, 'apple-yellow': 5, bun: 5, 'orchard-scene': 5, 'bakery-scene': 5, 'market-scene': 5, 'market-counter': 5, pip: 5, tom: 5, 'workshop-scene': 5 };
   // the market counter's top-left in the scene (it is drawn in front of her each frame)
   const MARKET_COUNTER = [18.9, 107.8];
+  // the fine map art (its own density, MAPD), loaded on its own so the rest can show first
+  (function loadFineMap() {
+    const names = ['ground', 'pond-ground', 'tree', 'tree-apple', 'bush', 'rock', 'reeds', 'lily', 'lily-f', 'crate-red', 'crate-yellow', 'crate-orange', 'barrel', 'board', 'fence-h', 'fence-v',
+      'house-blue', 'house-gold', 'house-red', 'shop', 'stall', 'dock', 'pond-cottage', 'pond-sign', 'pond-dock', 'v-her', 'v-rosa', 'v-bea', 'v-mo', 'v-pip', 'v-tom', 'fish-orange', 'fish-gold', 'fish-shadow', 'bobber', 'fish-basket'];
+    let left = names.length;
+    names.forEach(n => { const im = new Image(); im.d = MAPD; im.onload = () => { ART['m-' + n] = im; if (--left === 0 && scene && (scene.kind === 'map' || scene.kind === 'fish') && mapArtReady) { scene.setDensity(MAPD); } }; im.src = `art/m-${n}.png?v=1`; });
+  })();
   (function loadArt() {
     const names = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow', 'bakery-scene', 'bea', 'tray', 'bun', 'post-street', 'mo', 'cart', 'parcel', 'market-scene', 'market-counter', 'pip', 'workshop-scene', 'tom', 'dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5', 'dot-6']; let left = names.length;
     names.forEach(n => { const im = new Image(); im.d = ARTD[n] || 1; im.onload = () => { ART[n] = im; if (--left === 0) { artReady = true; if (scene && scene.kind === 'job' && paintedJob()) { scene.painted = true; scene.setDensity(FINE); const hz = document.querySelector('.vhaze'); if (hz) hz.className = 'vhaze off'; } } }; im.src = `art/${n}.png?v=3`; });
   })();
+  const mapCopies = {};
+  function mapSize(im, key, tall = 18) {
+    if (!im) return null; if (mapCopies[key]) return mapCopies[key];
+    const h = tall * MAPD, w = Math.round(im.width * h / im.height), c = document.createElement('canvas'); c.width = w; c.height = h; c.d = MAPD;
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    // shrink in halves for a clean result
+    let src = im, sw = im.width, sh = im.height;
+    while (sw / 2 > w) { const t = document.createElement('canvas'); t.width = Math.round(sw / 2); t.height = Math.round(sh / 2); const tg = t.getContext('2d'); tg.imageSmoothingQuality = 'high'; tg.drawImage(src, 0, 0, t.width, t.height); src = t; sw = t.width; sh = t.height; }
+    g.drawImage(src, 0, 0, w, h); return (mapCopies[key] = c);
+  }
   const paintedJob = () => !!(O && O.J.art && artReady), FINE = 5;   // close-ups with painted art draw at 5x density (about the iPad's own resolution there)
   // her painted sprite in her own avatar's colours: the hair and shirt pixels take her colours, keeping their shading
   const herCache = {};
@@ -1453,7 +1538,7 @@
     mode = mode === 'build' ? 'build' : 'map'; scene = null; ui.arrived = false; ui.popping = []; ui.story = false; ui.busy = false; ui.dotTarget = null; ui.plankFly = null;
     renderMap();
   }
-  function startFishingScene() { scene = makeScene('fish', buildFishStill); scene.painted = mapArtReady; scene.after = fishOverlays; startLoop(drawFishing); renderFishWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
+  function startFishingScene() { scene = makeScene('fish', buildFishStill, fineMapReady() ? MAPD : 1); scene.painted = mapArtReady; scene.after = fishOverlays; startLoop(drawFishing); renderFishWork(); const fd = document.getElementById('vfade'); if (fd) fd.classList.remove('on'); }
 
   // ---------- taps ----------
   // Pad keys act on pointerdown (see app.js); the click that follows is ignored. Both jobs share the pad's buttons.

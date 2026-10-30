@@ -53,19 +53,23 @@
     k.setCtx = c => { g = c; };
     k.setSkin = s => { skin = s; }; k.raw = fn => { const s = skin; skin = null; fn(); skin = s; };
     // Draw everything onto the current canvas, and also cut each tall thing out as its own sprite (with its base y).
-    k.bake = (W, H) => {
+    // D: the canvas's pixel density (a fine painted scene draws through a D-scaled transform); sprites keep scene units
+    k.bake = (W, H, D = 1) => {
       shadows.forEach(f => f());
-      const base = g, sc = document.createElement('canvas'); sc.width = W; sc.height = H; const sx = sc.getContext('2d', { willReadFrequently: true });
+      const base = g, CW = W * D, CH = H * D, sc = document.createElement('canvas'); sc.width = CW; sc.height = CH;
+      const sx = sc.getContext('2d', { willReadFrequently: true }); sx.setTransform(D, 0, 0, D, 0, 0); sx.imageSmoothingEnabled = false;
       const sprites = [];
       list.sort((a, b) => a.y - b.y).forEach(t => {
         t.f();
         if (!t.tall) return;
         sx.clearRect(0, 0, W, H); g = sx; t.f(); g = base;
-        const d = sx.getImageData(0, 0, W, H).data; let x0 = W, y0 = H, x1 = -1, y1 = -1;
-        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        // the bounds, sampled every D canvas pixels (one per scene pixel) and widened by D: quick at any density
+        const d = sx.getImageData(0, 0, CW, CH).data; let x0 = CW, y0 = CH, x1 = -1, y1 = -1;
+        for (let y = 0; y < CH; y += D) for (let x = 0; x < CW; x += D) if (d[(y * CW + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
         if (x1 < 0) return;
+        x0 = Math.max(0, x0 - D); y0 = Math.max(0, y0 - D); x1 = Math.min(CW - 1, x1 + D); y1 = Math.min(CH - 1, y1 + D);
         const c = document.createElement('canvas'); c.width = x1 - x0 + 1; c.height = y1 - y0 + 1; c.getContext('2d').drawImage(sc, x0, y0, c.width, c.height, 0, 0, c.width, c.height);
-        sprites.push({ y: t.y, x: x0, top: y0, w: c.width, h: c.height, c });
+        sprites.push({ y: t.y, x: x0 / D, top: y0 / D, w: c.width / D, h: c.height / D, c });
       });
       list.length = 0; shadows.length = 0;
       return sprites;

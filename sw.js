@@ -1,6 +1,6 @@
 /* Ellie Math service worker: cached copy first if the network is slow, never caches a bad response, updates on the next launch. */
-const VERSION = 'ellie-math-v28';
-const JS = ['engine', 'content', 'voice', 'audio', 'manip', 'theme', 'world', 'avatar', 'pixel', 'village', 'teach', 'parent', 'scratch', 'app'].map(n => `./${n}.js?v=28`);
+const VERSION = 'ellie-math-v29';
+const JS = ['engine', 'content', 'voice', 'audio', 'manip', 'theme', 'world', 'avatar', 'pixel', 'village', 'teach', 'parent', 'scratch', 'app'].map(n => `./${n}.js?v=29`);
 const ART = ['orchard-scene', 'her', 'rosa', 'basket', 'apple-red', 'apple-yellow', 'bakery-scene', 'bea', 'tray', 'bun', 'post-street', 'mo', 'cart', 'parcel', 'market-scene', 'market-counter', 'pip', 'workshop-scene', 'tom', 'dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5', 'dot-6'].map(n => `./art/${n}.png?v=3`);
 const MAP = ['village', 'pond', 'her', 'rosa', 'bea', 'mo', 'pip', 'tom'].map(n => `./art/map-${n}.png?v=3`);
 const FINE = ['ground','pond-ground','tree','tree-apple','bush','rock','reeds','lily','lily-f','crate-red','crate-yellow','crate-orange','barrel','board','fence-h','fence-v','house-blue','house-gold','house-red','shop','stall','dock','pond-cottage','pond-sign','pond-dock','v-her','v-rosa','v-bea','v-mo','v-pip','v-tom','fish-orange','fish-gold','fish-shadow','bobber','fish-basket','big-playground','big-windmill','big-fountain','big-duckpond','big-treehouse','big-lamppost','big-bunting','fish-sunny','fish-rainbow','fish-koi','fish-moon','fish-jewel','fish-king','c-pup-a','c-pup-b','c-pup-sit','c-bird-up','c-bird-down','c-bird-sit','c-bee-a','c-bee-b'].map(n => `./art/m-${n}.png?v=1`);

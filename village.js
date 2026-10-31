@@ -907,7 +907,7 @@
       <div class="vstage" id="vstage"><canvas id="vcanvas"></canvas><div class="vhaze ${mapArtReady ? 'off' : 'mid'}"></div>
         <div class="jsign" id="jsign"></div><div class="vtag" id="vtag"></div><div class="jbub bydot" id="jbub"></div>
       </div>
-      <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span><div class="jorder vpanel"><b>Make 10: catch fish</b><div class="jmarks fish" id="jmarks">${marks}</div>${streakHtml()}</div></div>
+      <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span><div class="jorder vpanel"><b>Make 10: catch fish</b><div class="jmarks fish" id="jmarks">${marks}</div></div>${streakHtml()}</div>
       <div class="vhud vtr"><button class="jhome vpanel" data-v="stopfish">🏠 Village</button></div>
       <div class="jpad vpanel" id="jpad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-fd="${d}">${d}</button>`).join('')}<button data-v="fback" aria-label="Delete">⌫</button><button data-fd="0">0</button><button class="ok" data-v="fok" aria-label="Check">✓</button></div>
       <div class="jleft"><button class="jround" data-v="jhear" aria-label="Hear it again">🔊</button><button class="jidk" data-v="jidk">I don't know</button></div>
@@ -1587,7 +1587,7 @@
         <div class="jsign ${J.chalk ? 'chalk' : ''}" id="jsign"></div><div class="jbub" id="jbub"></div>
         ${Array.from({ length: J.tagCount || 2 }, (_, i) => `<div class="jtag" id="jtag${i}"></div>`).join('')}${J.label ? '<div class="jlabel" id="jlabel"></div>' : ''}
       </div>
-      <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span><div class="jorder vpanel"><b>${esc(J.order)}</b><div class="jmarks ${J.marks}" id="jmarks">${marks}</div>${J.proc ? '' : streakHtml()}</div></div>
+      <div class="vhud vtl"><span class="vpill vcoins" id="vcoins">${COIN()} <b>${V().coins}</b></span><div class="jorder vpanel"><b>${esc(J.order)}</b><div class="jmarks ${J.marks}" id="jmarks">${marks}</div></div>${J.proc ? '' : streakHtml()}</div>
       <div class="vhud vtr"><button class="jhome vpanel" data-v="leavejob">🏠 Village</button></div>
       <div class="jpad vpanel" id="jpad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-fd="${d}">${d}</button>`).join('')}<button data-v="fback" aria-label="Delete">⌫</button><button data-fd="0">0</button><button class="ok" data-v="fok" aria-label="Check">✓</button></div>
       <div class="jleft"><button class="jround" data-v="jhear" aria-label="Hear it again">🔊</button><button class="jidk" data-v="jidk">I don't know</button><button class="jpeek" data-v="jpeek">👀 Peek</button></div>

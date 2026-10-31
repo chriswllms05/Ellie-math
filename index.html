@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="Ellie Math">
 <meta name="theme-color" content="#3d6bd6">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-180.png?v=29">
-<link rel="icon" href="icon-180.png?v=29">
+<link rel="apple-touch-icon" href="icon-180.png?v=30">
+<link rel="icon" href="icon-180.png?v=30">
 <style>
 @font-face { font-family:"Fredoka"; font-weight:500; font-display:swap; src:url(fonts/fredoka-latin-500-normal.woff2) format("woff2"); }
 @font-face { font-family:"Fredoka"; font-weight:600; font-display:swap; src:url(fonts/fredoka-latin-600-normal.woff2) format("woff2"); }
@@ -497,8 +497,9 @@ input, textarea { caret-color:var(--accent); }
 .jorder { padding:8px 16px 10px; border-radius:18px; } .jorder b { display:block; font-size:16px; color:#5a4a3a; }
 .jmarks { display:flex; gap:6px; margin-top:4px; }
 .jmarks i { width:22px; height:22px; border-radius:50% 50% 45% 45%; background:#ddd5c4; box-shadow:inset -3px -3px 0 rgba(0,0,0,.08); }
-.jstreak { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:22px; filter:grayscale(1) opacity(.5); transition:filter .3s; }
-.jstreak.hot { filter:none; }
+.jstreak { display:flex; align-items:center; gap:6px; align-self:stretch; padding:8px 14px; border-radius:18px; background:rgba(255,251,242,.9); box-shadow:0 2px 0 rgba(60,50,40,.12); font-size:22px; }
+.jstreak > * { filter:grayscale(1) opacity(.7); transition:filter .3s; }
+.jstreak.hot > * { filter:none; }
 .jstreak i { width:30px; height:12px; border-radius:6px; background:#e2dccd; box-shadow:inset 0 -2px 0 rgba(0,0,0,.08); }
 .jstreak i.on { background:linear-gradient(#ffe36b, #ffb52e); box-shadow:0 0 8px rgba(255,190,40,.8); animation:grow .3s cubic-bezier(.3,1.6,.6,1) both; }
 .jstreak.zap { animation:zap .9s ease-out; }
@@ -741,19 +742,19 @@ body.framed::before { inset:0; filter:none; opacity:1; image-rendering:pixelated
 <body>
 <div id="app"></div>
 <div id="turn" aria-live="polite"></div>
-<script src="engine.js?v=29"></script>
-<script src="content.js?v=29"></script>
-<script src="voice.js?v=29"></script>
-<script src="audio.js?v=29"></script>
-<script src="manip.js?v=29"></script>
-<script src="theme.js?v=29"></script>
-<script src="world.js?v=29"></script>
-<script src="avatar.js?v=29"></script>
-<script src="pixel.js?v=29"></script>
-<script src="village.js?v=29"></script>
-<script src="teach.js?v=29"></script>
-<script src="parent.js?v=29"></script>
-<script src="scratch.js?v=29"></script>
-<script src="app.js?v=29"></script>
+<script src="engine.js?v=30"></script>
+<script src="content.js?v=30"></script>
+<script src="voice.js?v=30"></script>
+<script src="audio.js?v=30"></script>
+<script src="manip.js?v=30"></script>
+<script src="theme.js?v=30"></script>
+<script src="world.js?v=30"></script>
+<script src="avatar.js?v=30"></script>
+<script src="pixel.js?v=30"></script>
+<script src="village.js?v=30"></script>
+<script src="teach.js?v=30"></script>
+<script src="parent.js?v=30"></script>
+<script src="scratch.js?v=30"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>

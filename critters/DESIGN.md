@@ -85,7 +85,7 @@ A real iPad app, not a web page: built in Swift, with **SpriteKit** (Apple's 2D 
 
 What it needs:
 - **A Mac with Xcode** (free from the App Store) to build it: the user's personal Mac laptop. Cloud sessions can't build iPad apps, so building and testing happen in a Claude Code session on that laptop. Setup steps: [spec/12-laptop-setup.md](spec/12-laptop-setup.md).
-- **A way onto Ellie's iPad.** Either plug the iPad into the Mac and install from Xcode with a free Apple ID (the app stops opening after 7 days until it's installed again), or join the **Apple Developer Program** ($99 a year) and use **TestFlight**: each new version arrives on her iPad over the air and lasts 90 days.
+- **A way onto Ellie's iPad:** the **Apple Developer Program** (joined) and **TestFlight**: each new version arrives on her iPad over the air and lasts 90 days. Early builds can also go straight from Xcode by cable.
 - The game's rules (the math engine, payouts, odds, critter stats, battle numbers) are kept apart from the screens, so they can be checked on their own.
 
 ## Names
@@ -134,6 +134,7 @@ Then put it in front of her for a few days and watch: does she start math rounds
 - The catcher works like the real one: claw drop, multiplier bars, conveyor of critters that each take a number of balls. (2026-11-25)
 - Names in the Pokémon style: real animal plus element, shared sounds within a family. (2026-11-25)
 - Everything is documented in the specs before building starts; building happens on the user's personal Mac laptop. (2026-11-25)
+- Xcode is installed on the laptop and the user has joined the Apple Developer Program, so versions reach Ellie's iPad over the air through TestFlight. (2026-11-25)
 - Made for Ellie's iPad mini (5th generation); her iPad's App Store uses her parent's Apple ID, so TestFlight installs need nothing extra. (2026-11-25)
 - Times tables are on from the start, beside facts to 20, because her class is already on multiplication; she knows some basic ones and is catching up. (2026-11-25)
 - Catch-up targets start from the old app's (facts to 10 by week 3, facts to 20 by week 10) plus times-table targets, and move each week to follow her actual pace ([spec/02-math.md](spec/02-math.md)). (2026-11-25)
@@ -142,5 +143,4 @@ Then put it in front of her for a few days and watch: does she start math rounds
 
 ## Open questions
 
-1. **Installing:** free Apple ID (reinstall every 7 days by cable) or the Apple Developer Program ($99 a year, updates over the air with TestFlight)?
-2. **Ellie's exact iPadOS version** (read as "20.6.5.2", which isn't an Apple version number; it doesn't change any plan).
+1. **Ellie's exact iPadOS version** (read as "20.6.5.2", which isn't an Apple version number; it doesn't change any plan).

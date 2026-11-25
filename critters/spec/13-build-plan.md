@@ -127,7 +127,6 @@ Each later slice also adds the next math skills as her class reaches them ([02-m
 | **She stops starting math rounds** | Check first: are rounds too long, is the fast time too tight (few fast answers), or does she have more pinballs than she can spend? Then shorten rounds, raise the pay or the combo, or give the trees something new to show (a bigger harvest, a tree that grows). Don't add math anywhere else: math only earns pinballs. |
 | **She rushes and guesses** for the combo | Wrong answers already pay nothing and reset the combo; if fast wrong answers stay high, look at how 02 handles quick wrong answers, rather than lowering what fast right answers pay. |
 | **Performance on her iPad** | Profile on her iPad from M2 on, not just the simulator; the ball cap and the rules in [11-tech.md](11-tech.md) are the levers. |
-| **The free Apple ID's 7-day limit** lets the app lapse while she's using it | Join the Developer Program before day-to-day play ([12-laptop-setup.md](12-laptop-setup.md)). |
 | **Lost progress** | Saves fall back automatically; export a backup weekly from the grown-up view. |
 
 ## Recording decisions

@@ -19,6 +19,8 @@ Apple menu () → **About This Mac**. Note the macOS version and how much free d
 
 ## 3. Install Xcode
 
+**Done:** Xcode is already installed on the laptop. Just make sure it's up to date (App Store → Updates) and that the iOS platform is installed (item 2 below), then run item 3 once.
+
 1. Open the **App Store** on the Mac, search for **Xcode**, and install it. It's free and a big download, so start it on good Wi-Fi.
 2. Open Xcode once. Let it install its extra components, and when it asks which platforms to add, include **iOS** (this covers iPad).
 3. Open **Terminal** (in Applications → Utilities) and run:
@@ -31,16 +33,14 @@ Apple menu () → **About This Mac**. Note the macOS version and how much free d
 
 In Xcode: **Xcode → Settings → Accounts** (about), click **+**, choose **Apple ID**, and sign in. This lets Xcode put apps on Ellie's iPad.
 
-## 5. Decide how the game gets onto her iPad
+## 5. How the game gets onto her iPad
 
-| | Free Apple ID | Apple Developer Program |
-|---|---|---|
-| Cost | Free | $99 a year |
-| How it installs | Plug her iPad into the Mac; Claude or you run it from Xcode | Over the air, through Apple's **TestFlight** app |
-| How long a version lasts | **7 days**, then the app won't open until it's installed again by cable | **90 days** per version, and each new version arrives on its own |
-| Good for | Trying things out at the start | Everyday use once she's playing |
+**Decided: the Apple Developer Program**, which you've already joined ($99 a year). That means:
 
-**Recommended:** start with the free Apple ID while the first pieces are being built, and join the Developer Program before Ellie plays it day to day. Joining is at **developer.apple.com/programs** with the same Apple ID; approval for an individual can take a day or two. Your Apple ID needs two-factor authentication turned on.
+- New versions reach Ellie's iPad **over the air through TestFlight**, and each lasts **90 days** (step 10).
+- During the early building you can still plug her iPad in and install straight from Xcode (step 9), which is quicker for trying things out. Builds installed that way last a year with the paid program.
+
+In Xcode's Accounts settings (step 4), your Apple ID should show your team as **(Individual)** or your name, not "Personal Team". If it only shows "Personal Team", sign out and back in.
 
 ## 6. Get this project onto the laptop
 
@@ -67,7 +67,7 @@ Start a new **local** Claude Code session (one that runs on your Mac, not in the
 
 Then say something like:
 
-> We're building the critter game in `critters/`. Read `critters/README.md`, then `critters/spec/13-build-plan.md`, and start milestone M0. Ellie's iPad is an iPad mini (5th generation) on iPadOS [version]. I'm using [a free Apple ID / the Apple Developer Program].
+> We're building the critter game in `critters/`. Read `critters/README.md`, then `critters/spec/13-build-plan.md`, and start milestone M0. Ellie's iPad is an iPad mini (5th generation) on iPadOS [version]. I'm in the Apple Developer Program, and Xcode is installed.
 
 **Your vault.** All the docs (the README, the design, the specs and the research notes) also belong in your ChrisOS vault, under **Projects/Critter Math**. In that first session, also say:
 
@@ -80,9 +80,8 @@ The script finds the vault on its own (iCloud Obsidian, iCloud Drive, Documents 
 1. Plug her iPad into the Mac with a cable. On the iPad, tap **Trust** when it asks about the computer, and enter her passcode.
 2. Claude (or you, in Xcode) picks her iPad as the place to run the app and starts it.
 3. The first time, the iPad asks for **Developer Mode**: go to **Settings → Privacy & Security → Developer Mode**, turn it on, and let the iPad restart. After it restarts, confirm when asked. (The switch only shows up after the iPad has been connected to Xcode once.)
-4. **With a free Apple ID only:** the iPad may refuse to open the app until you trust it: **Settings → General → VPN & Device Management** (about), tap your Apple ID under Developer App, and choose **Trust**.
 
-## 10. Later: TestFlight (Developer Program only)
+## 10. TestFlight (you have the Developer Program)
 
 Claude can do most of this from the Mac; the parts that need your Apple sign-in are yours.
 
@@ -95,5 +94,4 @@ TestFlight installs to the Apple ID that the iPad's App Store uses. **Her iPad's
 
 ## Questions to answer in the first session
 
-- Ellie's exact iPadOS version (step 1; the model is known).
-- Free Apple ID or the Developer Program (step 5).
+- Ellie's exact iPadOS version (step 1; the model is known). That's the only one left.

@@ -136,3 +136,4 @@ A new day starts at **4:00 a.m. local time** (tune), for everything that counts 
 
 - Native iPad app: **Swift, SwiftUI for menus, SpriteKit for the game scenes.** Portrait. Offline. Saves on the iPad; backup to a file. No accounts, ads, purchases or network.
 - Built in Xcode on the user's personal Mac laptop.
+- Made for Ellie's **iPad mini (5th generation)**: 768 × 1024 points upright, 60 Hz ([11-tech.md](11-tech.md)).

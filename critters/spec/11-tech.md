@@ -7,7 +7,8 @@ For the Claude session that builds the game. Words and shared numbers come from 
 - **Native iPad app** in Swift (Swift 6 language mode, Xcode 16 or newer). Apple frameworks only: no third-party packages, SDKs or CocoaPods.
 - **SwiftUI** for the app shell, menus, the math round, the grown-up view and every non-game screen.
 - **SpriteKit** for the four game scenes: pinball machine, catcher, battle, camp. Each is hosted in SwiftUI with `SpriteView`.
-- **Minimum iPadOS: 17** (open: confirm against Ellie's iPad; see [12-laptop-setup.md](12-laptop-setup.md)). 17 is the floor because the app model uses the Observation framework (`@Observable`).
+- **Minimum iPadOS: 17.** 17 is the floor because the app model uses the Observation framework (`@Observable`).
+- **The device to design and test for:** Ellie's iPad is an **iPad mini (5th generation)**: A12 chip, 3 GB of memory, a 7.9-inch 60 Hz screen (no ProMotion), **768 × 1024 points** held upright, drawn at @2x. Her parent read the iPadOS version as "20.6.5.2", which isn't a number Apple uses; it's most likely iPadOS 18 or 26, and either is above the minimum. Check it on the iPad in the first build session. Xcode must be new enough to install on her iPad's iPadOS; current Xcode is.
 - **iPad only, portrait only** (portrait and portrait upside-down). `UIRequiresFullScreen = YES`, so no Split View or Slide Over to lay out for. Status bar hidden in game scenes.
 - **No network, no accounts, no analytics, no ads, no purchases.** The app requests no network entitlement and makes no network calls. Nothing leaves the iPad except a backup file she or a grown-up chooses to share.
 
@@ -104,7 +105,7 @@ What lives where:
 
 ## Game loop and physics
 
-- **SpriteKit** drives each scene's frame loop. `SpriteView` gets `preferredFramesPerSecond: 120`; the iPad runs at 120 on ProMotion screens and 60 elsewhere.
+- **SpriteKit** drives each scene's frame loop. `SpriteView` gets `preferredFramesPerSecond: 120`; Ellie's iPad mini runs at 60, and ProMotion iPads at 120.
 - **Pinball and catcher** balls move by a small fixed-step physics stepper in GameCore (circles against pegs, rails, posts and bars; balls don't hit each other), not by SpriteKit's physics engine. The scenes only draw what the stepper says. That keeps both testable without an iPad and lets simulation tests run thousands of drops quickly.
 - **Pinball outcomes are rolled first.** GameCore picks the slot from the shares in 00 when she launches, then plays back a ball path recorded earlier by the stepper that ends in that slot, chosen for the top bumper's position at launch (the path library: [03-pinball-machine.md](03-pinball-machine.md)). That guarantees the odds in 00 and keeps the outcome in the saved RNG. A build-time tool in the GameCore package makes the path library; it's run again whenever the board changes.
 - **Catcher** balls run live on the stepper, so where they land depends on her timing. When a ball's centre crosses a multiplier bar, the stepper spawns the extra balls just below it (each ball passes a given bar once). GameCore counts the balls that land on each critter and decides catches ([04-catcher.md](04-catcher.md)).
@@ -122,7 +123,7 @@ What lives where:
 
 ## Performance targets
 
-- **60 fps minimum** on Ellie's iPad in every scene, including a catcher drop that hits x20 then x5 (100 balls). **120 fps** on ProMotion iPads where it holds.
+- **60 fps steady** on Ellie's iPad mini (its screen's top speed) in every scene, including a catcher drop that hits x20 then x5 (100 balls). **120 fps** on ProMotion iPads where it holds.
 - Launch to the first interactive screen in under 2 seconds.
 - No memory growth over a 30-minute session (check with Instruments' Allocations).
 - Debug builds show SpriteKit's `showsFPS`, `showsNodeCount` and `showsDrawCount`. Profile on the real iPad with Instruments (Time Profiler, Game Performance) before each TestFlight build.

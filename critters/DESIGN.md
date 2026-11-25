@@ -134,9 +134,13 @@ Then put it in front of her for a few days and watch: does she start math rounds
 - The catcher works like the real one: claw drop, multiplier bars, conveyor of critters that each take a number of balls. (2026-11-25)
 - Names in the Pokémon style: real animal plus element, shared sounds within a family. (2026-11-25)
 - Everything is documented in the specs before building starts; building happens on the user's personal Mac laptop. (2026-11-25)
+- Made for Ellie's iPad mini (5th generation); her iPad's App Store uses her parent's Apple ID, so TestFlight installs need nothing extra. (2026-11-25)
+- Times tables are on from the start, beside facts to 20, because her class is already on multiplication; she knows some basic ones and is catching up. (2026-11-25)
+- Catch-up targets start from the old app's (facts to 10 by week 3, facts to 20 by week 10) plus times-table targets, and move each week to follow her actual pace ([spec/02-math.md](spec/02-math.md)). (2026-11-25)
+- The starter names, Grumps, Juniper and Mossy Hollow are approved. (2026-11-25)
 
 ## Open questions
 
-1. **Building:** is the personal laptop a Mac, with Xcode installed? And which iPad does Ellie have (it sets the oldest iPadOS the app supports)?
-2. **Installing:** free Apple ID (reinstall every 7 days by cable) or the Apple Developer Program ($99 a year, updates over the air with TestFlight)?
-3. **Names:** starters from the list above or Ellie's own; a name for the zombies; a title for the game.
+1. **Installing:** free Apple ID (reinstall every 7 days by cable) or the Apple Developer Program ($99 a year, updates over the air with TestFlight)?
+2. **Ellie's exact iPadOS version** (read as "20.6.5.2", which isn't an Apple version number; it doesn't change any plan).
+3. **Levelling up:** being checked against the Clash of Critters wiki; [spec/07-economy.md](spec/07-economy.md) follows what it says.

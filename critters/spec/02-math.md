@@ -13,8 +13,9 @@ From the earlier Ellie Math notes (written October 2026, so the placement check 
 - **Rushes and guesses** when she's unsure.
 - Her class words: **partners of 10**, **doubles**, **near doubles**, **make 10**, **subtract from 10**, **subtract the ones first**, **think addition**, **groups of**. Help uses these words and no others.
 - Chapter 4 expects times facts for **×0 to ×5 and ×10** from memory.
+- **Her class is already on multiplication** (November 2026, from her parent). She knows some of the basic times facts and is still catching up.
 
-So: facts to 20 come first and get most of every round until they're caught up; times tables come in as her class reaches them; bigger questions come later.
+So: facts to 20 get most of every round until they're caught up; times tables run alongside them from the very first round; bigger questions come later.
 
 ## 2. Skills
 
@@ -42,11 +43,11 @@ About 270 facts in all. Each family's facts are taught in a fixed order, easiest
 
 **A family opens** when every family it needs has at least **70%** of its facts fast or solid (tune). Families A1–A4 are open from the start, unless the placement check opens more.
 
-### Track B · Times and division (data in Slice 1; turned on by the grown-up)
+### Track B · Times and division (Slice 1, on from the start)
 
 | # | Family | Example | Facts | Opens | Fast time |
 |---|---|---|---|---|---|
-| B1 | **×10, ×5, ×2** | 4 × 5 | a × b and b × a for b in {10, 5, 2}, a = 1–10 | Grown-up setting, or placement | 3 s |
+| B1 | **×10, ×5, ×2** | 4 × 5 | a × b and b × a for b in {10, 5, 2}, a = 1–10 | From the start | 3 s |
 | B2 | **×0 and ×1** | 7 × 1 | a × 0, 0 × a, a × 1, 1 × a, a = 0–10 | B1 70% | 3 s |
 | B3 | **×3, ×4** | 3 × 6 | as B1 with b in {3, 4} | B1 70% | 3 s |
 | B4 | **÷ for B1–B3** | 20 ÷ 5 | (a × b) ÷ b for each fact above, b ≥ 1 | its times family 70% | 4 s |
@@ -55,7 +56,7 @@ About 270 facts in all. Each family's facts are taught in a fixed order, easiest
 
 The grown-up setting **Times tables** has four steps: off · ×2 ×5 ×10 · add ×0 ×1 ×3 ×4 · add ×6–×9 (later). It sets which families may open; the 70% rule still orders them.
 
-**Share of a round:** while fewer than 80% of Track A's facts are solid, Track B gets **at most 25%** of a round (tune). After that, up to half.
+**Share of a round:** while fewer than 80% of Track A's facts are solid, Track B gets **about a third** of a round (tune), so the times facts her class is working on keep moving too. After that, up to half.
 
 ### Track C · Bigger questions (later)
 
@@ -222,7 +223,7 @@ Pictures show groups of five and ten, never single dots to count one by one. The
 | Slowest facts | 10 facts with the longest average of their last 3 right answers | 1 |
 | Most missed | 10 facts with the most wrong or "I don't know" in 14 days, and recent slips | 1 |
 | Placement | What it found, when | 1 |
-| Catch-up pace | Facts to 20 solid; new solid facts per week (4-week average); the week facts to 20 reach 90% at that pace; targets: facts to 10 by week 3, facts to 20 by week 10 (tune) | later |
+| Catch-up targets | Each target below: facts solid of the total, her pace, the week it forecasts, and on track / a little behind / moved / stuck | 1 (forecasts from week 2) |
 
 **Settings:**
 
@@ -232,7 +233,7 @@ Pictures show groups of five and ten, never single dots to count one by one. The
 | Round length | 10, 20, 30 | 20 |
 | Learning cap | 5 to 10 | 8 |
 | Families on or off | each family | all on |
-| Times tables | off · ×2 ×5 ×10 · add ×0 ×1 ×3 ×4 · add ×6–×9 (later) | off, unless placement finds she knows them |
+| Times tables | off · ×2 ×5 ×10 · add ×0 ×1 ×3 ×4 · add ×6–×9 (later) | add ×0 ×1 ×3 ×4 (on from the start; placement finds which she already knows) |
 | Division with times | on, off | on |
 | Easier after losses ([06-battle.md](06-battle.md#difficulty)) | on, off | on |
 | Raids can take candy (later; [09-later-modes.md](09-later-modes.md)) | on, off | on |
@@ -241,6 +242,29 @@ Pictures show groups of five and ten, never single dots to count one by one. The
 | Backup and restore | buttons (how they work: [11-tech.md](11-tech.md)) | |
 
 A family turned off isn't taught or reviewed, and its facts keep their state.
+
+### Catch-up targets that follow how she learns
+
+Starting targets, in weeks from her first day (tune; the first two are the old app's, which her parent thinks still hold):
+
+| Target | Families | By week |
+|---|---|---|
+| Facts to 10 | A1, A2, A3, A6, A9, A10 | 3 |
+| Facts to 20, with subtraction | all of Track A | 10 |
+| ×2, ×5, ×10 | B1 | 6 |
+| ×0, ×1, ×3, ×4 and their division | B2, B3, B4 | 12 |
+
+A target is met when 90% of its facts are solid.
+
+**Recalibrating, every week** (at the start of Monday, [00](00-names-and-numbers.md#days)):
+
+- **Pace** = facts in that target that became solid per week, averaged over the last 4 weeks (fewer at the start). No forecast until she has 2 weeks of answers.
+- **Forecast week** = this week + facts still to go ÷ pace.
+- **On track:** forecast on or before the target.
+- **A little behind:** forecast up to 2 weeks late. The view says what would close the gap, worked out from her own numbers: about how many more rounds a day, using how many facts went solid per round over the last 4 weeks.
+- **Moved:** more than 2 weeks late two weeks running. The target moves to the forecast week (rounded up), and the view says so and shows the original week beside it. Targets follow how she actually learns instead of sitting out of reach.
+- **Stuck:** no facts in that target became solid for 2 weeks. The view lists its most-missed facts and their help pictures, for practising together away from the screen.
+- Targets never move earlier by themselves. When a target is met well ahead of time, the view suggests the next one (for example ×6 to ×9). A grown-up can edit any target's week.
 
 ## 11. What the math engine stores
 
@@ -256,6 +280,6 @@ Fields only; the format and saving are in [11-tech.md](11-tech.md).
 
 ## 12. Slice 1 and later
 
-**Slice 1:** all of Track A; Track B families B1–B4 as data behind the Times tables setting; the placement check; the mastery model; the round builder; answering, timing and rushed answers; pay and combo; help pictures for every Slice 1 family; the grown-up view's Slice 1 sections and settings.
+**Slice 1:** all of Track A; Track B families B1–B4, on from the start; the placement check; the mastery model; the round builder; answering, timing and rushed answers; pay and combo; help pictures for every Slice 1 family; the grown-up view's Slice 1 sections and settings.
 
-**Later:** Track B5–B6 (×6 to ×9), Track C, the catch-up pace forecast, reading questions aloud, animated help.
+**Later:** Track B5–B6 (×6 to ×9), Track C, reading questions aloud, animated help.

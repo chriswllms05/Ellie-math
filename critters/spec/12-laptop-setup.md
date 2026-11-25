@@ -6,7 +6,9 @@ For you, before the first build session. The game is built on your personal lapt
 
 On her iPad: **Settings → General → About**. Note the **Model Name** and the **iPadOS version** (about: "Software Version" or "iOS Version").
 
-This sets the oldest iPadOS the game has to support. The plan is iPadOS 17 or newer; if her iPad is on something older, tell Claude in the first session.
+This sets the oldest iPadOS the game has to support. The plan is iPadOS 17 or newer.
+
+**Already known:** an **iPad mini (5th generation)**. The version was read as "20.6.5.2", which isn't a number Apple uses (most likely it's iPadOS 18.x or 26.x). Either works; check it once more when you plug the iPad in for the first time.
 
 ## 2. Check the Mac
 
@@ -65,7 +67,7 @@ Start a new **local** Claude Code session (one that runs on your Mac, not in the
 
 Then say something like:
 
-> We're building the critter game in `critters/`. Read `critters/README.md`, then `critters/spec/13-build-plan.md`, and start milestone M0. Ellie's iPad is a [model] on iPadOS [version]. I'm using [a free Apple ID / the Apple Developer Program].
+> We're building the critter game in `critters/`. Read `critters/README.md`, then `critters/spec/13-build-plan.md`, and start milestone M0. Ellie's iPad is an iPad mini (5th generation) on iPadOS [version]. I'm using [a free Apple ID / the Apple Developer Program].
 
 **Your vault.** All the docs (the README, the design, the specs and the research notes) also belong in your ChrisOS vault, under **Projects/Critter Math**. In that first session, also say:
 
@@ -89,10 +91,9 @@ Claude can do most of this from the Mac; the parts that need your Apple sign-in 
 3. In App Store Connect, under **TestFlight**, add yourself as an **internal tester**.
 4. On Ellie's iPad, install the free **TestFlight** app from the App Store, and open the invite. New versions then show up in TestFlight to install with one tap.
 
-TestFlight installs to the Apple ID that the iPad's App Store uses. If her iPad uses your Apple ID, this just works. If she has her own child account, tell Claude, and it will help set up an invite that works for her account.
+TestFlight installs to the Apple ID that the iPad's App Store uses. **Her iPad's App Store uses your Apple ID** (she has no Apple ID of her own), so this just works: you add yourself as the tester.
 
 ## Questions to answer in the first session
 
-- Ellie's iPad model and iPadOS version (step 1).
+- Ellie's exact iPadOS version (step 1; the model is known).
 - Free Apple ID or the Developer Program (step 5).
-- Whether her iPad's App Store uses your Apple ID or her own (step 10).

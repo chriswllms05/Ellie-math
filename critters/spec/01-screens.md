@@ -1,6 +1,6 @@
 # Screens
 
-Every screen and overlay, how she moves between them, and what she sees on her first day. Portrait iPad. Words and shared numbers: [00-names-and-numbers.md](00-names-and-numbers.md). This spec owns layout and navigation; what happens inside each scene belongs to the spec linked from it.
+Every screen and overlay, how she moves between them, and what she sees on her first day. Portrait iPad, laid out for Ellie's **iPad mini (5th generation): 768 × 1024 points** upright; larger iPads get the same layout scaled up, never a different one. Words and shared numbers: [00-names-and-numbers.md](00-names-and-numbers.md). This spec owns layout and navigation; what happens inside each scene belongs to the spec linked from it.
 
 ## The shape of it
 

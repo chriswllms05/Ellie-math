@@ -28,8 +28,9 @@ Critters ──► battles ──► boss stars ──► unlocks, more pinballs
 | **Pinball machine** | Same as the real game: tap to launch, a moving bumper at the top (launch when it points to the middle), capsule and shield bumpers with gauges, the centre card slot, four candy slots and the jackpot along the bottom, the same landing odds, and multiplier tiers that open as her pile grows (x3 at 240 pinballs up to x200 at 18,000). |
 | **Candy and levels** | Same: candy levels critters up. |
 | **Catcher** | A capsule opens the catcher. Which critter turns up depends on its find chance: rarer critters are harder to find. She catches them by hand. |
-| **Stars and evolution** | Ellie's rules, which differ from the real game: every duplicate gives that critter **1 star**, and **every 2 stars it evolves**. How many times a critter evolves depends on its rarity: **Starter 2, Rare 3, Epic 4, Legendary 5.** After its last evolution, more duplicates keep adding stars, which make it stronger. Wish boxes give a duplicate of the critter she chooses. No evolution trials. |
-| **Starters** | Four: **Grass, Lightning, Water and Fire**, one of each. |
+| **Rarity** | As in the real game: **Common** lines (blue) have 2 forms and **Rare** lines (purple) have 4. Forms go T1 → T2 (gold) → T3 (red) → T4 (rainbow), and a T4 form gives the whole team an aura. |
+| **Stars and evolution** | As in the real game: each duplicate adds star progress, stars make a critter stronger, and enough stars unlock its next form. Stars climb in tiers (bronze for stars 1–6, then silver, gold, moons, suns and crowns), each needing more duplicates per star. Going from T2 to T3 also needs a **trial**: early ones are goals she can reach anywhere (beat a number of Grumps, clear stages, hit the jackpot, feed it up a level), and event trials arrive with the events. Wish boxes give a duplicate of the critter she chooses. The research doesn't give the exact star count for every evolution (some evolve at 1 star, others at 6), so we set them along those lines and adjust if we learn the real ones. |
+| **Starters** | Four, one of each: **Grass, Lightning, Water and Fire**. Common lines (2 forms), like the real game's starters. |
 | **Elements** | Five, as in the real game: Water beats Fire, Fire beats Grass, Grass beats Rock, Rock beats Lightning, Lightning beats Water. A counter does double damage; being countered does half. Rock critters come from the catcher. |
 | **Battle** | Same: place critters on a grid (3 lanes × 3 rows in chapters 1–3, then 5 × 3), the lane lights green "Yes!" or red "No!" for the matchup, the "?" button shows the next wave, critters attack on their own, the Grumps walk down the lanes, and she loses if one reaches the bottom or the timer runs out. A boss every 10th stage, a battle report after a loss, Quick Deploy, and auto-battle on regular stages. Roles: tank, guardian, DPS, healer, support, specialist. |
 | **Boss stars** | Same idea: each boss beaten gives a star that unlocks the next feature (multipliers, more trees, card boosts, raid rewards, more camp land). Trimmed to fit how far she'll actually get. |
@@ -82,13 +83,13 @@ An iPad web app, held upright (the pinball board and the lanes both run top to b
 **Slice 1: the core loop, end to end**
 - A math round on a pinball tree, with pinballs and the speed combo.
 - The pinball machine: slots, odds, bumpers, multipliers, candy, capsules.
-- The catcher; the 4 starters and a handful of Rare critters; levels, stars and evolution.
+- The catcher; the 4 starters and a handful of other Common and Rare critters; levels, stars and the first evolutions.
 - Battle chapter 1: 3 × 3 grid, 10 stages, a boss at stage 10.
 - A first camp with trees and critters wandering.
 
 Then put it in front of her for a few days and watch: does she start math rounds without being asked? Does she rush? (Her wrong-answer rate will say.)
 
-**Slice 2:** chapters 2–4 (5 × 3 from chapter 4), Epic and Legendary critters, the boss star track, Quick Deploy, auto-battle, daily quests, wish boxes.
+**Slice 2:** chapters 2–4 (5 × 3 from chapter 4), more Rare critters, evolution trials, feeding, the boss star track, Quick Deploy, auto-battle, daily quests, wish boxes.
 
 **Slice 3:** the jackpot games against computer camps, shields, reward cards.
 
@@ -101,7 +102,7 @@ Then put it in front of her for a few days and watch: does she start math rounds
 - Copy the real game's gameplay; our own names and art. (2026-11-25)
 - Math only earns pinballs: no math in battles or anywhere else. (2026-11-25)
 - Luck-based rewards are fine: the machine, cards, jackpot. The catcher works on find chances. (2026-11-25)
-- 1 star per duplicate, an evolution every 2 stars; Starter 2 evolutions, Rare 3, Epic 4, Legendary 5. (2026-11-25)
+- Rarity, stars and evolution follow the real game. (2026-11-25)
 - Four starters: Grass, Lightning, Water, Fire. (2026-11-25)
 - Built as a new folder in this repository; the old app is left untouched. (2026-11-25)
 
@@ -109,5 +110,4 @@ Then put it in front of her for a few days and watch: does she start math rounds
 
 1. **Which math?** For example addition and subtraction facts to 20, times tables, division, or a mix, and which first.
 2. **How does catching work in the real game?** The wiki doesn't describe it. A description or screenshot of the catcher would let us copy it closely.
-3. **"2 evolutions" for starters** is read here as evolving twice (3 forms). Correct?
-4. **Names and look:** critter names, the enemies' name, and the game's name. Ellie could name them.
+3. **Names and look:** critter names, the enemies' name, and the game's name. Ellie could name them.

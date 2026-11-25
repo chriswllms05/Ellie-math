@@ -138,9 +138,9 @@ Then put it in front of her for a few days and watch: does she start math rounds
 - Times tables are on from the start, beside facts to 20, because her class is already on multiplication; she knows some basic ones and is catching up. (2026-11-25)
 - Catch-up targets start from the old app's (facts to 10 by week 3, facts to 20 by week 10) plus times-table targets, and move each week to follow her actual pace ([spec/02-math.md](spec/02-math.md)). (2026-11-25)
 - The critter names and "Grumps" are approved. (2026-11-25)
+- Levelling follows the real game as far as the wiki and guides document it: candy fills one shared level bar, every critter is at her level, level-ups give no items, and features unlock from boss stars. Capsules come mainly from the capsule ring, plus a welcome gift like the real game's. (2026-11-25)
 
 ## Open questions
 
 1. **Installing:** free Apple ID (reinstall every 7 days by cable) or the Apple Developer Program ($99 a year, updates over the air with TestFlight)?
 2. **Ellie's exact iPadOS version** (read as "20.6.5.2", which isn't an Apple version number; it doesn't change any plan).
-3. **Levelling up:** being checked against the Clash of Critters wiki; [spec/07-economy.md](spec/07-economy.md) follows what it says.

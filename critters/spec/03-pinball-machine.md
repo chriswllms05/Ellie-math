@@ -97,7 +97,7 @@ Real game: hits on the top-left bumper fill a gauge that gives a capsule (or pin
 
 | Ring | Hits to fill | When full | Slice |
 |---|---|---|---|
-| **Capsule ring** | 30 (tune) | A capsule. After the day's cap is reached, a pinball bonus instead. Cap and contents in [07](07-economy.md). | Slice 1 |
+| **Capsule ring** | 25 (tune); each hit counts as many times as the launch's multiplier, so the ring fills at the same pace per pinball whatever multiplier she plays | A capsule. After the day's cap is reached, a pinball bonus instead. Cap and contents in [07](07-economy.md). | Slice 1 |
 | **Shield ring** | 25 (tune) | +1 shield, or nothing if shields are full ([09](09-later-modes.md)). | Later; shown with a small lock until then, and hits don't count |
 
 - Each hit adds 1, whatever the multiplier (tune). So low multipliers fill rings faster per pinball spent, high multipliers pay more per launch: a real choice for her.
@@ -139,7 +139,7 @@ Each of these needs a sound and a small animation ([10-art-and-sound.md](10-art-
 - PUSH pressed (button squashes; plunger springs).
 - Ball hits a peg (peg flashes), the swing bumper (sparkle if a good launch), a ring (a rim segment lights).
 - Ball enters each kind of slot (far and mid: candy burst; jackpot: big fanfare; card hole: card flip).
-- Candy flying into the bar; the bar filling; **level up** (big moment, then the level-up reward from [07](07-economy.md)).
+- Candy flying into the bar; the bar filling; **level up** (a big moment: "All your critters got stronger!"; level-ups give no items, [07](07-economy.md#level-ups)).
 - A ring filling and paying.
 - Multiplier changing (the slot labels count up to their new amounts).
 - Holding PUSH (a steady rhythm, not a wall of noise).
@@ -155,7 +155,7 @@ Big moments (level-up, jackpot, capsule) pause new launches for about a second s
 
 ## Edge cases
 
-- Several level-ups from one landing (big multipliers): each one is shown in turn, quickly, and each pays its reward.
+- Several level-ups from one landing (big multipliers): each one is shown in turn, quickly.
 - A tier unlocks or locks mid-flight: affects only the next launch.
 - A jackpot or card landing while the minigame or card is still showing (later): queued, shown one after another.
 - Rapid tapping during a big moment: ignored until the moment ends.

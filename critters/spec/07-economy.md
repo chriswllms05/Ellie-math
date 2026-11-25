@@ -16,7 +16,7 @@ Every amount she earns or spends, and how the whole thing is meant to feel over 
 |---|---|---|---|
 | **Pinballs** | Math rounds (main source; [02-math.md](02-math.md)); daily quests; boss stages; chapter 1 reward; achievements; capsule ring after the daily cap; Green capsule bonus bags. Later: duels, Horde, Boss Challenge, events ([09](09-later-modes.md)). | Pinball machine launches: 1 × multiplier each. | Slice 1 |
 | **Candy** | Every pinball machine slot, the card hole and the jackpot; Blue capsule bonus piles. Later: reward cards, raids, duels, visits, feeds ([09](09-later-modes.md)). | Fills her level bar automatically; extra carries over into the next level. Later: some can be lost to raids. | Slice 1 |
-| **Capsules** (Green, Blue, Purple) | Level-ups; the capsule ring; boss stages; chapter 1 reward; one to start. | Opening a catch session ([04-catcher.md](04-catcher.md)). | Slice 1 |
+| **Capsules** (Green, Blue, Purple) | The capsule ring (main source); boss stages; chapter 1 reward; one to start, and the welcome gift. | Opening a catch session ([04-catcher.md](04-catcher.md)). | Slice 1 |
 | **Boss stars** | Each boss stage, first time beaten (one each). | Nothing: they unlock the boss star track below, and camp land ([08-camp.md](08-camp.md)). | Slice 1 |
 | **Wish boxes** | Chests at stages 40 and 80 of each chapter; the stage 80 boss. Later: events. | A duplicate of the critter she picks ([05-critters.md](05-critters.md)). | Slice 2 |
 | **Shovels** | Each boss stage, first time beaten (one each). | Clearing camp land ([08-camp.md](08-camp.md)). | When 08 adds camp land |
@@ -76,26 +76,21 @@ Candy to go from level L to L + 1 = **(20 + 5 × (L − 1)) × base(L)**, rounde
 
 (The last row is without candy boosts; boosts bring later levels about 20–50% sooner.)
 
-## Level-up rewards
+Real game: no source gives its candy curve. The one data point is a level-653 player's screen: that level cost 880,000 candy while the slots paid 3,000 and 6,000, so a level there cost about 293 far-slot payouts. Ours costs more far-slot payouts per level than that from level 57 on and keeps climbing. If her levels slow down too much after about level 60, the first thing to tune is to stop the climb at 300, the real game's figure.
 
-Every level-up is a moment ([03](03-pinball-machine.md#feedback-and-animation)), and some pay a capsule:
+## Level-ups
 
-| Level reached | Reward |
-|---|---|
-| A multiple of 10 | Purple capsule |
-| A multiple of 5 (not 10) | Blue capsule |
-| Any other even level | Green capsule |
-| Odd levels | none |
+Real game (wiki and guides): candy is how you level up, it fills the one level bar shown at the top of the pinball screen, and guides talk about a single account level. No source lists any reward for a level-up, and features unlock from boss stars, not levels.
 
-That's 6 capsules every 10 levels. Real game: a reviewer says candy is used "to unlock gachapon capsules"; we read that as level-up rewards (not confirmed by the research).
+Ours, the same: a level-up is a big moment ([03](03-pinball-machine.md#feedback-and-animation)) and makes every critter she owns stronger at once ([05](05-critters.md#stat-model)). It gives no items. Capsules come from the capsule ring, boss stages and chapter rewards, as in the real game.
 
 ## Capsules: all sources
 
 | Source | How many | Colour |
 |---|---|---|
-| Start | 1 | Blue (her first catch) |
-| Level-ups | 6 per 10 levels (above) | Green, Blue, Purple |
-| Capsule ring ([03](03-pinball-machine.md#ring-bumpers-and-their-gauges)) | up to **3 a day** | Green 80%, Blue 18%, Purple 2% |
+| Start | 1 | Blue |
+| Welcome gift, day 1 | 6 | 5 Green, 1 Purple (the real game gives new players 5 capsules and a Rare one through a welcome code) |
+| Capsule ring ([03](03-pinball-machine.md#ring-bumpers-and-their-gauges)) | up to **5 a day** (the main source, as in the real game) | Green 80%, Blue 18%, Purple 2% |
 | Capsule ring after the daily cap | none: pays **25 pinballs** instead | |
 | Boss stages | 1 each | Blue; the stage 80 boss gives Purple |
 | Chapter 1 reward | 13 | 3 Purple, 10 Blue |
@@ -194,7 +189,7 @@ One-time, paid in pinballs (real game: 20–50 each).
 | Level | 1 (empty candy bar) |
 | Pinballs | 50, so she can try the machine before her first round ([01-screens.md](01-screens.md) decides the order) |
 | Critters | the four starters, first form, no stars ([05-critters.md](05-critters.md)) |
-| Capsules | 1 Blue |
+| Capsules | 1 Blue, plus the welcome gift: 5 Green and 1 Purple (they wait behind the capsule button) |
 | Multiplier | x1 (toggle hidden until boss star 1) |
 | Shields | none until shields exist; then 5, as in the real game ([09](09-later-modes.md)) |
 
@@ -207,8 +202,8 @@ What a typical month looks like with about 10 minutes of math a day (3 rounds), 
 | Math rounds, in all | 3 | about 21 | about 42 | about 90 |
 | Pinballs earned, in all | about 250 | about 1,900 | about 5,500 | about 11,500 |
 | Her level | about 12 | about 35 | about 65 | about 100 |
-| Capsules opened, in all | about 10 | about 35 | about 75 | about 130 |
-| Critters caught, in all | about 25 | about 85 | about 190 | about 325 |
+| Capsules opened, in all | about 10 | about 30 | about 70 | about 145 |
+| Critters caught, in all | about 25 | about 75 | about 170 | about 360 |
 | Battle | boss 10 beaten (day 1–2) | about stage 40 | chapter 1 done (about day 12) | chapter 3 done |
 | Boss stars | 1 | about 4 | about 8 | about 24 |
 

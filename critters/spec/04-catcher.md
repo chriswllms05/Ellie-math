@@ -16,7 +16,7 @@ Ours: a capsule is one catch session. The colour decides how good the belt is.
 
 - All numbers (tune). Drops stay at 5 for every colour (the screenshots show 5); if Purple sessions feel short, try 6.
 - The wish box is not a capsule in ours: it's an item that adds a duplicate to a critter she picks ([05-critters.md](05-critters.md), amounts in [07](07-economy.md)). Later.
-- **Where capsules come from** (how many: [07-economy.md](07-economy.md)): the pinball machine's capsule ring ([03](03-pinball-machine.md)), level-ups, boss stages, chapter rewards, and one to start.
+- **Where capsules come from** (how many: [07-economy.md](07-economy.md)): the pinball machine's capsule ring ([03](03-pinball-machine.md)), boss stages, chapter rewards, one to start and a welcome gift.
 - Capsules wait in her inventory until she opens them, one at a time. They never expire. Where she opens them from: [01-screens.md](01-screens.md).
 
 ## A catch session, start to finish

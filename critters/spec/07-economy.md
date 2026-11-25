@@ -67,7 +67,7 @@ Real game: the screenshot shows the mid slots paying twice the far slots (3,000 
 
 ### What a level costs
 
-Candy to go from level L to L + 1 = **(20 + 5 × (L − 1)) × base(L)**, rounded to two significant figures. So a level always costs about (20 + 5 × (L − 1)) ÷ 2.1 pinballs: about 10 at level 1, 33 at level 10, 80 at level 30, 130 at level 50, 250 at level 100. There's no top level.
+Candy to go from level L to L + 1 = **(20 + 5 × (L − 1)) × base(L)**, rounded to two significant figures. So a level always costs about (20 + 5 × (L − 1)) ÷ 2.1 pinballs: about 10 at level 1, 31 at level 10, 80 at level 30, 130 at level 50, 250 at level 100. There's no top level.
 
 | Level | 1 | 2 | 5 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -205,8 +205,8 @@ What a typical month looks like with about 10 minutes of math a day (3 rounds), 
 | Math rounds, in all | 3 | about 21 | about 42 | about 90 |
 | Pinballs earned, in all | about 250 | about 1,900 | about 5,500 | about 11,500 |
 | Her level | about 12 | about 35 | about 65 | about 100 |
-| Capsules opened, in all | about 10 | about 35 | about 75 | about 140 |
-| Critters caught, in all | about 25 | about 85 | about 190 | about 350 |
+| Capsules opened, in all | about 10 | about 35 | about 75 | about 130 |
+| Critters caught, in all | about 25 | about 85 | about 190 | about 325 |
 | Battle | boss 10 beaten (day 1–2) | about stage 40 | chapter 1 done (about day 12) | chapter 3 done |
 | Boss stars | 1 | about 4 | about 8 | about 24 |
 

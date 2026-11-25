@@ -1,6 +1,6 @@
-# The critter game
+# Critter Math
 
-A math game for Ellie that copies the gameplay of Clash of Critters, with math as the only way to earn pinballs. A native iPad app (Swift, SwiftUI, SpriteKit), started 2026-11-25 as a fresh start; the old Ellie Math app at the root of this repository is separate and stays as it is.
+**Critter Math**: a math game for Ellie that copies the gameplay of Clash of Critters, with math as the only way to earn pinballs. A native iPad app (Swift, SwiftUI, SpriteKit), started 2026-11-25 as a fresh start; the old Ellie Math app at the root of this repository is separate and stays as it is.
 
 ## Read in this order
 
@@ -24,3 +24,5 @@ A math game for Ellie that copies the gameplay of Clash of Critters, with math a
 | [11-tech.md](spec/11-tech.md) | How the app is built: structure, data, saving, testing |
 | [12-laptop-setup.md](spec/12-laptop-setup.md) | Getting the Mac laptop and Ellie's iPad ready |
 | [13-build-plan.md](spec/13-build-plan.md) | What gets built in what order, and how each step is checked |
+
+These docs are also copied into the ChrisOS vault, at `Projects/Critter Math`, by [tools/sync-to-vault.sh](tools/sync-to-vault.sh) on the Mac. Edit them here; the vault copy is overwritten.

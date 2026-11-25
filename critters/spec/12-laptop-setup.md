@@ -67,6 +67,12 @@ Then say something like:
 
 > We're building the critter game in `critters/`. Read `critters/README.md`, then `critters/spec/13-build-plan.md`, and start milestone M0. Ellie's iPad is a [model] on iPadOS [version]. I'm using [a free Apple ID / the Apple Developer Program].
 
+**Your vault.** All the docs (the README, the design, the specs and the research notes) also belong in your ChrisOS vault, under **Projects/Critter Math**. In that first session, also say:
+
+> Copy the docs into my vault with `critters/tools/sync-to-vault.sh`, then add a Stop hook to `.claude/settings.local.json` that runs it, so the vault stays up to date after every turn.
+
+The script finds the vault on its own (iCloud Obsidian, iCloud Drive, Documents or your home folder) and only copies files that changed. If your Mac asks whether Claude may access files in iCloud Drive, allow it. The hook goes in the laptop's own settings file, which isn't shared, and Claude Code asks you to approve it.
+
 ## 9. The first time you install on her iPad by cable
 
 1. Plug her iPad into the Mac with a cable. On the iPad, tap **Trust** when it asks about the computer, and enter her passcode.

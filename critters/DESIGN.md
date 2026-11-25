@@ -25,9 +25,9 @@ Critters ──► battles ──► boss stars ──► unlocks, more pinballs
 
 | System | In ours |
 |---|---|
-| **Pinball machine** | Same as the real game: tap to launch, a moving bumper at the top (launch when it points to the middle), capsule and shield bumpers with gauges, the centre card slot, four candy slots and the jackpot along the bottom, the same landing odds, and multiplier tiers that open as her pile grows (x3 at 240 pinballs up to x200 at 18,000). |
+| **Pinball machine** | Same as the real game: a peg board with no flippers, a big PUSH button to launch (with the multiplier beside it), a moving bumper at the top (launch when it points to the middle), capsule and shield bumpers whose rings fill up, the centre card hole, four candy slots and the jackpot along the bottom, the same landing odds, and multiplier tiers that open as her pile grows (x3 at 240 pinballs up to x200 at 18,000). |
 | **Candy and levels** | Same: candy levels critters up. |
-| **Catcher** | A capsule opens the catcher. Which critter turns up depends on its find chance: rarer critters are harder to find. She catches them by hand. |
+| **Catcher** | A capsule (green, blue, purple, wish box) opens the catcher: an arcade capture toy with about 5 critters in it. Which critters turn up depends on their find chance, so rarer ones are harder to find, and better capsules hold better odds. She has a few balls to drop at them and catches what she hits. Quick Capture (take them all) comes later, as in the real game. The real controls aren't documented, so this is our best reading. |
 | **Rarity** | As in the real game: **Common** lines (blue) have 2 forms and **Rare** lines (purple) have 4. Forms go T1 → T2 (gold) → T3 (red) → T4 (rainbow), and a T4 form gives the whole team an aura. |
 | **Stars and evolution** | As in the real game: each duplicate adds star progress, stars make a critter stronger, and enough stars unlock its next form. Stars climb in tiers (bronze for stars 1–6, then silver, gold, moons, suns and crowns), each needing more duplicates per star. Going from T2 to T3 also needs a **trial**: early ones are goals she can reach anywhere (beat a number of Grumps, clear stages, hit the jackpot, feed it up a level), and event trials arrive with the events. Wish boxes give a duplicate of the critter she chooses. The research doesn't give the exact star count for every evolution (some evolve at 1 star, others at 6), so we set them along those lines and adjust if we learn the real ones. |
 | **Starters** | Four, one of each: **Grass, Lightning, Water and Fire**. Common lines (2 forms), like the real game's starters. |
@@ -109,5 +109,5 @@ Then put it in front of her for a few days and watch: does she start math rounds
 ## Open questions
 
 1. **Which math?** For example addition and subtraction facts to 20, times tables, division, or a mix, and which first.
-2. **How does catching work in the real game?** The wiki doesn't describe it. A description or screenshot of the catcher would let us copy it closely.
+2. **How does catching work in the real game?** The research points to an arcade capture toy (a claw or dropped balls) over about 5 critters, with a few tries per round, but nothing describes the controls. A description from someone who plays it would settle it.
 3. **Names and look:** critter names, the enemies' name, and the game's name. Ellie could name them.

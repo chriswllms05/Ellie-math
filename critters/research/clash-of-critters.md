@@ -138,3 +138,32 @@ A vertical pinball board. One launch costs pinballs × the multiplier; the ball'
 **Fun:** cute designs; "flashy combos, satisfying multipliers, and bonus bonanzas … the kind of dopamine hit that'll keep you coming back"; "never-ending and absolutely compelling loop"; "the perfect combination of auto-battling idleness and cuteness overload"; the suspense of being raided; repeated centre hits at high multipliers; the jackpot; levelling fast early; auto-fight.
 
 **Complaints:** "not like the ads"; the dopamine fades as levels slow; constant pop-up offers; fishing is tedious; some bonus games drag; unfair for players who don't pay; overwhelming ("an unholy amount of things happening"); difficulty walls; server merges.
+
+## Follow-up: the catcher and the real screens
+
+Added later on 2026-11-25 from the same helper session, which looked at 18 wiki screenshots. It also saved an annotated page of those screenshots as a private artifact in the user's claude.ai account: https://claude.ai/artifact/WmtDCA1rfW9AAANf2yj4aV
+
+**Tatari Catcher**
+- Where new Tatari and duplicates come from. Reached from the pinball machine: the capsule bumper's gauge fills, or a capsule drops. Capsules also come from codes, chapter chests, the Dojo and card-album sets.
+- Capsule rarities, low to high: Green, Blue, Purple, Wishbox. A capsule can hold Tatari, pinballs, card packs or candy.
+- Normally you catch Tatari one at a time, by hand. At multiplier x60+ a "Quick Capture" button (bottom right) claims them all at once; a later boss-star upgrade, "Rapid Capture", adds Quick Capture and Auto Capture.
+- The exact controls aren't documented anywhere that loaded. Clues: the Rapid Capture art is a claw-machine claw grabbing a Tatari; a video title says "catch all 5 Tatari … using a single Tatari catcher" (about 5 per round, one attempt can catch several); another mentions an "endless supply of balls to capture every available tatari" (you drop or launch a limited supply of balls); an unverified blog calls it "physics-based", launching balls at multiplier platforms. Best reading: an arcade capture toy (claw or ball drop) over a few Tatari, with limited attempts per round. Odds, Tatari per capsule and what happens to missed ones are not covered.
+
+**Pinball screen** (portrait phone, top to bottom)
+- Header: player level, candy bar, element-upgrade icons; a row of shield icons. "Mall" button left; the current event panel right (timer, item count, progress).
+- The cabinet: a **peg field** (pachinko/Plinko style, about 30 pegs, **no flippers**). Upper left: the capsule bumper (a ring that is its own fill gauge). Upper right: the shield bumper. Centre: two curved rails make a cup over the small card hole.
+- Bottom row: five slots between posts: candy, candy, jackpot (centre), candy, candy, with event-item bubbles over some slots. A spring plunger on the right edge.
+- Under the cabinet: a huge "PUSH" button with the multiplier toggle beside it, the pinball count and a recovery timer ("8:47 to recover 45").
+- Bottom navigation: Battle (with a "BOSS" sign when a boss is next), Challenge, Critters, Camp. Side buttons: chat, quests, friends.
+
+**Battle screens:** the formation screen has back, "Quick Deploy" and "Auto Battle" buttons. A defeat shows tips ("Match elemental counters", "Adjust Tatari positioning"). Victory and defeat banners are cheerful; a loss shows a knocked-out critter and a little ghost, cute rather than grim.
+
+**Jackpot minigame screens**
+- Raid: another camp as an island; targeting rings over about 5 of its Tatari; tap one to send an elemental blast; "Switch Camp".
+- Duel: the opponent's 3 Tatari at the top; 10 boxes in two rows below; "Remaining attempts: 5"; a rewards screen after.
+- Visit: the friend's camp darkened, a banner like "Find Sick Pets", a Start button, then 30 seconds to tap the hidden Tatari.
+- Feed: an 8 × 8 block-puzzle board with two of the friend's Tatari at the top, a 30-second timer, a score and three pieces to place.
+
+**Camp and events:** the pinball machine is a building in the camp. Every 3-day event follows one loop: a pinball slot earns the event item, you spend it in a team minigame, and claim rewards along a milestone track.
+
+**Tone:** cozy and cute: thick dark outlines, flat bright colours, chunky rounded headings, round blushing chibi animals with food or element motifs. (Ours gets its own look.)

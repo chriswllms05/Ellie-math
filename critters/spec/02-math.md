@@ -76,7 +76,7 @@ Her very first math round finds where she is, so she never grinds facts she alre
 - **How it's framed:** it is simply her first round at her first tree. The tree "wants to see what you already know." No score, no "test", no wrong sound.
 - **Pays like any round:** normal pinballs and combo, so it feels like the game.
 - **What it asks:** for each family in order (A1 to A11, then B1 and B3 unless Times tables is off), **2 facts** from the middle of its list.
-  - Both fast and right: the family **opens**, and all its facts start as **fast** (one fast day credited). They still need a second fast day to become solid, so nothing is assumed for good.
+  - Both fast and right: the family **opens**, and all its facts start as **fast** (one fast day credited). They still need a second fast day to become solid, so nothing is assumed for good. Their "due" dates are spread over the next **7 days** (tune), so big families don't crowd out learning.
   - One or none: the family stays as it was (open or closed by the normal rules), facts stay **new**.
   - If both facts in two families in a row miss, it skips the families that need those two.
 - **No help during placement:** a miss or "I don't know" just says "Okay!" and moves on. Help would make it long and feel like a lesson.

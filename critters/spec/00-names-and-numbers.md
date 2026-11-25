@@ -97,6 +97,8 @@ No Rock starter; Rock critters come from the catcher.
 - **Fast** = answered within the skill's fast time: **3 seconds** for facts (tune; grown-up setting).
 - **Combo:** x1 to start; x2 after 3 fast right answers in a row, x3 after 6, x4 after 10. A slow right answer drops it one step; a wrong answer drops it to x1; "I don't know" leaves it where it is.
 - **Round:** about 20 questions (tune). As many rounds a day as she likes. Trees never fill on their own.
+- **Bigger questions** (place value, rounding, mental math; later): pay double (6 × combo fast, 2 slow), with their own longer fast time ([02-math.md](02-math.md)).
+- A perfect 20-question round of facts pays 183 pinballs; a typical early round about 35–70 ([07-economy.md](07-economy.md) balances around this).
 
 ## Pinball machine (copied from the real game)
 

@@ -131,7 +131,7 @@ Real game: 601 boss stars; each unlocks a piece of camp land, and the first 14 e
 | 4 | Card boost: more candy from Blue cards | Slice 3 |
 | 5 | Raid rewards up | Slice 3 |
 | 7 | Duel rewards up | Slice 3 |
-| 8 | Feeding ([05](05-critters.md)) | later |
+| 8 | Feeding ([05](05-critters.md)) | Slice 2 |
 | 9 | Candy boost +20% | Slice 2 |
 | 10 | Candy boost +30% | Slice 2 |
 | 11 | Gold reward cards | Slice 3 |
@@ -143,13 +143,15 @@ Real game: 601 boss stars; each unlocks a piece of camp land, and the first 14 e
 | 28 | Candy boost +50%, and Quick Capture ([04](04-catcher.md#quick-capture-and-auto-capture-later)) | Slice 2 |
 | 70 | One more shield allowed | later |
 
-Left out of the real track: critter badges (no badge challenge yet), pinball recovery and more pinball trees (math replaces idle income; whether extra trees mean anything is [08-camp.md](08-camp.md)'s call), and pinball storage (there's no cap on pinballs).
+**More pinball trees** (Slice 2): a second tree at boss star 2, then one more at stars 6, 13, 20, 30, 45 and 60, up to 8 trees as in the real game. Every tree runs the same math round ([08-camp.md](08-camp.md)); each tree beyond the first adds a **tree bonus** of **+5%** to the pinballs every round grows (tune; 8 trees = +35%). The balance targets below assume it, and the balance simulation must include it.
+
+Left out of the real track: critter badges (no badge challenge yet), pinball recovery (math replaces idle income), and pinball storage (there's no cap on pinballs).
 
 Until boss star 3, the card hole pays its Slice 1 candy bonus; until the jackpot minigames exist, the jackpot does too.
 
 ## Daily quests
 
-Real game: 3 quests a day, 30 pinballs each, like "Shoot 100 pinballs", "Clear 30 Zobos", "Complete a raid".
+Real game: 3 quests a day, 30 pinballs each, like "Shoot 100 pinballs", "Clear 30 zombies", "Complete a raid".
 
 Ours: **3 a day, 30 pinballs each**, starting the day after her first launch. New quests at **4:00 in the morning**, local time. Unfinished ones simply go away; nothing is lost. Quests never ask for math: math only shows up as the pinballs she earns.
 
@@ -221,7 +223,7 @@ Chapter 2's bosses fall between levels 60 and 80, chapter 3's between 80 and 100
 
 ## Left out from the real game
 
-Paid there, so simply not in ours: Ignis Gems and everything bought with them; the shop and its packs; battle pass, monthly pass, growth fund, club store; pop-up offers; redeem codes; buying wish boxes or silver bricks.
+Paid there, so simply not in ours: premium gems and everything bought with them; the shop and its packs; battle pass, monthly pass, growth fund, club store; pop-up offers; redeem codes; buying wish boxes or silver bricks.
 
 Free there, but replaced by math: pinball trees' idle income, the pinball recovery timer, the free daily gift, and the pinball storage cap.
 

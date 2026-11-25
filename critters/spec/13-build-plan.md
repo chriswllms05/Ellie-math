@@ -110,7 +110,7 @@ Let her play without being told how much math to do; just show her the first tre
 
 Coarser for now; each gets milestones like Slice 1's when it starts.
 
-- **Slice 2:** chapters 2–4 (5 × 3 grid from chapter 4), more Rare critters, evolution trials, feeding, the boss star track, Quick Deploy, auto-battle, daily quests, wish boxes. Specs: [05](05-critters.md), [06](06-battle.md), [07](07-economy.md).
+- **Slice 2:** chapters 2–4 (5 × 3 grid from chapter 4), more Rare critters, evolution trials, feeding, the boss star track, more pinball trees, Quick Deploy, auto-battle, wish boxes, decorating and opening up camp land. Specs: [05](05-critters.md), [06](06-battle.md), [07](07-economy.md), [08](08-camp.md).
 - **Slice 3:** the jackpot games against computer camps, shields, reward cards. Spec: [09-later-modes.md](09-later-modes.md).
 - **Slice 4:** Horde Invasion with chips, Boss Challenge, the first rotating events. Spec: [09-later-modes.md](09-later-modes.md).
 - **Slice 5:** more critters, chapters and events.

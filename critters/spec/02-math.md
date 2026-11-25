@@ -97,7 +97,7 @@ Her very first math round finds where she is, so she never grinds facts she alre
 
 ### Cold and warm answers
 
-The **first** time a fact is asked on a given calendar day (her iPad's local date) is its **cold** answer. Any later ask that day (a repeat after a miss, a second round) is **warm**. **Only cold answers move a fact between states.** Warm answers still pay pinballs and are logged, but they can't make a fact fast or solid: a fact she just saw is easy to remember.
+The **first** time a fact is asked on a given day (a day starts at 4:00 a.m. local time: [00](00-names-and-numbers.md#days)) is its **cold** answer. Any later ask that day (a repeat after a miss, a second round) is **warm**. **Only cold answers move a fact between states.** Warm answers still pay pinballs and are logged, but they can't make a fact fast or solid: a fact she just saw is easy to remember.
 
 ### Transitions (cold answers only)
 
@@ -117,7 +117,7 @@ A fact goes from **new** to **learning** when the round builder first asks it (o
 
 ## 5. Building a round
 
-**Length:** 20 questions (tune; grown-up setting 10, 20 or 30). She can do as many rounds a day as she likes. Because fast days are counted per calendar day, five rounds in one day can't make facts solid faster than one.
+**Length:** 20 questions (tune; grown-up setting 10, 20 or 30). She can do as many rounds a day as she likes. Because fast days are counted per day, five rounds in one day can't make facts solid faster than one.
 
 **Picking (each round):**
 
@@ -234,6 +234,8 @@ Pictures show groups of five and ten, never single dots to count one by one. The
 | Families on or off | each family | all on |
 | Times tables | off · ×2 ×5 ×10 · add ×0 ×1 ×3 ×4 · add ×6–×9 (later) | off, unless placement finds she knows them |
 | Division with times | on, off | on |
+| Easier after losses ([06-battle.md](06-battle.md#difficulty)) | on, off | on |
+| Raids can take candy (later; [09-later-modes.md](09-later-modes.md)) | on, off | on |
 | Redo placement | button | |
 | Change PIN | button | |
 | Backup and restore | buttons (how they work: [11-tech.md](11-tech.md)) | |

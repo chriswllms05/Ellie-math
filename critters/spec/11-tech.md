@@ -82,6 +82,7 @@ What lives where:
 - **Atomic writes:** encode, write with `.atomic`, then move. Before replacing, the previous file is kept as `save.prev.json`.
 - **Daily snapshots:** the first save each day also writes `snapshots/save-YYYY-MM-DD.json`; keep the last 14 (tune).
 - **Loading:** try `save.json`; if it's missing or won't decode, try `save.prev.json`, then the newest snapshot that decodes. If one of those is used, record it so the grown-up view can say "restored from yesterday's copy".
+- **Picking up where she left off:** reopening the app returns her to the same place. A math round resumes at the next unanswered question (pinballs already grown stay on the tree); a catch session resumes with the same belt, counts and drops left, from the moment before the last drop; a battle restarts from the start of the wave she was on. Everything needed for that lives in the save file.
 - **When to save:** after every math answer, every catch session, every battle, every purchase or evolution, and when the app goes to the background (`scenePhase` changes). Pinball launches can be many per second, so those saves are coalesced: at most once a second, plus on background.
 - **Migrations:** each schema change bumps `schemaVersion` and adds a step `migrate(fromVersion n: Int, json: [String: Any]) -> [String: Any]`. Loading runs every step from the file's version to the current one, then decodes. Every old version keeps a fixture file in the tests.
 - **Backup:** the grown-up view exports the save as a file (`Critters-backup-YYYY-MM-DD.json`) through the share sheet (`ShareLink`), so it can go to Files, AirDrop or Mail. **Restore** uses `.fileImporter`, checks the file decodes (after migration), asks for confirmation, and keeps a safety copy of the current save first.
@@ -97,16 +98,16 @@ What lives where:
 ## Time
 
 - `GameClock` protocol (`now`, `today`), with the real clock in the app and a settable clock in tests and the debug menu.
-- **A day** for mastery ("fast on two different days"), daily quests and snapshots starts at **3:00 a.m. local time** (tune), so a late-evening round counts as that day.
+- **A day** for mastery ("fast on two different days"), daily quests and snapshots starts at **4:00 a.m. local time** ([00](00-names-and-numbers.md#days)), so a late-evening round counts as that day.
 - If the device clock goes backwards, nothing is awarded twice: GameCore keeps the latest day it has seen and never treats an earlier day as new.
 - **Answer timing** is measured in the app with a monotonic clock (`ContinuousClock`), from the moment the number pad becomes active to the moment she submits. If the app leaves the foreground mid-question, that question's time is thrown away and it's asked again. 02-math owns what counts as fast and how keypresses are treated.
 
 ## Game loop and physics
 
 - **SpriteKit** drives each scene's frame loop. `SpriteView` gets `preferredFramesPerSecond: 120`; the iPad runs at 120 on ProMotion screens and 60 elsewhere.
-- **Pinball and catcher** use SpriteKit physics (`SKPhysicsBody`). The physics world runs at SpriteKit's fixed step; the scene never moves physics bodies by hand except through forces and impulses.
-- **Pinball outcomes are rolled first.** GameCore picks the slot from the shares in 00 when she launches; the scene then plays a ball that lands there, using SpriteKit physics with small, invisible steering in the lower part of the board. That guarantees the odds in 00 and keeps the outcome in the saved RNG. How the board looks and feels, and what the timing bumper changes, is [03-pinball-machine.md](03-pinball-machine.md). If 03 calls for a purely physical board instead, the slot-share test below must run the real scene and pass the same tolerance.
-- **Catcher** balls are real physics: where they land depends on her timing. Each multiplier bar is a sensor (contact only, no collision); when a ball's centre crosses a bar, the scene spawns the extra balls just below it (each ball passes a given bar once). GameCore counts the balls that land on each critter and decides catches.
+- **Pinball and catcher** balls move by a small fixed-step physics stepper in GameCore (circles against pegs, rails, posts and bars; balls don't hit each other), not by SpriteKit's physics engine. The scenes only draw what the stepper says. That keeps both testable without an iPad and lets simulation tests run thousands of drops quickly.
+- **Pinball outcomes are rolled first.** GameCore picks the slot from the shares in 00 when she launches, then plays back a ball path recorded earlier by the stepper that ends in that slot, chosen for the top bumper's position at launch (the path library: [03-pinball-machine.md](03-pinball-machine.md)). That guarantees the odds in 00 and keeps the outcome in the saved RNG. A build-time tool in the GameCore package makes the path library; it's run again whenever the board changes.
+- **Catcher** balls run live on the stepper, so where they land depends on her timing. When a ball's centre crosses a multiplier bar, the stepper spawns the extra balls just below it (each ball passes a given bar once). GameCore counts the balls that land on each critter and decides catches ([04-catcher.md](04-catcher.md)).
 - **Battle** is not physics. It's a deterministic simulation in GameCore that advances in fixed ticks (**30 ticks a second**, tune) from the team, the stage and the seed. The scene runs an accumulator in `update(_:)`, steps the simulation as many ticks as time allows, and draws positions interpolated between the last two ticks. The same team, stage and seed always give the same battle, which is what makes balance tests possible.
 - **Camp** is mostly animation (critters wandering, trees, decorations); no physics needed.
 
@@ -161,7 +162,7 @@ Reached by a hidden gesture in debug builds; compiled out of release builds. It 
 - **Saves:** round trip; every old-version fixture migrates and decodes; a corrupted `save.json` falls back to `save.prev.json`, then to a snapshot.
 - **Purity:** no GameCore source file imports a UI framework.
 
-**App** (`CrittersTests`, XCTest): SaveStore against a temporary directory; backup export and import; the pinball scene lands the rolled slot in 999 of 1,000 headless runs (scene presented in an offscreen `SKView`).
+**App** (`CrittersTests`, XCTest): SaveStore against a temporary directory; backup export and import; the pinball scene plays the rolled slot's path to the end and shows the right payout (scene presented in an offscreen `SKView`).
 
 **UI flows** (`CrittersUITests`): launched with `-uiTesting`, which uses a fixed seed, a fixed clock, fast animations and an optional save fixture. Flows: first launch through the placement check, a math round, a pinball launch, a catch, and battle stage 1; the grown-up view behind the PIN; backup export. Each flow attaches screenshots.
 

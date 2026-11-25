@@ -118,7 +118,7 @@ Six made-up neighbours, each with a camp of their own near Mossy Hollow:
 
 ## Grump Rush · Slice 4
 
-**Real game (Zobo Horde Invasion):**
+**Real game (its horde invasion mode):**
 - Two players defend together against 25 waves (35 in older versions), with a boss at the end of each wave.
 - You earn **energizers** during the run to deploy and upgrade critters, up to a deployment limit.
 - Critters level 1 to 7 inside the run and learn skills at 3, 5 and 7. You can move them mid-fight.

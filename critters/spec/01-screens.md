@@ -202,7 +202,7 @@ Ours: **Juniper**, a friendly young camp ranger with a big floppy hat and a satc
 
 ## First launch (about 15–20 minutes, Slice 1)
 
-1. **Title.** The game's art and title, then **Tap to start**.
+1. **Title.** The **Critter Math** logo over the hollow at dusk, then **Tap to start**.
 2. **Welcome.** Juniper: "Hi! Welcome to camp. I look after the critters around here." Then: "What's your name?" A simple keyboard; a grown-up can change it later.
 3. **The starters.** Four acorn capsules on a log, one each in green, orange, blue and yellow. Juniper: "These four want to join you." She taps each one to open it: the critter hops out with its name and element (the starters are listed in [00](00-names-and-numbers.md)). **She gets all four**, so her first team has four elements to try. (The real game also gives its starters rather than making you choose.)
 4. **Her first tree.** Juniper walks her to a small tree in camp: "Pinballs grow on these trees when you answer questions." This first round is the **placement check**: what it asks and how it's scored are in [02-math.md](02-math.md). It looks and pays like a normal round. "I don't know" is introduced here: "If you don't know one, tap this. That's always okay."
@@ -212,7 +212,7 @@ Ours: **Juniper**, a friendly young camp ranger with a big floppy hat and a satc
    - Her first launches are set up so that the capsule ring fills ([03-pinball-machine.md](03-pinball-machine.md)) and candy lands, so her first **Level up!** comes quickly.
    - The multiplier toggle is pointed out once she has more than one tier open.
 7. **First catch.** The capsule overlay offers **Open now**. A hand shows when to drop. The first session is set up so she catches at least one new critter ([04-catcher.md](04-catcher.md)).
-8. **First battle.** The Battle button glows. On stage 1, Juniper shows how to drag a critter into a slot, and what green **Yes!** and red **No!** mean. She taps Start and wins (stage 1 is easy: [06-battle.md](06-battle.md)).
+8. **First battle.** The Battle button glows. On stage 1 her four starters are already on the grid ([05-critters.md](05-critters.md)). Juniper shows her how to drag one to another slot, and what green **Yes!** and red **No!** mean. She taps Start and wins (stage 1 is easy: [06-battle.md](06-battle.md)).
 9. **Back home.** Juniper: "Need more pinballs? Your trees grow them whenever you answer questions." The day is hers from here.
 
 **If she stops partway**, it picks up at the same step next time. Each step can be skipped by a grown-up from the grown-up view.

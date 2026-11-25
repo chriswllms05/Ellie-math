@@ -22,6 +22,8 @@ What each owned critter stores:
 
 Its **level is not stored**: every critter is at her shared level (see [00](00-names-and-numbers.md#levels)).
 
+What each line (species) defines, besides its forms, stats and skills below: `catchable` (true for every Slice 1 line, starters included, so they can earn duplicates) and `findWeight` (default 1; how often it turns up in the catcher compared with others of its rarity, [04-catcher.md](04-catcher.md)).
+
 ## Stat model
 
 Four numbers matter in battle. Two grow; two are fixed per form.
@@ -210,6 +212,10 @@ Every critter repeats its **base attack** every interval. Some attacks are speci
 - T2: every 3rd attack **bounces** to up to 2 more (70% each jump).
 - T3: every 5th attack is a lightning strike: area (radius 1 tile), 1.5 × ATK, Stun 0.5 s.
 - T4 aura *Thunderhead*: Lightning critters +15% HP and ATK.
+
+### The chapter 1 reward critter
+
+Finishing chapter 1 gives one Rare critter ([07-economy.md](07-economy.md)): a Rare line she doesn't own yet, picked at random; if she owns every Rare, a duplicate of the Rare with the fewest stars.
 
 ### First launch
 

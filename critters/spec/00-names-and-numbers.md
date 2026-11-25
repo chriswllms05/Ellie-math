@@ -66,7 +66,8 @@ So that two specs never give two answers:
 | Capsules, catcher board, critter find chances | 04-catcher |
 | Critter roster, stats, growth, stars, evolution, skills, auras | 05-critters |
 | Grumps, waves, damage, bosses, stages, battle screens | 06-battle |
-| Every amount earned or spent: candy per slot, level costs, stage and chest rewards, boss star track, daily quests, balance targets | 07-economy |
+| Every amount earned or spent: candy per slot, level costs, stage and chest rewards, boss star track, tree bonus, daily quests, balance targets | 07-economy |
+| Amounts that only the later modes use (raids, duels, visits, feeds, Horde, Boss Challenge, events) | 09-later-modes, until each is built; then they move to 07 |
 | Camp, trees, decorating | 08-camp |
 | Jackpot minigames, shields, reward cards, Horde, Boss Challenge, events | 09-later-modes |
 | Look, assets, animation, sound | 10-art-and-sound |
@@ -113,7 +114,7 @@ No Rock starter; Rock critters come from the catcher.
 
 The real shares add to 99.6%; ours are scaled to 100%. Two bumpers near the top fill ring gauges: **capsule bumper** (top left; full ring gives a capsule) and **shield bumper** (top right; later).
 
-**Multiplier tiers:** x1 and x2 always; each higher tier opens while she holds at least: **x3 240 · x5 360 · x10 600 · x20 1,200 · x40 2,400 · x60 4,800 · x100 7,200 · x150 12,000 · x200 18,000** pinballs. A launch costs 1 pinball × the multiplier and pays × the multiplier.
+**Multiplier tiers:** the multiplier toggle appears at boss star 1, as in the real game; from then x1 and x2 are always there; each higher tier opens while she holds at least: **x3 240 · x5 360 · x10 600 · x20 1,200 · x40 2,400 · x60 4,800 · x100 7,200 · x150 12,000 · x200 18,000** pinballs. A launch costs 1 pinball × the multiplier and pays × the multiplier.
 
 ## Catcher (copied from the real game)
 
@@ -126,6 +127,10 @@ The real shares add to 99.6%; ours are scaled to 100%. Two bumpers near the top 
 - Grid: **3 lanes × 3 rows** (9 critters) in chapters 1–3; **5 × 3** (15) from chapter 4.
 - **80 stages per chapter**, a boss on every 10th.
 - Lose if a Grump reaches the bottom or the timer runs out; win by clearing every wave.
+
+## Days
+
+A new day starts at **4:00 a.m. local time** (tune), for everything that counts days: mastery ("fast on two different days"), daily quests, the capsule ring's daily cap, snapshots and the grown-up view's daily numbers.
 
 ## The app
 

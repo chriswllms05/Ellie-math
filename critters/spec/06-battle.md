@@ -179,14 +179,18 @@ A gentle **"Oh no!"** banner (critters sitting down, a sulky Grump doing a littl
 
 Each stage has a fixed **recommended level** `R`. Grumps are built at that level, so a stage is always the same stage; she gets past a hard one by growing (more levels from candy, more stars, evolutions, new critters), which sends her back to the pinball machine and so to math rounds.
 
+**R follows the level she's likely to be** when she reaches the stage, from [07-economy.md](07-economy.md#balance-targets), so a typical team wins a boss in one to three tries and most regular stages on the first try:
+
+- **Boss stages, chapter 1:** R = 11, 18, 25, 32, 40, 46, 52, 58 for stages 10 to 80 (07's table).
+- **Boss stages, chapter 2 on:** R = 40 + 20 × (chapter − 1) + 2.5 × k, rounded, for the chapter's k-th boss (k = 1 to 8). Chapter 2's bosses run 63 to 80 and chapter 3's 83 to 100, matching 07; after that, 20 more levels a chapter (tune).
+- **Regular stages:** a straight line between the boss before (stage 0 of chapter 1 counts as level 1; stage 0 of a later chapter is the previous chapter's last boss) and the boss after, minus 2, never below 1. Chapter 1's first ten: 1, 1, 2, 3, 4, 5, 6, 7, 8, then 11 for the boss.
+
 ```
-g = (chapter − 1) × 80 + stage          (her overall stage number)
-R = 1 + floor(0.5 × (g − 1))            (+2 on boss stages)        (tune)
 grump HP  = round(base HP  × levelFactor(R) × help)
 grump ATK = round(base ATK × levelFactor(R) × help)
 ```
 
-`levelFactor` is the critters' own formula ([05-critters.md](05-critters.md#stat-model)). [07-economy.md](07-economy.md) needs her level to roughly keep pace with `R` (about 40 levels per chapter) when she plays every day.
+`levelFactor` is the critters' own formula ([05-critters.md](05-critters.md#stat-model)). If 07's level targets change, these R values change with them; the battle balance tests check both together ([11-tech.md](11-tech.md)).
 
 **Easier after losses** (ours; the real game doesn't do this): after 3 losses in a row on the same stage its Grumps get `help = 0.9`; after 5, 0.8; after 7 or more, 0.7. It resets when she wins that stage. A grown-up setting can turn it off ([02-math.md](02-math.md) holds the grown-up settings). Leaving a battle doesn't count as a loss.
 
@@ -218,13 +222,13 @@ Lanes are Left, Middle, Right; each lane's element is listed L / M / R ("–" = 
 | 1-1 | 1 | – / – / – | Shuffler M @0; Shuffler L @4 | Shuffler R @0; Shuffler M @3; Shuffler L @6 | — |
 | 1-2 | 1 | Fire / – / – | Shuffler ×2 L @0 (+3); Shuffler M @2 | Shuffler ×2 L @0 (+3); Shuffler M @1; Shuffler R @4 | — |
 | 1-3 | 2 | – / Water / – | Scamper ×3 M @0 (+0.6); Shuffler L @3 | Shuffler R @0; Scamper ×3 M @4 (+0.6); Shuffler L @6 | — |
-| 1-4 | 2 | Grass / Fire / Water | Shuffler L @0, M @1, R @2 | Shuffler ×2 L @0 (+3); Scamper ×3 R @2 (+0.6) | Shuffler ×2 M @0 (+3); Shuffler L @2; Shuffler R @4 |
-| 1-5 | 3 | Rock / – / Lightning | Lobber M @0; Shuffler L @2; Shuffler R @4 | Shuffler ×2 R @0 (+3); Lobber L @2; Scamper ×3 M @5 (+0.6) | Lobber R @0; Shuffler ×2 M @1 (+3); Shuffler L @3 |
-| 1-6 | 3 | Water / Grass / Fire | Shuffler ×2 L @0, M @1, R @2 (each +3) | Scamper ×4 L @0 (+0.5); Lobber M @2; Shuffler ×2 R @3 (+3) | Lobber L @0; Lobber R @0; Shuffler ×3 M @2 (+2.5) |
-| 1-7 | 4 | Fire / Rock / Water | Buckethead M @0; Shuffler L @2; Shuffler R @4 | Shuffler ×2 L @0 (+3); Buckethead R @2; Scamper ×3 M @4 (+0.6) | Buckethead L @0; Lobber M @1; Shuffler ×2 R @2 (+3) |
-| 1-8 | 4 | Lightning / Water / Grass | Shuffler ×2 L @0 (+3); Scamper ×3 M @1 (+0.6); Shuffler R @2 | Buckethead M @0; Lobber L @1; Lobber R @2 | Scamper ×4 R @0 (+0.5); Buckethead L @2; Shuffler ×2 M @3 (+3) |
-| 1-9 | 5 | Grass / Rock / Fire | Shuffler ×2 L @0 (+3); Lobber M @1; Shuffler ×2 R @2 (+3) | Buckethead L @0; Buckethead R @1; Scamper ×4 M @3 (+0.5) | **Big Grump** M @0; Shuffler ×2 L @3 (+3); Shuffler ×2 R @5 (+3) |
-| 1-10 | 7 | Water / Rock / Fire | Shuffler ×2 L @0 (+3); Shuffler M @1; Shuffler ×2 R @2 (+3) | Scamper ×3 L @0 (+0.6); Lobber M @1; Buckethead R @2 | **Mudlump** M @0; Shuffler L @6, R @6, L @14, R @14 |
+| 1-4 | 3 | Grass / Fire / Water | Shuffler L @0, M @1, R @2 | Shuffler ×2 L @0 (+3); Scamper ×3 R @2 (+0.6) | Shuffler ×2 M @0 (+3); Shuffler L @2; Shuffler R @4 |
+| 1-5 | 4 | Rock / – / Lightning | Lobber M @0; Shuffler L @2; Shuffler R @4 | Shuffler ×2 R @0 (+3); Lobber L @2; Scamper ×3 M @5 (+0.6) | Lobber R @0; Shuffler ×2 M @1 (+3); Shuffler L @3 |
+| 1-6 | 5 | Water / Grass / Fire | Shuffler ×2 L @0, M @1, R @2 (each +3) | Scamper ×4 L @0 (+0.5); Lobber M @2; Shuffler ×2 R @3 (+3) | Lobber L @0; Lobber R @0; Shuffler ×3 M @2 (+2.5) |
+| 1-7 | 6 | Fire / Rock / Water | Buckethead M @0; Shuffler L @2; Shuffler R @4 | Shuffler ×2 L @0 (+3); Buckethead R @2; Scamper ×3 M @4 (+0.6) | Buckethead L @0; Lobber M @1; Shuffler ×2 R @2 (+3) |
+| 1-8 | 7 | Lightning / Water / Grass | Shuffler ×2 L @0 (+3); Scamper ×3 M @1 (+0.6); Shuffler R @2 | Buckethead M @0; Lobber L @1; Lobber R @2 | Scamper ×4 R @0 (+0.5); Buckethead L @2; Shuffler ×2 M @3 (+3) |
+| 1-9 | 8 | Grass / Rock / Fire | Shuffler ×2 L @0 (+3); Lobber M @1; Shuffler ×2 R @2 (+3) | Buckethead L @0; Buckethead R @1; Scamper ×4 M @3 (+0.5) | **Big Grump** M @0; Shuffler ×2 L @3 (+3); Shuffler ×2 R @5 (+3) |
+| 1-10 | 11 | Water / Rock / Fire | Shuffler ×2 L @0 (+3); Shuffler M @1; Shuffler ×2 R @2 (+3) | Scamper ×3 L @0 (+0.6); Lobber M @1; Buckethead R @2 | **Mudlump** M @0; Shuffler L @6, R @6, L @14, R @14 |
 
 1-1 is a gentle first win with her four starters in their starting places ([05-critters.md](05-critters.md#first-launch)). 1-2 shows the first "Yes!": Axolittle (Water) in the Fire lane. 1-5 brings the first Lightning lane, which none of her starters counter.
 

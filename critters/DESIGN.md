@@ -113,7 +113,7 @@ Rare lines have 4 forms, for example a rock armadillo (Pebbledillo → Rockadill
 
 Then put it in front of her for a few days and watch: does she start math rounds without being asked? Does she rush? (Her wrong-answer rate will say.)
 
-**Slice 2:** chapters 2–4 (5 × 3 from chapter 4), more Rare critters, evolution trials, feeding, the boss star track, Quick Deploy, auto-battle, daily quests, wish boxes.
+**Slice 2:** chapters 2–4 (5 × 3 from chapter 4), more Rare critters, evolution trials, feeding, the boss star track, more pinball trees, Quick Deploy, auto-battle, wish boxes, decorating and opening up camp land. (Daily quests start in Slice 1.)
 
 **Slice 3:** the jackpot games against computer camps, shields, reward cards.
 

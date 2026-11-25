@@ -267,7 +267,7 @@ Total: 120 small frames and 24 portraits. T3 and T4 for the five Rare lines come
 | Juniper | 3 poses, 200 × 260 |
 | Speech bubble, pointing hand | 1 each |
 | Particles | confetti, sparkle, plink |
-| Title logo | the game's title is still open; a placeholder is used until it's chosen |
+| Title logo | **Critter Math**, in Lilita One with a pinball berry for the dot of the i |
 | App icon | 1024 px: a pinball berry and a starter critter, on moss green |
 
 ## Later slices (summary)

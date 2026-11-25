@@ -167,3 +167,10 @@ Added later on 2026-11-25 from the same helper session, which looked at 18 wiki 
 **Camp and events:** the pinball machine is a building in the camp. Every 3-day event follows one loop: a pinball slot earns the event item, you spend it in a team minigame, and claim rewards along a milestone track.
 
 **Tone:** cozy and cute: thick dark outlines, flat bright colours, chunky rounded headings, round blushing chibi animals with food or element motifs. (Ours gets its own look.)
+
+## The catcher, confirmed (from the user's own screenshots and description)
+
+- **Layout, top to bottom:** a claw holding one pinball (a pearly ball with a paw print) at the top centre, a "?" help button at top right; multiplier bars across the middle: two yellow **x5** and one red **x20** that slide side to side, and two cyan **x3** bars fixed low on the left and right; two orange rails angled down into a **chute** at the centre, with a light beam under it; a **conveyor belt** of Tatari along the bottom, each on a pedestal (blue for common, purple for rare) with a number under it; then a big round **drop button** with the drops left under it (5 → 4 → 3 → 2), greyed out while balls are falling; a "Tatari Crate" button at bottom left.
+- **How it plays:** tap the button and the claw opens; the ball falls. Each multiplier bar it passes through turns it into that many balls (x5 → 5, x20 → 20; balls from one bar can then hit another). All the balls roll down the rails into the chute and drop onto whichever Tatari is passing under it on the moving belt. Every ball counts that Tatari's number down by one (16 → 8 → 2 across a few drops); at 0 it's caught. Several Tatari can be caught in one session.
+- **Skill:** timing. When to drop (so the ball meets the sliding bars), and which Tatari will be under the chute when the balls arrive.
+- **Numbers seen:** rare (purple) Tatari needed 16; common ones 9 to 11.

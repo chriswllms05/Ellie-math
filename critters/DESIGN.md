@@ -27,7 +27,7 @@ Critters ──► battles ──► boss stars ──► unlocks, more pinballs
 |---|---|
 | **Pinball machine** | Same as the real game: a peg board with no flippers, a big PUSH button to launch (with the multiplier beside it), a moving bumper at the top (launch when it points to the middle), capsule and shield bumpers whose rings fill up, the centre card hole, four candy slots and the jackpot along the bottom, the same landing odds, and multiplier tiers that open as her pile grows (x3 at 240 pinballs up to x200 at 18,000). |
 | **Candy and levels** | Same: candy levels critters up. |
-| **Catcher** | A capsule (green, blue, purple, wish box) opens the catcher: an arcade capture toy with about 5 critters in it. Which critters turn up depends on their find chance, so rarer ones are harder to find, and better capsules hold better odds. She has a few balls to drop at them and catches what she hits. Quick Capture (take them all) comes later, as in the real game. The real controls aren't documented, so this is our best reading. |
+| **Catcher** | Copied from the real one (from your screenshots and description). A capsule from the pinball machine opens a catch session. A claw at the top holds a ball; she taps the big button to drop it. On the way down it passes through multiplier bars (x3, x5, x20; the upper ones slide side to side), and each bar it goes through multiplies it into that many balls. The balls roll down two rails into a chute that pours them onto a moving conveyor belt of critters. Each critter shows a number: how many balls it takes to catch it. Every ball that lands on it counts it down, and at 0 it's caught. She gets a few drops per session (5 in the screenshots), so timing decides how many she catches: dropping when the bars line up, and when the critter she wants is passing under the chute. Which critters ride the belt depends on find chances: rarer ones turn up less often and need more balls. A crate button shows what can turn up. Better capsules give better odds. Quick Capture (catch them all) comes later, as in the real game. |
 | **Rarity** | As in the real game: **Common** lines (blue) have 2 forms and **Rare** lines (purple) have 4. Forms go T1 → T2 (gold) → T3 (red) → T4 (rainbow), and a T4 form gives the whole team an aura. |
 | **Stars and evolution** | As in the real game: each duplicate adds star progress, stars make a critter stronger, and enough stars unlock its next form. Stars climb in tiers (bronze for stars 1–6, then silver, gold, moons, suns and crowns), each needing more duplicates per star. Going from T2 to T3 also needs a **trial**: early ones are goals she can reach anywhere (beat a number of Grumps, clear stages, hit the jackpot, feed it up a level), and event trials arrive with the events. Wish boxes give a duplicate of the critter she chooses. The research doesn't give the exact star count for every evolution (some evolve at 1 star, others at 6), so we set them along those lines and adjust if we learn the real ones. |
 | **Starters** | Four, one of each: **Grass, Lightning, Water and Fire**. Common lines (2 forms), like the real game's starters. |
@@ -68,19 +68,43 @@ The pinball trees in her camp are where math happens. She taps a tree to start a
 
 ### The math engine (new)
 
-- **What it covers:** to decide (open question 1).
+- **What it covers**, from what's known about Ellie (third grade, Singapore Dimensions Math 3; behind on facts to 20 and still counting them on her fingers; tends to rush and guess when unsure):
+  1. **First and most: addition and subtraction facts to 20.** Her biggest gap, and the one everything else in third grade leans on. Built up the way her class teaches them: partners of 10, doubles, near doubles, make 10, subtract from 10, take away from teens.
+  2. **Then times tables, as her class reaches them:** ×2, ×5, ×10, then ×3 and ×4 (chapter 4 expects 0–5 and 10 from memory), then ×6 to ×9, each with its division partner.
+  3. **Later, as bigger questions with their own, longer time:** place value and rounding to 10,000, and mental math (chapter 2 strategies). They pay more per question.
+- **It starts with a short check** (with "I don't know" always there) to find where she is now, since those notes are from October.
+- **Speed pays for knowing, not counting.** Counting a fact on fingers usually takes longer than 3 seconds, so the pay table quietly rewards recall over counting without anyone telling her not to count.
 - **How a fact grows:** new → learning → fast → solid. A fact counts as solid only after fast answers on two different days.
 - **What a round holds:** mostly facts she's learning, some review of fast and solid ones spaced out over days, and a few new ones.
 - **After a miss:** the answer, with a quick picture or strategy, then the fact comes back a few questions later.
 - **Grown-up view** (behind a press-and-hold and a PIN): minutes and answers per day, fast %, her slowest and most-missed facts, and settings (what's practised, the fast time). Backup to a file.
 
-## Platform
+## Platform: a native iPad app
 
-An iPad web app, held upright (the pinball board and the lanes both run top to bottom). It installs to the home screen, works offline and saves on the iPad. It lives at `/Ellie-math/critters/` on GitHub Pages.
+A real iPad app, not a web page: built in Swift, with **SpriteKit** (Apple's 2D game engine) for the pinball machine, catcher and battles, and SwiftUI for menus and the grown-up view. That gives real physics for dozens of bouncing balls, smooth animation at the iPad's full frame rate, quick sound, and saving that Safari can't clear. Held upright, like the real game. Works offline; no accounts; nothing uploaded.
+
+What it needs:
+- **A Mac with Xcode** (free from the App Store) to build it. Cloud sessions can't build iPad apps, so building and testing happen in a Claude Code session on the Mac.
+- **A way onto Ellie's iPad.** Either plug the iPad into the Mac and install from Xcode with a free Apple ID (the app stops opening after 7 days until it's installed again), or join the **Apple Developer Program** ($99 a year) and use **TestFlight**: each new version arrives on her iPad over the air and lasts 90 days.
+- The game's rules (the math engine, payouts, odds, critter stats, battle numbers) are kept apart from the screens, so they can be checked on their own.
+
+## Names
+
+Like Pokémon: made-up names that sound like the real animal plus its element, with each evolution family sharing a sound (Caterpie → Metapod → Butterfree). Our own animals, not the real game's. Ideas for the starters, for Ellie to pick from or replace:
+
+| Element | Animal | Forms (starters are Common: 2 forms) |
+|---|---|---|
+| Grass | hedgehog with leaf spines | Sprickle → Thornhog |
+| Lightning | hamster with sparking cheeks | Zapster → Voltamster |
+| Water | axolotl | Axolittle → Tidalotl |
+| Fire | red panda | Cinderpaw → Blazepanda |
+
+Rare lines have 4 forms, for example a rock armadillo (Pebbledillo → Rockadillo → Boulderdillo → Titanadillo) or a water tadpole that grows up (Tadpip → Froglet → Tidetoad → Kingcroak). The zombies are still "Grumps" for now, and the game still needs a title.
 
 ## Build plan
 
 **Slice 1: the core loop, end to end**
+- The iPad app itself: an Xcode project, SpriteKit scenes, saving on the device.
 - A math round on a pinball tree, with pinballs and the speed combo.
 - The pinball machine: slots, odds, bumpers, multipliers, candy, capsules.
 - The catcher; the 4 starters and a handful of other Common and Rare critters; levels, stars and the first evolutions.
@@ -105,9 +129,13 @@ Then put it in front of her for a few days and watch: does she start math rounds
 - Rarity, stars and evolution follow the real game. (2026-11-25)
 - Four starters: Grass, Lightning, Water, Fire. (2026-11-25)
 - Built as a new folder in this repository; the old app is left untouched. (2026-11-25)
+- A native iPad app (Swift, SpriteKit), not a web app. (2026-11-25)
+- The math follows where Ellie is: facts to 20 first, then times tables as her class reaches them, then bigger questions. (2026-11-25)
+- The catcher works like the real one: claw drop, multiplier bars, conveyor of critters that each take a number of balls. (2026-11-25)
+- Names in the Pokémon style: real animal plus element, shared sounds within a family. (2026-11-25)
 
 ## Open questions
 
-1. **Which math?** For example addition and subtraction facts to 20, times tables, division, or a mix, and which first.
-2. **How does catching work in the real game?** The research points to an arcade capture toy (a claw or dropped balls) over about 5 critters, with a few tries per round, but nothing describes the controls. A description from someone who plays it would settle it.
-3. **Names and look:** critter names, the enemies' name, and the game's name. Ellie could name them.
+1. **Building:** is Xcode installed on the Mac, and is it recent enough for the iPad's iOS version?
+2. **Installing:** free Apple ID (reinstall every 7 days by cable) or the Apple Developer Program ($99 a year, updates over the air with TestFlight)?
+3. **Names:** starters from the list above or Ellie's own; a name for the zombies; a title for the game.

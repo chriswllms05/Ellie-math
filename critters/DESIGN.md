@@ -137,7 +137,7 @@ Then put it in front of her for a few days and watch: does she start math rounds
 - Made for Ellie's iPad mini (5th generation); her iPad's App Store uses her parent's Apple ID, so TestFlight installs need nothing extra. (2026-11-25)
 - Times tables are on from the start, beside facts to 20, because her class is already on multiplication; she knows some basic ones and is catching up. (2026-11-25)
 - Catch-up targets start from the old app's (facts to 10 by week 3, facts to 20 by week 10) plus times-table targets, and move each week to follow her actual pace ([spec/02-math.md](spec/02-math.md)). (2026-11-25)
-- The starter names, Grumps, Juniper and Mossy Hollow are approved. (2026-11-25)
+- The critter names and "Grumps" are approved. (2026-11-25)
 
 ## Open questions
 

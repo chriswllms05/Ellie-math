@@ -174,3 +174,14 @@ Added later on 2026-11-25 from the same helper session, which looked at 18 wiki 
 - **How it plays:** tap the button and the claw opens; the ball falls. Each multiplier bar it passes through turns it into that many balls (x5 → 5, x20 → 20; balls from one bar can then hit another). All the balls roll down the rails into the chute and drop onto whichever Tatari is passing under it on the moving belt. Every ball counts that Tatari's number down by one (16 → 8 → 2 across a few drops); at 0 it's caught. Several Tatari can be caught in one session.
 - **Skill:** timing. When to drop (so the ball meets the sliding bars), and which Tatari will be under the chute when the balls arrive.
 - **Numbers seen:** rare (purple) Tatari needed 16; common ones 9 to 11.
+
+## Levelling (follow-up, 2026-11-25)
+
+The wiki has no pages for candy, levels or experience (they don't exist), and no guide documents the curve. What the sources do say:
+
+- **Candy is how you level up** ("candies being how you level up"; "Candy levels Tatari"). Guides speak of one "account level", the pinball screen shows a single level badge, and nothing describes spending candy on one critter, so it's almost certainly one shared level that every critter is at.
+- **The level bar:** a level-653 player's screen shows the badge "653" and the bar "879.44K/880K": candy collected toward the next level. Raids take candy from that bar.
+- **Slot candy** at level 653: 3,000 (outer slots) and 6,000 (inner slots) at x1. So a level there cost about 293 outer-slot payouts. That's the only data point on the curve.
+- **What multiplies candy:** the pinball multiplier; boss-star candy boosts (+20%, +30%, +40%, +50%); card boosts; an unexplained "2x meter".
+- **Level-up rewards:** none documented, and no level cap. Features unlock from boss stars, not levels. Capsules come from the capsule bumper, slots, codes and chapter chests, not from levelling. (One hands-on article says candy "unlocks gachapon capsules"; nothing else backs that up.) New players get 5 capsules and a Rare capsule from a welcome code.
+- **Double XP cards** (5 or 10 minutes, from events) and "Account EXP" are mentioned in one blog but not explained.

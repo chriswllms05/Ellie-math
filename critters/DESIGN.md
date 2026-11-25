@@ -2,7 +2,7 @@
 
 Working title. Started 2026-11-25 as a fresh start: nothing from Ellie Math v1 or v2 (the village) carries over. The old app at the root of this repository stays live for Ellie until this one replaces it.
 
-How the real game plays, in detail: [research/clash-of-critters.md](research/clash-of-critters.md).
+How the real game plays, in detail: [research/clash-of-critters.md](research/clash-of-critters.md). Exactly what to build: the specs in [spec/](spec/), listed in [README.md](README.md). This page is the overview; where the two differ, the specs win.
 
 ## The idea
 
@@ -84,7 +84,7 @@ The pinball trees in her camp are where math happens. She taps a tree to start a
 A real iPad app, not a web page: built in Swift, with **SpriteKit** (Apple's 2D game engine) for the pinball machine, catcher and battles, and SwiftUI for menus and the grown-up view. That gives real physics for dozens of bouncing balls, smooth animation at the iPad's full frame rate, quick sound, and saving that Safari can't clear. Held upright, like the real game. Works offline; no accounts; nothing uploaded.
 
 What it needs:
-- **A Mac with Xcode** (free from the App Store) to build it. Cloud sessions can't build iPad apps, so building and testing happen in a Claude Code session on the Mac.
+- **A Mac with Xcode** (free from the App Store) to build it: the user's personal Mac laptop. Cloud sessions can't build iPad apps, so building and testing happen in a Claude Code session on that laptop. Setup steps: [spec/12-laptop-setup.md](spec/12-laptop-setup.md).
 - **A way onto Ellie's iPad.** Either plug the iPad into the Mac and install from Xcode with a free Apple ID (the app stops opening after 7 days until it's installed again), or join the **Apple Developer Program** ($99 a year) and use **TestFlight**: each new version arrives on her iPad over the air and lasts 90 days.
 - The game's rules (the math engine, payouts, odds, critter stats, battle numbers) are kept apart from the screens, so they can be checked on their own.
 
@@ -133,9 +133,10 @@ Then put it in front of her for a few days and watch: does she start math rounds
 - The math follows where Ellie is: facts to 20 first, then times tables as her class reaches them, then bigger questions. (2026-11-25)
 - The catcher works like the real one: claw drop, multiplier bars, conveyor of critters that each take a number of balls. (2026-11-25)
 - Names in the Pokémon style: real animal plus element, shared sounds within a family. (2026-11-25)
+- Everything is documented in the specs before building starts; building happens on the user's personal Mac laptop. (2026-11-25)
 
 ## Open questions
 
-1. **Building:** is Xcode installed on the Mac, and is it recent enough for the iPad's iOS version?
+1. **Building:** is the personal laptop a Mac, with Xcode installed? And which iPad does Ellie have (it sets the oldest iPadOS the app supports)?
 2. **Installing:** free Apple ID (reinstall every 7 days by cable) or the Apple Developer Program ($99 a year, updates over the air with TestFlight)?
 3. **Names:** starters from the list above or Ellie's own; a name for the zombies; a title for the game.

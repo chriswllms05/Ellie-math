@@ -176,7 +176,7 @@ Daily quests with progress bars and a **Claim** button on each finished one. Wha
 - **Music** on/off.
 - **Sounds** on/off.
 - **Read speech bubbles aloud** on/off (uses the iPad's voice).
-- **Grown-ups:** a small button that needs **press and hold for 3 seconds**, then the grown-up PIN. Everything behind it: [02-math.md](02-math.md).
+- **Grown-ups:** a small button that needs **press and hold for 2 seconds**, then the grown-up PIN. Everything behind it: [02-math.md](02-math.md).
 
 ## Overlays
 

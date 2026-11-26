@@ -8,7 +8,7 @@ On her iPad: **Settings → General → About**. Note the **Model Name** and the
 
 This sets the oldest iPadOS the game has to support. The plan is iPadOS 17 or newer.
 
-**Already known:** an **iPad mini (5th generation)**. The version was read as "20.6.5.2", which isn't a number Apple uses (most likely it's iPadOS 18.x or 26.x). Either works; check it once more when you plug the iPad in for the first time.
+**Already known:** an **iPad mini (5th generation)** on **iPadOS 26.5.2**.
 
 ## 2. Check the Mac
 
@@ -67,7 +67,7 @@ Start a new **local** Claude Code session (one that runs on your Mac, not in the
 
 Then say something like:
 
-> We're building the critter game in `critters/`. Read `critters/README.md`, then `critters/spec/13-build-plan.md`, and start milestone M0. Ellie's iPad is an iPad mini (5th generation) on iPadOS [version]. I'm in the Apple Developer Program, and Xcode is installed.
+> We're building the critter game in `critters/`. Read `critters/README.md`, then `critters/spec/13-build-plan.md`, and start milestone M0. Ellie's iPad is an iPad mini (5th generation) on iPadOS 26.5.2. I'm in the Apple Developer Program, and Xcode is installed.
 
 **Your vault.** All the docs (the README, the design, the specs and the research notes) also belong in your ChrisOS vault, under **Projects/Critter Math**. In that first session, also say:
 
@@ -94,4 +94,4 @@ TestFlight installs to the Apple ID that the iPad's App Store uses. **Her iPad's
 
 ## Questions to answer in the first session
 
-- Ellie's exact iPadOS version (step 1; the model is known). That's the only one left.
+None left: the iPad, the iPadOS version, Xcode and the Developer Program are all settled.

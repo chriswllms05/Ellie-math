@@ -135,7 +135,7 @@ Then put it in front of her for a few days and watch: does she start math rounds
 - Names in the Pokémon style: real animal plus element, shared sounds within a family. (2026-11-25)
 - Everything is documented in the specs before building starts; building happens on the user's personal Mac laptop. (2026-11-25)
 - Xcode is installed on the laptop and the user has joined the Apple Developer Program, so versions reach Ellie's iPad over the air through TestFlight. (2026-11-25)
-- Made for Ellie's iPad mini (5th generation); her iPad's App Store uses her parent's Apple ID, so TestFlight installs need nothing extra. (2026-11-25)
+- Made for Ellie's iPad mini (5th generation) on iPadOS 26.5.2; her iPad's App Store uses her parent's Apple ID, so TestFlight installs need nothing extra. (2026-11-25)
 - Times tables are on from the start, beside facts to 20, because her class is already on multiplication; she knows some basic ones and is catching up. (2026-11-25)
 - Catch-up targets start from the old app's (facts to 10 by week 3, facts to 20 by week 10) plus times-table targets, and move each week to follow her actual pace ([spec/02-math.md](spec/02-math.md)). (2026-11-25)
 - The critter names and "Grumps" are approved. (2026-11-25)
@@ -143,4 +143,4 @@ Then put it in front of her for a few days and watch: does she start math rounds
 
 ## Open questions
 
-1. **Ellie's exact iPadOS version** (read as "20.6.5.2", which isn't an Apple version number; it doesn't change any plan).
+None right now. New ones go here as they come up.

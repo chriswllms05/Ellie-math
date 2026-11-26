@@ -8,7 +8,7 @@ For the Claude session that builds the game. Words and shared numbers come from 
 - **SwiftUI** for the app shell, menus, the math round, the grown-up view and every non-game screen.
 - **SpriteKit** for the four game scenes: pinball machine, catcher, battle, camp. Each is hosted in SwiftUI with `SpriteView`.
 - **Minimum iPadOS: 17.** 17 is the floor because the app model uses the Observation framework (`@Observable`).
-- **The device to design and test for:** Ellie's iPad is an **iPad mini (5th generation)**: A12 chip, 3 GB of memory, a 7.9-inch 60 Hz screen (no ProMotion), **768 × 1024 points** held upright, drawn at @2x. Her parent read the iPadOS version as "20.6.5.2", which isn't a number Apple uses; it's most likely iPadOS 18 or 26, and either is above the minimum. Check it on the iPad in the first build session. Xcode must be new enough to install on her iPad's iPadOS; current Xcode is.
+- **The device to design and test for:** Ellie's iPad is an **iPad mini (5th generation)**: A12 chip, 3 GB of memory, a 7.9-inch 60 Hz screen (no ProMotion), **768 × 1024 points** held upright, drawn at @2x. It runs **iPadOS 26.5.2**. Xcode must be new enough to install on her iPad's iPadOS; current Xcode is.
 - **iPad only, portrait only** (portrait and portrait upside-down). `UIRequiresFullScreen = YES`, so no Split View or Slide Over to lay out for. Status bar hidden in game scenes.
 - **No network, no accounts, no analytics, no ads, no purchases.** The app requests no network entitlement and makes no network calls. Nothing leaves the iPad except a backup file she or a grown-up chooses to share.
 

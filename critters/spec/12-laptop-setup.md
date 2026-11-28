@@ -55,7 +55,7 @@ The project lives on GitHub at **chriswllms05/Ellie-math**. Pick one way:
   git clone https://github.com/chriswllms05/Ellie-math.git
   ```
 
-The game's documents are on a working branch until they're merged. In the first session, ask Claude to switch to the branch that has the `critters/` folder (it was `claude/admiring-thompson-6zzxj3` when these specs were written), or merge that branch into `main` first.
+The game's documents are on `main` (merged on 2026-11-28). If the repo was already on the laptop, pull the latest `main` first (in GitHub Desktop: **Fetch origin**, then **Pull**).
 
 ## 7. Install Claude Code on the laptop
 

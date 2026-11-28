@@ -19,7 +19,10 @@ if [ -z "$vault" ]; then
     if [ -d "$c" ]; then vault="$c"; break; fi
   done
 fi
-[ -n "$vault" ] && [ -d "$vault" ] || exit 0
+if [ -z "$vault" ] || [ ! -d "$vault" ]; then
+  echo "Critter Math: couldn't find the ChrisOS vault here, so nothing was copied. On the Mac, run again with CRITTER_VAULT set to the vault folder."
+  exit 0
+fi
 
 dest="$vault/Projects/Critter Math"
 
@@ -48,3 +51,5 @@ These notes are copied automatically from the Ellie-math repository (the `critte
 
 Start with [README](README.md).
 NOTE
+
+echo "Critter Math: docs copied to $dest"
